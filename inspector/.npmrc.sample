@@ -1,0 +1,10 @@
+; URL used for communications between the web inspector and the server.
+; It must include the protocol (e.g. "http"), which must be one of the
+; following values: http, https, ws, wss
+inspector_debugger_url = "ws://127.0.0.1:22625"
+
+; URL at which the `client.js` (the one that should be loaded by the device)
+; can be reached.
+; It must includes the protocol (e.g. "http"), which can be either http or
+; https.
+device_script_url = "http://127.0.0.1:8080/client.js"
