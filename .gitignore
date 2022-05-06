@@ -1,0 +1,11 @@
+/inspector/node_modules/
+/inspector/inspector.js
+/inspector/.npmrc
+
+/client/node_modules/
+/client/client.js
+/client/.npmrc
+
+/server/node_modules/
+/server/server-logs.txt
+/server/logs-*.txt

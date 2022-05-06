@@ -1,0 +1,4 @@
+; URL used for communications between the device and the server (e.g. for logs).
+; It must include the protocol (e.g. "http"), which must be one of the
+; following values: http, https, ws, wss
+device_debugger_url = "ws://127.0.0.1:22626"

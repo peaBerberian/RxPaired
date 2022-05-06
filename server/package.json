@@ -1,0 +1,31 @@
+{
+  "name": "rx-paired-server",
+  "version": "0.0.1",
+  "description": "Server for RxPaired: the lightweight, RxPlayer-oriented, remote inspector",
+  "main": "./build/main.js",
+  "type": "module",
+  "scripts": {
+    "build": "tsc --project .",
+    "run": "node ./build/main.js",
+    "start": "npm run build && npm run run",
+    "check": "tsc --noEmit --project .",
+    "lint": "eslint src -c .eslintrc.cjs"
+  },
+  "author": "peaberberian",
+  "license": "MIT",
+  "dependencies": {
+    "commander": "9.2.0",
+    "ws": "8.5.0"
+  },
+  "devDependencies": {
+    "@types/node": "17.0.31",
+    "@types/ws": "8.5.3",
+    "@typescript-eslint/eslint-plugin": "5.22.0",
+    "esbuild": "0.14.38",
+    "eslint": "8.14.0",
+    "eslint-plugin-import": "2.26.0",
+    "eslint-plugin-jsdoc": "39.2.9",
+    "http-server": "14.1.0",
+    "typescript": "4.6.4"
+  }
+}

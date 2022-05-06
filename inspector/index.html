@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="description" content="The RxPlayer's light remote debugger">
+<meta http-equiv="Content-Security-Policy" content="connect-src 'self' ws: wss:">
+<title>RxPaired-inspector</title>
+<style>
+body {
+  font-family: sans-serif;
+}
+body.light {
+  background-color: #e5e5e5;
+  color: #000;
+  color-scheme: light;
+}
+body.dark {
+  background-color: #000;
+  color: #fff;
+  color-scheme: dark;
+}
+
+ul {
+  margin: 0px;
+}
+
+canvas {
+  max-width: 100%;
+}
+
+.error-msg {
+  font-weight: bold;
+  padding: 5px;
+  background-color: #cc0000;
+  color: #ffffff;
+}
+
+.header {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 5px;
+  margin-bottom: 10px;
+}
+
+.header-item {
+  margin: 0px 3px;
+  padding: 3px 7px;
+  font-size: 18px;
+  font-family: monospace;
+}
+
+.header-item.page-title {
+  font-weight: bold;
+  font-size: 19px;
+  white-space: nowrap;
+}
+
+.header-item button {
+  cursor: pointer;
+  border-radius: 2px;
+  margin: 0px 3px;
+}
+.dark .header-item button {
+  background-color: #111;
+  border: 1px dotted #ccc;
+  color: #ddd;
+}
+.light .header-item button {
+  background-color: #eee;
+  border: 1px dotted #444;
+  color: #111;
+}
+
+.header-item button:disabled {
+  cursor: auto;
+}
+.dark .header-item button:disabled {
+  background-color: #464646;
+}
+.light .header-item button:disabled {
+  background-color: #dbdbdb;
+  color: #444;
+  border: 1px dotted #868686;
+}
+
+.token-header-value {
+  border-radius: 5px;
+  padding: 6px 13px;
+  white-space: nowrap;
+}
+.light .token-header-value {
+  background-color: #cbcbcb;
+}
+.dark .token-header-value {
+  background-color: #242a23;
+}
+
+.token-title {
+  text-align: center;
+}
+
+.token-title-val {
+  font-weight: normal;
+}
+.light .token-title-val {
+  color: #990033;
+}
+.dark .token-title-val {
+  color: #d3ffcf;
+}
+
+.light .emphasized {
+  color: #990033;
+}
+.dark .emphasized {
+  color: #d3ffcf;
+}
+
+.module-wrapper {
+  margin: 5px;
+  float: left;
+  width: 100%;
+  overflow: auto;
+}
+
+.light .module-wrapper {
+  border: 1px solid #b2b5bf;
+  background-color: #fff;
+}
+.dark .module-wrapper {
+  border: 1px solid #5c5c5c;
+  background-color: #0d0d0d;
+}
+
+.module-title {
+  font-weight: bold;
+  padding: 3px;
+  font-size: 14px;
+  margin: 0px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.module-title-buttons button {
+  margin: 0px 2px;
+  font-family: monospace;
+}
+.light .module-title {
+  color: #000;
+  background: #abdffd;
+  background: -webkit-linear-gradient(to top, #abdffd, #a1d0ff);
+  background: linear-gradient(to top, #abdffd, #a1d0ff);
+}
+.dark .module-title {
+  color: #fff;
+  background-color: #242424;
+  background-image: linear-gradient(191deg, #444 0%, #242424 74%);
+}
+
+.module-title-buttons button svg {
+  height: 10px;
+  width: 10px;
+}
+.light .module-title-buttons button svg {
+  fill: #000;
+}
+.dark .module-title-buttons button svg {
+  fill: #fff;
+}
+.module-title-buttons button:disabled svg {
+  fill: #555;
+}
+
+.module-body {
+  padding: 6px;
+}
+
+.howto-body {
+  padding: 10px;
+}
+
+.log-body {
+  overflow: auto;
+  height: 800px;
+  resize: vertical;
+}
+
+.log-body pre {
+  margin: 0px 0px;
+  padding: 5px 0px;
+}
+
+.light .log-error {
+  color: #aa0000;
+}
+.light .log-warn {
+  color: #555500;
+}
+.light .log-info {
+  color: #0000aa;
+}
+.light .log-network {
+  color: #005555;
+}
+.dark .log-error {
+  color: #ff4444;
+}
+.dark .log-warn {
+  color: #ffff00;
+}
+.dark .log-info {
+  color: #b5b5ff;
+}
+.dark .log-network {
+  color: #75d9ff;
+}
+
+.light .focused {
+  background-color: #fffcd6;
+}
+.dark .focused {
+  background-color: #0b5109;
+}
+
+.closed-modules {
+  margin: 5px;
+  float: left;
+  width: 100%;
+}
+.light .closed-modules {
+  border: 1px solid #b2b5bf;
+  background-color: #fff;
+}
+.dark .closed-modules {
+  border: 1px solid #5c5c5c;
+  background-color: #000;
+}
+
+.closed-modules-title {
+  padding: 5px;
+  display: block;
+  font-weight: bold;
+  font-size: 14px;
+  position: relative;
+}
+.light .closed-modules-title {
+  color: #000;
+  background-color: #c3c3c3;
+  background: linear-gradient(to top, #c3c3c3, #a9a7a7);
+}
+.dark .closed-modules-title {
+    color: #000;
+    background-color: #b5b2b2;
+    background: linear-gradient(to right, #b5b2b2, #1a1a1a);
+}
+
+.closed-module-elt {
+  margin: 5px 5px;
+  display: inline-block;
+  cursor: pointer;
+  font-size: 12px;
+  padding: 4px 5px;
+  font-weight: bold;
+}
+.light .closed-module-elt {
+  border: 1px solid #b2b5bf;
+  background: -webkit-linear-gradient(to top, #abdffd, #a1d0ff);
+  background: linear-gradient(to top, #abdffd, #a1d0ff);
+}
+.dark .closed-module-elt {
+  border: 1px solid #5c5c5c;
+  color: #fff;
+  background-color: #242424;
+  background-image: linear-gradient(191deg, #444 0%, #242424 74%);
+}
+
+.light .focused-bg {
+  background-color: #ffffaa;
+}
+
+.dark .focused-bg {
+  background-color: #505035;
+}
+
+.light .important-bg {
+  background-color: #c4ffd0;
+}
+
+.dark .important-bg {
+  background-color: #6a3d3d;
+}
+
+</style>
+</head>
+<body class="light">
+<script type="text/javascript" src="./inspector.js" charset="utf-8"></script>
+</body>
+</html>

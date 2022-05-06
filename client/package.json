@@ -1,0 +1,18 @@
+{
+  "name": "rx-paired-client",
+  "version": "0.0.1",
+  "description": "Client-side script for RxPaired: the lightweight, RxPlayer-oriented, remote inspector",
+  "main": "client.js",
+  "scripts": {
+    "build": "./build.mjs",
+    "build:min": "./build.mjs -m",
+    "build:watch": "./build.mjs -w",
+    "build:watch:min": "./build.mjs -w -m",
+    "serve": "node ../utils/static_http_server.mjs --port 8696 --include-client-file"
+  },
+  "author": "peaberberian",
+  "license": "MIT",
+  "devDependencies": {
+    "esbuild": "^0.14.38"
+  }
+}
