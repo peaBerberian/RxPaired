@@ -54,7 +54,7 @@ const __TOKEN__ = "";
       case "function":
       case "symbol":
       case "bigint":
-        processed = arg.toString();
+        processed = "";
         break;
 
       case "string":
@@ -67,16 +67,12 @@ const __TOKEN__ = "";
       case "object":
         if (arg === null) {
           processed = "null";
+        } else if (arg instanceof Error) {
+          processed = "NAME: " + String(arg.name) +
+            " ~ CODE: " + String(arg.code) +
+            " ~ MESSAGE: " + String(arg.message);
         } else {
-          try {
-            if (typeof arg.buffer === "object" && arg.buffer instanceof ArrayBuffer) {
-              processed = "$TypedArray?";
-            } else if (typeof arg.byteLength === "number" && arg instanceof ArrayBuffer) {
-              processed = "$ArrayBuffer";
-            } else {
-              processed = safeJsonStringify(arg);
-            }
-          } catch (_) {}
+          processed = "{}";
         }
         break;
       default:
