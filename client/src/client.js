@@ -420,6 +420,7 @@ const __TOKEN__ = "";
     }
     return processed;
   }
+  window.__RX_PLAYER_DEBUG_MODE__ = true;
 })();
 
 function evaluate(obj){
