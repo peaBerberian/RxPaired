@@ -34,14 +34,6 @@ const __TOKEN__ = "";
     logQueue.push(log);
   };
 
-  socket.addEventListener("open", function () {
-    sendLog = (log) => socket.send(log);
-    for (const log of logQueue) {
-      sendLog(log);
-    }
-    logQueue.length = 0;
-  });
-
   function formatAndSendLog(namespace, log) {
     const time = performance.now().toFixed(2);
     const logText = `${time} [${namespace}] ${log}`;
@@ -85,13 +77,16 @@ const __TOKEN__ = "";
     return processed;
   }
 
-  [ "log", "error", "info", "warn", "debug"].forEach(meth => {
+  const spyRemovers = [ "log", "error", "info", "warn", "debug"].map(meth => {
     const oldConsoleFn = console[meth];
     console[meth] = function (...args) {
       const argStr = args.map(processArg).join(" ");
       formatAndSendLog(meth, argStr);
       return oldConsoleFn.apply(this, args);
     };
+    return function () {
+      console[meth] = oldConsoleFn;
+    }
   });
 
   if (SHOULD_LOG_REQUESTS) {
@@ -119,6 +114,9 @@ const __TOKEN__ = "";
       };
       return originalXhrOpen.apply(this, arguments);
     };
+    spyRemovers.push(function () {
+      XMLHttpRequest.prototype.open = originalXhrOpen;
+    });
 
     const originalFetch = window.fetch;
     window.fetch = function() {
@@ -159,6 +157,9 @@ const __TOKEN__ = "";
           throw err;
         });
     };
+    spyRemovers.push(function() {
+      window.fetch = originalFetch;
+    });
   }
 
   sendLog("Init v1 " + performance.now() + " " + Date.now());
@@ -319,6 +320,25 @@ const __TOKEN__ = "";
     }
   }
 
+  /**
+   * Stop spying on JavaScript methods, just reset their original behavior.
+   */
+  function abort() {
+    logQueue.length = 0;
+    spyRemovers.forEach(cb => cb());
+    spyRemovers.length = 0;
+  }
+
+  socket.addEventListener("open", function () {
+    sendLog = (log) => socket.send(log);
+    for (const log of logQueue) {
+      sendLog(log);
+    }
+    logQueue.length = 0;
+  });
+
+  socket.addEventListener("error", abort);
+  socket.addEventListener("close", abort);
 
   socket.addEventListener("message", function (event) {
     if (event == null || event.data == null) {
