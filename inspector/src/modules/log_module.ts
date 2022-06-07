@@ -13,6 +13,12 @@ export default function LogModule(
   { state } : { state : ObservableState<InspectorState> }
 ) {
   /**
+   * The current filtered string.
+   * `null` if no filter is active.
+   */
+  let currentFilter : string | null = null;
+
+  /**
    * Log element's header which is going to show various information on what is
    * happening and if a log is selected.
    */
@@ -54,11 +60,40 @@ export default function LogModule(
    */
   let nextLogIdx = 0;
 
+  /** Text input element for filtering logs. */
+  const logFilterInputElt = createElement("input", {
+    className: "log-filter",
+  });
+  logFilterInputElt.placeholder = "Filter logs based on text (case sensitive)";
+  logFilterInputElt.type = "input";
+  logFilterInputElt.style.margin = "5px 0px";
+  logFilterInputElt.style.width = "calc(100% - 9px)";
+  logFilterInputElt.oninput = function() {
+    const text = logFilterInputElt.value;
+    if (text !== null && text.length > 0) {
+      currentFilter = text;
+      logsPending = [];
+      clearLogs();
+      const allLogs = state.getCurrentState(STATE_PROPS.LOGS_HISTORY) ?? [];
+      logsPending = allLogs.filter((l) => l.includes(text));
+      displayNextPendingLogs();
+    } else if (currentFilter !== null) {
+      currentFilter = null;
+      clearLogs();
+      logsPending = state.getCurrentState(STATE_PROPS.LOGS_HISTORY) ?? [];
+      displayNextPendingLogs();
+    }
+  };
+
   state.subscribe(STATE_PROPS.LOGS_HISTORY, onLogsHistoryChange, true);
   state.subscribe(STATE_PROPS.SELECTED_LOG_INDEX, onSelectedLogChanges, true);
 
   return {
-    body: createCompositeElement("div", [logHeaderElt, logContainerElt]),
+    body: createCompositeElement("div", [
+      logHeaderElt,
+      logFilterInputElt,
+      logContainerElt,
+    ]),
     clear: clearLogs,
     destroy() {
       logsPending = [];
@@ -76,7 +111,11 @@ export default function LogModule(
 
   /** Display header for when no logs are yet received. */
   function displayNoLogHeader() {
-    logHeaderElt.textContent = "No log received yet.";
+    if (currentFilter === null) {
+      logHeaderElt.textContent = "No log received yet.";
+    } else {
+      logHeaderElt.textContent = "No log corresponding to that filter.";
+    }
     logHeaderElt.classList.remove("important-bg");
   }
 
@@ -118,16 +157,18 @@ export default function LogModule(
    * @returns {string}
    */
   function getHeaderType() : "loading" | "no-log" | "no-selected" | "selected" {
-    switch (logHeaderElt.textContent) {
-      case LOADING_LOGS_MSG:
-        return "loading";
-      case NO_LOG_SELECTED_MSG:
-        return "no-selected";
-      case LOG_SELECTED_MSG:
-        return "selected";
-      default:
-        return "no-log";
+    const textContent = logHeaderElt.textContent;
+    if (textContent === null) {
+      return "no-log";
     }
+    if (textContent.startsWith(LOADING_LOGS_MSG)) {
+      return "loading";
+    } else if (textContent.startsWith(NO_LOG_SELECTED_MSG)) {
+      return "no-selected";
+    } else if (textContent.startsWith(LOG_SELECTED_MSG)) {
+      return "selected";
+    }
+    return "no-log";
   }
 
   /**
@@ -149,7 +190,10 @@ export default function LogModule(
       clearLogs();
     }
 
-    logsPending = logsPending.concat(values);
+    const filtered = currentFilter === null ?
+      values :
+      values.filter(v => v.includes(currentFilter as string));
+    logsPending = logsPending.concat(filtered);
     if (timeoutInterval !== undefined) {
       return;
     } else {
@@ -161,15 +205,13 @@ export default function LogModule(
    * Callback called when the index of the selected log changes.
    * This Callback is also mainly here to better handle conflicts between multiple
    * concurrent LogModules.
-   * @param {string} updateType
    */
-  function onSelectedLogChanges(updateType: UPDATE_TYPE | "initial") {
+  function onSelectedLogChanges() {
     const hasLogIdxSelected = state
       .getCurrentState(STATE_PROPS.SELECTED_LOG_INDEX) !== undefined;
     const headerType = getHeaderType();
     if (
       !hasLogIdxSelected &&
-      updateType === "initial" &&
       logContainerElt.childNodes.length === 0
     ) {
       if (headerType !== "no-log") {
@@ -203,7 +245,7 @@ export default function LogModule(
       timeoutInterval = setTimeout(displayNextPendingLogs, 50);
     } else {
       const headerType = getHeaderType();
-      if (logContainerElt.childNodes.length === 0) {
+      if (logsToDisplay.length === 0) {
         if (headerType !== "no-log") {
           displayNoLogHeader();
         }
