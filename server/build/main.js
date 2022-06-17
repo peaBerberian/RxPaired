@@ -26,7 +26,7 @@ const DEFAULT_CLIENT_MESSAGE_LIMIT = 1000;
 const DEFAULT_LOG_FILE_PATH = "server_logs.txt";
 const { program } = commander;
 program
-    .description("RLRI - RxPlayer's Light Remote Inspector")
+    .description("RxPaired - RxPlayer's Light Remote Inspector")
     .option("-cp, --client-port <port>", "Port used for client to server communication. " +
     `Defaults to ${DEFAULT_CLIENT_PORT}.`)
     .option("-dp, --debugger-port <port>", "Port used for device to server communication. " +
