@@ -53,6 +53,7 @@ function buildClient(options) {
     entryPoints: [path.join(currentDirName, "src", "client.js")],
     bundle: true,
     minifySyntax: minify,
+    target: "es6",
     outfile: path.join(currentDirName, "client.js"),
     watch: !watch ? undefined : {
       onRebuild(error, result) {
