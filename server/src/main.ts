@@ -16,8 +16,8 @@ import createCheckers from "./safe_checks.js";
  */
 const INIT_REGEX = /^Init v1 ([0-9]+(?:\.[0-9]+)?) ([0-9]+(?:\.[0-9]+)?)$/;
 
-const DEFAULT_CLIENT_PORT = 22625;
-const DEFAULT_DEBUGGER_PORT = 22626;
+const DEFAULT_INSPECTOR_PORT = 22625;
+const DEFAULT_DEVICE_PORT = 22626;
 const DEFAULT_HISTORY_SIZE = 0;
 const DEFAULT_MAX_TOKEN_DURATION = 4 * 60 * 60;
 const DEFAULT_MAX_LOG_LENGTH = 3000;
@@ -32,12 +32,12 @@ const { program } = commander;
 
 program
   .description("RxPaired - RxPlayer's Light Remote Inspector")
-  .option("-cp, --client-port <port>",
-          "Port used for client to server communication. " +
-          `Defaults to ${DEFAULT_CLIENT_PORT}.`)
-  .option("-dp, --debugger-port <port>",
-          "Port used for device to server communication. " +
-          `Defaults to ${DEFAULT_DEBUGGER_PORT}.`)
+  .option("-cp, --inspector-port <port>",
+          "Port used for inspector to server communication. " +
+          `Defaults to ${DEFAULT_INSPECTOR_PORT}.`)
+  .option("-dp, --device-port <port>",
+          "Port used for inspector to server communication. " +
+          `Defaults to ${DEFAULT_DEVICE_PORT}.`)
   .option("-f, --create-log-files",
           "If set, a log file will also be written for each token and for each " +
           "day (server time) this token is used, in the current directory.")
@@ -82,12 +82,12 @@ program
 program.parse(process.argv);
 const options = program.opts();
 
-const clientPort = options.clientPort === undefined ?
-  DEFAULT_CLIENT_PORT :
-  +options.clientPort;
-const debuggerPort = options.debuggerPort === undefined ?
-  DEFAULT_DEBUGGER_PORT :
-  +options.debuggerPort;
+const inspectorPort = options.inspectorPort === undefined ?
+  DEFAULT_INSPECTOR_PORT :
+  +options.inspectorPort;
+const devicePort = options.devicePort === undefined ?
+  DEFAULT_DEVICE_PORT :
+  +options.devicePort;
 const usePassword = Boolean(options.password);
 const forcePassword = typeof options.forcePassword === "string" ?
   options.forcePassword :
@@ -149,8 +149,8 @@ const logFile = typeof options.logFile === "string" ?
 logger.setLogFile(logFile ?? DEFAULT_LOG_FILE_PATH);
 
 [
-  [clientPort, "--client-port"],
-  [debuggerPort, "--debugger-port"],
+  [inspectorPort, "--inspector-port"],
+  [devicePort, "--device-port"],
   [maxTokenDuration, "--max-token-duration"],
   [maxLogLength, "--max-log-length"],
   [historySize, "--history-size"],
@@ -176,8 +176,8 @@ if (usePassword) {
   console.log("Generated password:", password);
 }
 
-const debugSocket = new WebSocketServer({ port: debuggerPort });
-const htmlClientSocket = new WebSocketServer({ port: clientPort });
+const debugSocket = new WebSocketServer({ port: devicePort });
+const htmlClientSocket = new WebSocketServer({ port: inspectorPort });
 
 const checkers = createCheckers({
   debugSocket,
@@ -406,8 +406,8 @@ htmlClientSocket.on("connection", (ws, req) => {
     }
   });
 });
-logger.log(`Emitting to web clients at ws://127.0.0.1:${clientPort}`);
-logger.log(`Listening for device logs at ws://127.0.0.1:${debuggerPort}`);
+logger.log(`Emitting to web clients at ws://127.0.0.1:${inspectorPort}`);
+logger.log(`Listening for device logs at ws://127.0.0.1:${devicePort}`);
 
 function sendMessageToClient(
   message : string,
