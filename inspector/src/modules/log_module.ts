@@ -1,6 +1,10 @@
-import { InspectorState, MAX_DISPLAYED_LOG_ELEMENTS, STATE_PROPS } from "../constants";
-import { createCompositeElement, createElement } from "../dom-utils";
-import ObservableState, { UPDATE_TYPE } from "../observable_state";
+import { MAX_DISPLAYED_LOG_ELEMENTS, STATE_PROPS } from "../constants";
+import { createButton, createCompositeElement, createElement } from "../dom-utils";
+import { UPDATE_TYPE } from "../observable_state";
+import {
+  ModuleObject,
+  ModuleFunctionArguments,
+} from "./index";
 
 const LOADING_LOGS_MSG = "Loading logs...";
 const NO_LOG_SELECTED_MSG = "No log selected (click to select)";
@@ -9,14 +13,15 @@ const LOG_SELECTED_MSG = "A log has been selected";
 /**
  * @param {Object} args
  */
-export default function LogModule(
-  { state } : { state : ObservableState<InspectorState> }
-) {
+export default function LogModule({
+  state,
+  configState,
+} : ModuleFunctionArguments) : ModuleObject {
   /**
-   * The current filtered string.
+   * A filter function allowing to filter only wanted logs.
    * `null` if no filter is active.
    */
-  let currentFilter : string | null = null;
+  let currentFilter : ((input : string) => boolean) | null = null;
 
   /**
    * Log element's header which is going to show various information on what is
@@ -69,30 +74,65 @@ export default function LogModule(
    */
   let nextLogIdx = 0;
 
+  /** If `true`, inputted search string are case sensitive. */
+  let areSearchCaseSensitive = false;
+
+  /** If `true`, inputted search string are Regular Expression. */
+  let areSearchRegex = false;
+
+  /** Wrapper elements allowing to filter logs. */
+  const filterFlexElt = createElement("div", {
+    className: "log-wrapper",
+  });
+  filterFlexElt.style.display = "flex";
+  filterFlexElt.style.height = "40px";
+  filterFlexElt.style.margin = "5px 0px";
+  const unsubFilterFlexStyle = configState.subscribe(STATE_PROPS.CSS_MODE, () => {
+    filterFlexElt.style.backgroundColor =
+      configState.getCurrentState(STATE_PROPS.CSS_MODE) === "dark" ?
+        "#333" :
+        "#f2f2f2";
+  }, true);
+
+  const [caseSensitiveBtn, unsubCaseBtn] = createFilterButtonElement(
+    "Aa",
+    "Enable case sensitivity",
+    "Disable case sensitivity",
+    () => {
+      areSearchCaseSensitive = true;
+      refreshFilters();
+    },
+    () => {
+      areSearchCaseSensitive = false;
+      refreshFilters();
+    });
+
+  const [regexFilterButton, unsubRegexBtn] = createFilterButtonElement(
+    ".*",
+    "Enable RegExp mode",
+    "Disable RegExp mode",
+    () => {
+      areSearchRegex = true;
+      refreshFilters();
+    },
+    () => {
+      areSearchRegex = false;
+      refreshFilters();
+    });
+
   /** Text input element for filtering logs. */
   const logFilterInputElt = createElement("input", {
     className: "log-filter",
   });
-  logFilterInputElt.placeholder = "Filter logs based on text (case sensitive)";
+  logFilterInputElt.placeholder = "Filter logs based on text";
   logFilterInputElt.type = "input";
-  logFilterInputElt.style.margin = "5px 0px";
+  logFilterInputElt.style.margin = "5px";
   logFilterInputElt.style.width = "calc(100% - 9px)";
-  logFilterInputElt.oninput = function() {
-    const text = logFilterInputElt.value;
-    if (text !== null && text.length > 0) {
-      currentFilter = text;
-      logsPending = [];
-      clearLogs();
-      const allLogs = state.getCurrentState(STATE_PROPS.LOGS_HISTORY) ?? [];
-      logsPending = allLogs.filter((l) => l.includes(text));
-      displayNextPendingLogs();
-    } else if (currentFilter !== null) {
-      currentFilter = null;
-      clearLogs();
-      logsPending = state.getCurrentState(STATE_PROPS.LOGS_HISTORY) ?? [];
-      displayNextPendingLogs();
-    }
-  };
+  logFilterInputElt.oninput = refreshFilters;
+
+  filterFlexElt.appendChild(caseSensitiveBtn);
+  filterFlexElt.appendChild(regexFilterButton);
+  filterFlexElt.appendChild(logFilterInputElt);
 
   state.subscribe(STATE_PROPS.LOGS_HISTORY, onLogsHistoryChange, true);
   state.subscribe(STATE_PROPS.SELECTED_LOG_INDEX, onSelectedLogChanges, true);
@@ -101,10 +141,15 @@ export default function LogModule(
   return {
     body: createCompositeElement("div", [
       logHeaderElt,
-      logFilterInputElt,
+      filterFlexElt,
       logBodyElt,
     ]),
-    clear: clearLogs,
+    clear() {
+      unsubCaseBtn();
+      unsubRegexBtn();
+      unsubFilterFlexStyle();
+      clearLogs();
+    },
     destroy() {
       logsPending = [];
       timeoutInterval = undefined;
@@ -202,7 +247,7 @@ export default function LogModule(
 
     const filtered = currentFilter === null ?
       values :
-      values.filter(v => v.includes(currentFilter as string));
+      values.filter(currentFilter);
     logsPending = logsPending.concat(filtered);
     if (timeoutInterval !== undefined) {
       return;
@@ -339,6 +384,117 @@ export default function LogModule(
   }
 
   /**
+   * Reapply filters on what is currently in `logFilterInputElt.value`.
+   */
+  function refreshFilters() {
+    const text = logFilterInputElt.value;
+    if (text !== null && text.length > 0) {
+      if (areSearchRegex) {
+        const flags = areSearchCaseSensitive ? "i" : undefined;
+        const reg = new RegExp(text, flags);
+        currentFilter = (input : string) => reg.test(input);
+      } else if (areSearchCaseSensitive) {
+        currentFilter = (input : string) => input.toLowerCase().includes(text);
+      } else {
+        const toLower = text.toLowerCase();
+        currentFilter = (input : string) => input.toLowerCase().includes(toLower);
+      }
+      logsPending = [];
+      clearLogs();
+      const allLogs = state.getCurrentState(STATE_PROPS.LOGS_HISTORY) ?? [];
+      logsPending = allLogs.filter(currentFilter);
+      displayNextPendingLogs();
+    } else if (currentFilter !== null) {
+      currentFilter = null;
+      clearLogs();
+      logsPending = state.getCurrentState(STATE_PROPS.LOGS_HISTORY) ?? [];
+      displayNextPendingLogs();
+    }
+  }
+
+  /**
+   * Create a button element that will be displayed alongside the filter bar.
+   * @param {string} innerText - The text to display inside the button
+   * @param {string} titleDisabled - The title (e.g. in tooltip) that will be
+   * shown when the button is not enabled.
+   * @param {string} titleEnabled - The title (e.g. in tooltip) that will be
+   * shown when the button is enabled.
+   * @param {Function} onEnabled - The function that should be called when the
+   * button is enabled.
+   * @param {Function} onEnabled - The function that should be called when the
+   * feature behind the button is enabled.
+   * @param {Function} onDisabled - The function that should be called when the
+   * feature behind the button is disabled.
+   * @returns {Array} Returns a tuple of two values:
+   *   - HTMLElement of the button
+   *   - Code to be called when the button is removed from the DOM
+   */
+  function createFilterButtonElement(
+    innerText: string,
+    titleDisabled: string,
+    titleEnabled: string,
+    onEnabled: () => void,
+    onDisabled: () => void
+  ) : [HTMLElement, () => void] {
+    let isDisabled = true;
+    let isDarkMode = configState
+      .getCurrentState(STATE_PROPS.CSS_MODE) === "dark";
+    const unsub = configState.subscribe(STATE_PROPS.CSS_MODE, () => {
+      isDarkMode = configState
+        .getCurrentState(STATE_PROPS.CSS_MODE) === "dark";
+      if (isDisabled) {
+        setDisabledStyle();
+      } else {
+        setEnabledStyle();
+      }
+    });
+    const buttonElt = createButton({
+      textContent: innerText,
+      className: "log-filter-button",
+      onClick() {
+        if (isDisabled) {
+          isDisabled = false;
+          setEnabledStyle();
+          buttonElt.title = titleEnabled;
+          onEnabled();
+        } else {
+          isDisabled = true;
+          buttonElt.title = titleDisabled;
+          setDisabledStyle();
+          buttonElt.style.color = isDarkMode ?
+            "#ffffff" :
+            "#000000";
+          onDisabled();
+        }
+      },
+    });
+
+    buttonElt.title = titleDisabled;
+    buttonElt.style.cursor = "pointer";
+    buttonElt.style.fontWeight = "bold";
+    buttonElt.style.margin = "6px 5px";
+    buttonElt.style.border = "none";
+    buttonElt.style.fontSize = "11px";
+    buttonElt.style.padding = "4px";
+    buttonElt.style.backgroundColor = "transparent";
+    setDisabledStyle();
+    return [buttonElt, unsub];
+
+    function setEnabledStyle() {
+      buttonElt.style.color = isDarkMode ?
+        "#d3ffcf" :
+        "#990033";
+    }
+
+    function setDisabledStyle() {
+      buttonElt.style.color = isDarkMode ?
+        "#ffffff" :
+        "#000000";
+
+    }
+  }
+
+  /**
    * Clear all logs currently displayed or pending to be displayed, without
    * modifying the complete log history.
    */
@@ -376,4 +532,3 @@ export function createLogElement(logTxt : string) : HTMLElement {
       "log-line log-unknown",
   });
 }
-
