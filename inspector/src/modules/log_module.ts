@@ -238,6 +238,9 @@ export default function LogModule(
    */
   function displayNextPendingLogs() : void {
     timeoutInterval = undefined;
+    if (logsPending.length > MAX_DISPLAYED_LOG_ELEMENTS) {
+      logsPending = logsPending.slice(MAX_DISPLAYED_LOG_ELEMENTS);
+    }
     const logsToDisplay = logsPending.slice(0, 200);
     logsPending = logsPending.slice(200);
     if (logsPending.length > 0) {
