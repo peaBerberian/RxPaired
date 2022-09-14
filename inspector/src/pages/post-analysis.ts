@@ -1,7 +1,7 @@
 import { ConfigState, InspectorState, STATE_PROPS } from "../constants";
 import createModules from "../create_modules";
 import { createCompositeElement, createElement } from "../dom-utils";
-import ObservableState, {UPDATE_TYPE} from "../observable_state";
+import ObservableState, { UPDATE_TYPE } from "../observable_state";
 import { updateStatesFromLogGroup } from "../update_state_from_log";
 import { createClearStoredConfigButton, createDarkLightModeButton } from "./utils";
 
@@ -71,7 +71,7 @@ function createPostDebuggerHeaderElement(
 function createImportFileButton(
   inspectorState : ObservableState<InspectorState>
 ) : HTMLInputElement {
-  const fileInputEl = createElement("input") as HTMLInputElement;
+  const fileInputEl = createElement("input");
   fileInputEl.name = "file";
   fileInputEl.type = "file";
   fileInputEl.addEventListener("change", onFileSelection, false);

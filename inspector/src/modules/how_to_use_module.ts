@@ -62,7 +62,7 @@ export default function HowToUseModule(
     }),
   ]);
 
-  const link = createElement("a", { textContent: CLIENT_SCRIPT_URL }) as HTMLLinkElement;
+  const link = createElement("a", { textContent: CLIENT_SCRIPT_URL });
   link.href = CLIENT_SCRIPT_URL;
   const liElt2 = createCompositeElement("li", [
     "Add manually the content of this script to the beginning of the " +

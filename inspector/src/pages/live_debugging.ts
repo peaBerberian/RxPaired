@@ -5,7 +5,7 @@ import ObservableState, { UPDATE_TYPE } from "../observable_state";
 import updateStateFromLog, {
   updateStatesFromLogGroup,
 } from "../update_state_from_log";
-import { displayError, getDefaultModuleOrder } from "../utils";
+import { displayError } from "../utils";
 import { createClearStoredConfigButton, createDarkLightModeButton } from "./utils";
 
 /**

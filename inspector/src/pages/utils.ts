@@ -1,7 +1,7 @@
 import { ConfigState, STATE_PROPS } from "../constants";
-import { createButton, createCompositeElement, createElement } from "../dom-utils";
+import { createButton } from "../dom-utils";
 import ObservableState, { UPDATE_TYPE } from "../observable_state";
-import {getDefaultModuleOrder} from "../utils";
+import { getDefaultModuleOrder } from "../utils";
 
 /**
  * Returns an HTML element corresponding to the light/dark mode button.
