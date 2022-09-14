@@ -26,13 +26,22 @@ export default function LogModule(
   logHeaderElt.style.borderBottom = "1px dashed #878787";
   displayNoLogHeader();
 
-  /** Element which will contain all logs. */
-  const logContainerElt = createElement("div", { className: "log-body module-body" });
+  /** Wrapper elements which will contain log messages. */
+  const logBodyElt = createElement("div", { className: "log-body module-body" });
+
+  /**
+   * Parent element of the individual log messages.
+   * It should be the unique child of `logBodyElt`, it is written that way so it
+   * may easily be removed and appended at will from the DOM when it is in the
+   * process of being heavily updated to improve performances.
+   */
+  const logContainerElt =
+    createElement("div", { className: "log-container module-body" });
 
   // When pushing a LOT (thousands) of logs at once, the page can become
   // unresponsive multiple seconds.
   // To avoid a pause with no possibility of user interaction in the mean time,
-  // logs are only processed by groups of 200, with a `setTimeout` between them.
+  // logs are only processed by groups of 500, with a `setTimeout` between them.
 
   /**
    * Logs that are not yet displayed.
@@ -88,11 +97,12 @@ export default function LogModule(
   state.subscribe(STATE_PROPS.LOGS_HISTORY, onLogsHistoryChange, true);
   state.subscribe(STATE_PROPS.SELECTED_LOG_INDEX, onSelectedLogChanges, true);
 
+  logBodyElt.appendChild(logContainerElt);
   return {
     body: createCompositeElement("div", [
       logHeaderElt,
       logFilterInputElt,
-      logContainerElt,
+      logBodyElt,
     ]),
     clear: clearLogs,
     destroy() {
@@ -241,8 +251,14 @@ export default function LogModule(
     if (logsPending.length > MAX_DISPLAYED_LOG_ELEMENTS) {
       logsPending = logsPending.slice(MAX_DISPLAYED_LOG_ELEMENTS);
     }
-    const logsToDisplay = logsPending.slice(0, 200);
-    logsPending = logsPending.slice(200);
+
+    const wasScrolledToBottom = isLogBodyScrolledToBottom();
+    const shouldMaskContainerTemporarily = logsPending.length >= 10;
+    if (shouldMaskContainerTemporarily) {
+      logBodyElt.innerHTML = "";
+    }
+    const logsToDisplay = logsPending.slice(0, 500);
+    logsPending = logsPending.slice(500);
     if (logsPending.length > 0) {
       displayLoadingHeader();
       timeoutInterval = setTimeout(displayNextPendingLogs, 50);
@@ -268,18 +284,22 @@ export default function LogModule(
       while (logContainerElt.children.length > MAX_DISPLAYED_LOG_ELEMENTS - 1) {
         logContainerElt.removeChild(logContainerElt.children[0]);
       }
-      const hasVerticalScrollbar =
-        logContainerElt.scrollHeight > logContainerElt.clientHeight;
-      const wasScrolledToBottom = !hasVerticalScrollbar ||
-        logContainerElt.scrollHeight -
-          logContainerElt.clientHeight <= logContainerElt.scrollTop + 5;
       logContainerElt.appendChild(logElt);
-      if (wasScrolledToBottom) {
-        logContainerElt.scrollTop = logContainerElt.scrollHeight;
-      }
-
       nextLogIdx++;
     }
+    if (shouldMaskContainerTemporarily) {
+      logBodyElt.appendChild(logContainerElt);
+    }
+    if (wasScrolledToBottom) {
+      logBodyElt.scrollTop = logBodyElt.scrollHeight;
+    }
+  }
+
+  function isLogBodyScrolledToBottom() : boolean {
+    const hasVerticalScrollbar = logBodyElt.scrollHeight > logBodyElt.clientHeight;
+    return !hasVerticalScrollbar ||
+      logBodyElt.scrollHeight -
+      logBodyElt.clientHeight <= logBodyElt.scrollTop + 5;
   }
 
   /**
@@ -327,6 +347,7 @@ export default function LogModule(
     clearTimeout(timeoutInterval);
     timeoutInterval = undefined;
     logContainerElt.innerHTML = "";
+    logBodyElt.innerHTML = "";
     if (getHeaderType() !== "no-log") {
       displayNoLogHeader();
     }
