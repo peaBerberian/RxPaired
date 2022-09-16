@@ -20,8 +20,19 @@ export default function generatePostAnalysisPage(
   document.body.appendChild(modulesContainerElt);
 
   inspectorState.subscribe(STATE_PROPS.SELECTED_LOG_INDEX, () => {
-    const selectedLogIdx = inspectorState.getCurrentState(STATE_PROPS.SELECTED_LOG_INDEX);
-    const history = inspectorState.getCurrentState(STATE_PROPS.LOGS_HISTORY) ?? [];
+    const allState = inspectorState.getCurrentState();
+    const selectedLogIdx = allState[STATE_PROPS.SELECTED_LOG_INDEX];
+    const history = allState[STATE_PROPS.LOGS_HISTORY] ?? [];
+    /* eslint-disable-next-line */
+    (Object.keys(allState) as unknown as Array<keyof InspectorState>)
+      .forEach((stateProp: keyof InspectorState) => {
+        if (
+          stateProp !== STATE_PROPS.LOGS_HISTORY &&
+          stateProp !== STATE_PROPS.SELECTED_LOG_INDEX
+        ) {
+          inspectorState.updateState(stateProp, UPDATE_TYPE.REPLACE, undefined);
+        }
+      });
     if (selectedLogIdx === undefined) {
       updateStatesFromLogGroup(inspectorState, history);
       inspectorState.commitUpdates();

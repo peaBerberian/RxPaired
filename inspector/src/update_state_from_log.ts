@@ -1,4 +1,4 @@
-import { InspectorState } from "./constants";
+import { InspectorState, STATE_PROPS } from "./constants";
 import LogProcessors, {
   StateUpdate,
 } from "./log_processors";
