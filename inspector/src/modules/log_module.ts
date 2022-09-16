@@ -49,9 +49,11 @@ export default function LogModule({
   // logs are only processed by groups of 500, with a `setTimeout` between them.
 
   /**
-   * Logs that are not yet displayed.
+   * Logs that are not yet displayed as a tuple of:
+   *   1. The log message
+   *   2. The log idx in the message in the LOGS_HISTORY array.
    */
-  let logsPending : string[] = [];
+  let logsPending : Array<[string, number]> = [];
 
   /**
    * If set, a `setTimeout` has been called to process the next group of logs
@@ -237,17 +239,25 @@ export default function LogModule({
   ) {
     if (values === undefined) {
       nextLogIdx = 0;
+      logsPending = [];
       clearLogs();
       return;
     }
     if (updateType === UPDATE_TYPE.REPLACE || updateType === "initial") {
       nextLogIdx = 0;
+      logsPending = [];
       clearLogs();
     }
 
-    const filtered = currentFilter === null ?
-      values :
-      values.filter(currentFilter);
+    const numberedValues = values
+      .map((str) : [string, number] => [str, nextLogIdx++]);
+    let filtered;
+    if (currentFilter === null) {
+      filtered = numberedValues;
+    } else {
+      const filter = currentFilter;
+      filtered = numberedValues.filter(([str]) => filter(str));
+    }
     logsPending = logsPending.concat(filtered);
     if (timeoutInterval !== undefined) {
       return;
@@ -304,12 +314,22 @@ export default function LogModule({
     }
     const logsToDisplay = logsPending.slice(0, 500);
     logsPending = logsPending.slice(500);
+    displayLoadingHeader();
+    for (const log of logsToDisplay) {
+      const logElt = createLogElement(log[0]);
+      logElt.dataset.logId = String(log[1]);
+      logElt.onclick = toggleCurrentElementSelection;
+      while (logContainerElt.children.length > MAX_DISPLAYED_LOG_ELEMENTS - 1) {
+        logContainerElt.removeChild(logContainerElt.children[0]);
+      }
+      logContainerElt.appendChild(logElt);
+    }
+
     if (logsPending.length > 0) {
-      displayLoadingHeader();
       timeoutInterval = setTimeout(displayNextPendingLogs, 50);
     } else {
       const headerType = getHeaderType();
-      if (logsToDisplay.length === 0) {
+      if (logContainerElt.childNodes.length === 0) {
         if (headerType !== "no-log") {
           displayNoLogHeader();
         }
@@ -322,16 +342,6 @@ export default function LogModule({
       }
     }
 
-    for (const log of logsToDisplay) {
-      const logElt = createLogElement(log);
-      logElt.dataset.logId = String(nextLogIdx);
-      logElt.onclick = toggleCurrentElementSelection;
-      while (logContainerElt.children.length > MAX_DISPLAYED_LOG_ELEMENTS - 1) {
-        logContainerElt.removeChild(logContainerElt.children[0]);
-      }
-      logContainerElt.appendChild(logElt);
-      nextLogIdx++;
-    }
     if (shouldMaskContainerTemporarily) {
       logBodyElt.appendChild(logContainerElt);
     }
@@ -399,16 +409,15 @@ export default function LogModule({
         const toLower = text.toLowerCase();
         currentFilter = (input : string) => input.toLowerCase().includes(toLower);
       }
-      logsPending = [];
-      clearLogs();
-      const allLogs = state.getCurrentState(STATE_PROPS.LOGS_HISTORY) ?? [];
-      logsPending = allLogs.filter(currentFilter);
-      displayNextPendingLogs();
+      onLogsHistoryChange(
+        "initial",
+        state.getCurrentState(STATE_PROPS.LOGS_HISTORY) ?? []
+      );
     } else if (currentFilter !== null) {
-      currentFilter = null;
-      clearLogs();
-      logsPending = state.getCurrentState(STATE_PROPS.LOGS_HISTORY) ?? [];
-      displayNextPendingLogs();
+      onLogsHistoryChange(
+        "initial",
+        state.getCurrentState(STATE_PROPS.LOGS_HISTORY) ?? []
+      );
     }
   }
 
