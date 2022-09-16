@@ -131,6 +131,7 @@ export default function LogModule({
   logFilterInputElt.style.margin = "5px";
   logFilterInputElt.style.width = "calc(100% - 9px)";
   logFilterInputElt.oninput = refreshFilters;
+  logFilterInputElt.onchange = refreshFilters;
 
   filterFlexElt.appendChild(caseSensitiveBtn);
   filterFlexElt.appendChild(regexFilterButton);
@@ -413,7 +414,8 @@ export default function LogModule({
         "initial",
         state.getCurrentState(STATE_PROPS.LOGS_HISTORY) ?? []
       );
-    } else if (currentFilter !== null) {
+    } else {
+      currentFilter = null;
       onLogsHistoryChange(
         "initial",
         state.getCurrentState(STATE_PROPS.LOGS_HISTORY) ?? []
