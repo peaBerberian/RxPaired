@@ -309,11 +309,10 @@ export default function LogModule({
     }
 
     const wasScrolledToBottom = isLogBodyScrolledToBottom();
-    const shouldMaskContainerTemporarily = logsPending.length >= 10;
-    if (shouldMaskContainerTemporarily) {
+    const logsToDisplay = logsPending.slice(0, 500);
+    if (logsToDisplay.length >= 10) {
       logBodyElt.innerHTML = "";
     }
-    const logsToDisplay = logsPending.slice(0, 500);
     logsPending = logsPending.slice(500);
     displayLoadingHeader();
     for (const log of logsToDisplay) {
@@ -343,7 +342,7 @@ export default function LogModule({
       }
     }
 
-    if (shouldMaskContainerTemporarily) {
+    if (logContainerElt.parentElement !== logBodyElt) {
       logBodyElt.appendChild(logContainerElt);
     }
     if (wasScrolledToBottom) {
