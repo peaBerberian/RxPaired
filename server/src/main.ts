@@ -36,7 +36,7 @@ program
           "Port used for inspector to server communication. " +
           `Defaults to ${DEFAULT_INSPECTOR_PORT}.`)
   .option("-dp, --device-port <port>",
-          "Port used for inspector to server communication. " +
+          "Port used for device-to-server communication. " +
           `Defaults to ${DEFAULT_DEVICE_PORT}.`)
   .option("-f, --create-log-files",
           "If set, a log file will also be written for each token and for each " +
