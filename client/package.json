@@ -4,8 +4,8 @@
   "description": "Client-side script for RxPaired: the lightweight, RxPlayer-oriented, remote inspector",
   "main": "client.js",
   "scripts": {
-    "build": "./build.mjs",
-    "build:min": "./build.mjs -m",
+    "build": "./build.mjs && tsc client.js --target ES5 --allowJs --outFile client.es5.js",
+    "build:min": "./build.mjs -m && tsc client.js --target ES5 --allowJs --outFile client.es5.js",
     "build:watch": "./build.mjs -w",
     "build:watch:min": "./build.mjs -w -m",
     "serve": "node ../utils/static_http_server.mjs --port 8696 --include-client-file"
@@ -13,6 +13,7 @@
   "author": "peaberberian",
   "license": "MIT",
   "devDependencies": {
-    "esbuild": "^0.14.38"
+    "esbuild": "^0.14.38",
+    "typescript": "^5.0.2"
   }
 }
