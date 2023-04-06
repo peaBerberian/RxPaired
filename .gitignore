@@ -4,6 +4,7 @@
 
 /client/node_modules/
 /client/client.js
+/client/client.es5.js
 /client/.npmrc
 
 /server/node_modules/
