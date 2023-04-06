@@ -404,7 +404,7 @@ export default function LogModule({
         const reg = new RegExp(text, flags);
         currentFilter = (input : string) => reg.test(input);
       } else if (areSearchCaseSensitive) {
-        currentFilter = (input : string) => input.toLowerCase().includes(text);
+        currentFilter = (input : string) => input.includes(text);
       } else {
         const toLower = text.toLowerCase();
         currentFilter = (input : string) => input.toLowerCase().includes(toLower);
