@@ -72,7 +72,7 @@ const usePassword = Boolean(options.password);
 const forcePassword = typeof options.forcePassword === "string" ?
     options.forcePassword :
     undefined;
-const shouldCreateLogFiles = Boolean(options.shouldCreateLogFiles);
+const shouldCreateLogFiles = Boolean(options.createLogFiles);
 /** Maximum duration a Token can be used for, in milliseconds. */
 const maxTokenDuration = options.maxTokenDuration === undefined ?
     DEFAULT_MAX_TOKEN_DURATION * 1000 :
