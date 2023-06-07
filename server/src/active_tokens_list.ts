@@ -121,9 +121,19 @@ export class TokenMetadata {
   public timestamp : number;
 
   /**
-   * Each web "client" (remote debugger) connected with this token.
+   * Information on each web "client" (remote debugger) connected with this
+   * token.
    */
-  public clients : WebSocket.WebSocket[];
+  public clients : Array<{
+    /** Corresponding WebSocket on which logs are sent. */
+    webSocket : WebSocket.WebSocket;
+    /**
+     * Store Timer ID of the interval at which `"ping"` messages are sent to
+     * ensure the connection isn't closed by some mechanism (for example a
+     * server watcher closing down the connection when it seems to be unused).
+     */
+    pingInterval : NodeJS.Timer;
+  }>;
 
   /**
    * The device running with this token.
@@ -132,6 +142,13 @@ export class TokenMetadata {
    * There cannot be multiple devices connected with the same token.
    */
   public device : WebSocket.WebSocket | null;
+
+  /**
+   * Store Timer ID of the interval at which `"ping"` messages are sent to the
+   * device to ensure the connection isn't closed by some mechanism (for example
+   * a server watcher closing down the connection when it seems to be unused).
+   */
+  public pingInterval : NodeJS.Timer | null;
 
   /**
    * Initialization data received when the device connected with this
@@ -154,6 +171,7 @@ export class TokenMetadata {
     this.timestamp = performance.now();
     this.clients = [];
     this.device = null;
+    this.pingInterval = null;
     this._initData = null;
     this._history = {
       history: [],

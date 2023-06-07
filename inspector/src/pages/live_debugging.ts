@@ -85,6 +85,11 @@ export default function generateLiveDebuggingPage(
       }
       const hasSelectedLog = inspectorState
         .getCurrentState(STATE_PROPS.SELECTED_LOG_INDEX) !== undefined;
+
+      if (event.data === "ping") {
+        currentSocket.send("pong");
+        return;
+      }
       if (event.data[0] === "{") {
         try {
           // TODO better type all this mess.

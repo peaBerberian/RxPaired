@@ -84,6 +84,7 @@ export class TokenMetadata {
         this.timestamp = performance.now();
         this.clients = [];
         this.device = null;
+        this.pingInterval = null;
         this._initData = null;
         this._history = {
             history: [],

@@ -351,13 +351,19 @@ const __TOKEN__ = "";
 
     let formattedObj;
     try {
+      let messageStr;
       if (typeof event.data === "string") {
-        formattedObj = JSON.parse(event.data);
+        messageStr = event.data;
       } else if (event.data instanceof ArrayBuffer) {
-        formattedObj = JSON.parse(utf8ToStr(new Uint8Array(event.data)));
+        messageStr = utf8ToStr(new Uint8Array(event.data));
       } else {
         throw new Error("Unknown format");
       }
+      if (messageStr === "ping") {
+        socket.send("pong");
+        return;
+      }
+      formattedObj = JSON.parse(messageStr)
     } catch (formattingError) {
       socket.send(safeJsonStringify({
         type: "websocket-warning",

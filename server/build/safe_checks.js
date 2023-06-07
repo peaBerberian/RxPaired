@@ -27,7 +27,6 @@ export default function createCheckers({ debugSocket, htmlClientSocket, maxToken
     const newDeviceEvents = [];
     /* Clear list of bad events older than 24 hours every 10 minutes. */
     setInterval(() => {
-        var _a;
         const now = performance.now();
         [badPasswordEvents, newClientEvents, newDeviceEvents].forEach(evts => {
             while (evts.length > 0 && now - evts[0] > 24 * 60 * 60 * 1000) {
@@ -50,7 +49,11 @@ export default function createCheckers({ debugSocket, htmlClientSocket, maxToken
                     tokenInfo.device = null;
                 }
                 while (tokenInfo.clients.length > 0) {
-                    (_a = tokenInfo.clients.pop()) === null || _a === void 0 ? void 0 : _a.close();
+                    const clientInfo = tokenInfo.clients.pop();
+                    if (clientInfo !== undefined) {
+                        clientInfo.webSocket.close();
+                        clearInterval(clientInfo.pingInterval);
+                    }
                 }
             }
         }

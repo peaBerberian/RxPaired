@@ -157,7 +157,6 @@ const checkers = createCheckers({
     deviceConnectionLimit,
 });
 debugSocket.on("connection", (ws, req) => {
-    var _a;
     if (req.url === undefined) {
         ws.close();
         return;
@@ -184,20 +183,30 @@ debugSocket.on("connection", (ws, req) => {
         existingToken.device.close();
         existingToken.device = null;
         while (existingToken.clients.length > 0) {
-            (_a = existingToken.clients.pop()) === null || _a === void 0 ? void 0 : _a.close();
+            const clientInfo = existingToken.clients.pop();
+            if (clientInfo !== undefined) {
+                clientInfo.webSocket.close();
+                clearInterval(clientInfo.pingInterval);
+            }
         }
         return;
     }
     writeLog("log", "Received authorized device connection", { address: req.socket.remoteAddress, tokenId });
     checkers.checkNewDeviceLimit();
     existingToken.device = ws;
+    existingToken.pingInterval = setInterval(() => {
+        ws.send("ping");
+    }, 10000);
     ws.on("message", message => {
         checkers.checkDeviceMessageLimit();
         let messageStr = message.toString();
         if (messageStr.length > maxLogLength) {
             return;
         }
-        if ((existingToken === null || existingToken === void 0 ? void 0 : existingToken.device) !== null && messageStr.startsWith("Init ")) {
+        if (messageStr === "pong") {
+            return;
+        }
+        else if ((existingToken === null || existingToken === void 0 ? void 0 : existingToken.device) !== null && messageStr.startsWith("Init ")) {
             writeLog("log", "received Init message", { address: req.socket.remoteAddress, tokenId });
             const matches = messageStr.match(INIT_REGEX);
             if (matches === null) {
@@ -227,11 +236,14 @@ debugSocket.on("connection", (ws, req) => {
             return;
         }
         for (const client of existingToken.clients) {
-            sendMessageToClient(messageStr, client, req, tokenId);
+            sendMessageToClient(messageStr, client.webSocket, req, tokenId);
         }
     });
     ws.on("close", () => {
         writeLog("log", "Device disconnected.", { address: req.socket.remoteAddress, tokenId });
+        if (existingToken.pingInterval !== null) {
+            clearInterval(existingToken.pingInterval);
+        }
         existingToken.device = null;
         if (existingToken.clients.length === 0) {
             const indexOfToken = activeTokensList.findIndex(tokenId);
@@ -287,7 +299,13 @@ htmlClientSocket.on("connection", (ws, req) => {
     else {
         writeLog("log", "Adding new client to token.", { tokenId });
     }
-    existingToken.clients.push(ws);
+    const pingInterval = setInterval(() => {
+        ws.send("ping");
+    }, 10000);
+    existingToken.clients.push({
+        webSocket: ws,
+        pingInterval,
+    });
     const deviceInitData = existingToken.getDeviceInitData();
     if (deviceInitData !== null) {
         const { timestamp, dateMs } = deviceInitData;
@@ -306,6 +324,9 @@ htmlClientSocket.on("connection", (ws, req) => {
     ws.on("message", message => {
         checkers.checkClientMessageLimit();
         const messageStr = message.toString();
+        if (messageStr === "pong") {
+            return;
+        }
         let messageObj;
         try {
             messageObj = JSON.parse(messageStr);
@@ -336,11 +357,13 @@ htmlClientSocket.on("connection", (ws, req) => {
             return;
         }
         writeLog("log", "Client disconnected.", { address: req.socket.remoteAddress, tokenId });
-        const indexOfClient = existingToken.clients.indexOf(ws);
+        const indexOfClient = existingToken.clients
+            .findIndex((obj) => obj.webSocket === ws);
         if (indexOfClient === -1) {
             writeLog("warn", "Closing client not found.", { tokenId });
             return;
         }
+        clearInterval(existingToken.clients[indexOfClient].pingInterval);
         existingToken.clients.splice(indexOfClient, 1);
         if (existingToken.clients.length === 0 && existingToken.device === null) {
             const indexOfToken = activeTokensList.findIndex(tokenId);

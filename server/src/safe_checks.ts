@@ -76,7 +76,11 @@ export default function createCheckers({
           tokenInfo.device = null;
         }
         while (tokenInfo.clients.length > 0) {
-          tokenInfo.clients.pop()?.close();
+          const clientInfo = tokenInfo.clients.pop();
+          if (clientInfo !== undefined) {
+            clientInfo.webSocket.close();
+            clearInterval(clientInfo.pingInterval);
+          }
         }
       }
     }
