@@ -98,13 +98,19 @@ export default function generateLiveDebuggingPage(
           /* eslint-disable @typescript-eslint/restrict-template-expressions */
           const signal = JSON.parse(event.data);
           if (signal.type === "Init") {
-            if (signal.value.history.length > 0) {
-              const logs = signal.value.history as string[];
+            const initTimestamp = signal.value?.timestamp;
+            if (typeof initTimestamp === "number") {
+              const initLog =
+                `${initTimestamp.toFixed(2)} [Init] Local-Date:${signal.value.dateMs}`;
+              let updates = [initLog];
+              if (signal.value?.history?.length > 0) {
+                updates = updates.concat(signal.value.history as string[]);
+              }
               inspectorState.updateState(STATE_PROPS.LOGS_HISTORY,
                                          UPDATE_TYPE.PUSH,
-                                         logs);
+                                         updates);
               if (!hasSelectedLog) {
-                updateStatesFromLogGroup(inspectorState, logs);
+                updateStatesFromLogGroup(inspectorState, updates);
               }
               inspectorState.commitUpdates();
             }
