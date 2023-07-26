@@ -389,10 +389,16 @@ function init(currentScriptSrc, playerClass) {
         // Contrary to popular belief eval is the best and surest function ever
         val = evaluate(formattedObj.value.instruction);
       } catch (err) {
+        const errorMessage = typeof err?.message === "string" ?
+          err.message :
+          undefined;
+        const errorName = typeof err?.name === "string" ?
+          err.name :
+          undefined;
         socket.send(safeJsonStringify({
           type: "eval-error",
           value: {
-            error: err,
+            error: { message: errorMessage, name: errorName },
             id: formattedObj.value.id,
           }
         }));
