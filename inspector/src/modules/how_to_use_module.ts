@@ -75,15 +75,45 @@ export default function HowToUseModule(
     ".",
   ]);
 
+  const liElt3 = createCompositeElement("li", [
+    "Import dynamically the script in your code by writing something like:",
+    createCompositeElement("details", [
+      createElement("summary", {
+        textContent: "code",
+      }),
+      createElement("pre", {
+        textContent: `import("${CLIENT_SCRIPT_URL}#${tokenId}")
+  .then(() => {
+    try {
+      window.__RX_INSPECTOR_RUN__({
+        url: "${CLIENT_SCRIPT_URL}#${tokenId}",
+        playerClass: <RX_PLAYER_CLASS>,
+      });
+      console.info("Inspector initialized with success:", inspectorUrl);
+    } catch (error) {
+      console.error("Failed to initialize inspector:", error);
+    }
+  })
+  .catch((error) =>
+    console.error("Failed to dynamically import inspector:", error)
+  );`,
+      }),
+      "Where ",
+      createElement("span", {
+        className: "emphasized",
+        textContent: "<RX_PLAYER_CLASS>",
+      }),
+      " is a reference to the RxPlayer's class in your code",
+    ]),
+  ]);
 
   const howToBodyElt = createCompositeElement("div", [
     "To start debugging you can either:",
     createElement("br"),
     createCompositeElement("ul", [
-      createElement("br"),
       liElt1,
-      createElement("br"),
       liElt2,
+      liElt3,
     ]),
     createElement("br"),
     ...noteInspectorBeforeClient,
