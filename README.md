@@ -20,13 +20,13 @@ Its key features are:
  - Possibility to send JavaScript instructions to the device.
 
  - "Time travel": Possibility to see the known playback conditions and its related
-   indicators at the time a log was sent, by clicking on it on the inspector.
+   indicators at the time a log was sent, by clicking on its log on the inspector.
 
 
 ## Table Of Contents
 
   - [What is it?](#what-is-it)
-  - [How it works?](#how-it-works)
+  - [How does it work?](#how-it-works)
   - [How to run it?](#how-to-run-it)
   - [Why creating this tool?](#why-creating-this-tool)
 
@@ -37,46 +37,48 @@ Its key features are:
 RxPaired was first and foremost created to improve debugging and manual testing
 sessions on resource-constrained devices using the RxPlayer.
 
-It aims to redirect logs received on the tested device to a web page (generally seen
-on another device) while using the minimum resources possible on the tested device.
+It aims to redirect logs received on the tested device to a web page (generally loaded
+on another device) while using the minimum possible resources on the tested device.
 
 This web page also automatically exploits those logs to produce helpful graphs and
-metrics about what's actually happening that might even not be visible on screen:
-how much data is buffered, of what audio and video quality etc.
+metrics about what's currently happening with the player: how much data is buffered, of
+what audio and video quality etc.
 
-It also allows to emit instructions from the webpage to the device.
+You can also emit instructions JavaScript instructions from the webpage to the device, as
+well as get responses back.
 
-However, this tool was also written with modularity in mind. It should thus be very
+Yet, this tool was also written with modularity in mind. It should thus be very
 easy to remove the RxPlayer "modules" from the web inspector of RxPaired, and replace
 them by another logic, even for other usages than for media streaming.
 
 
 <a class="anchor" href="#how-it-works"></a>
-## How it works?
+## How does it work?
 
 RxPaired comes in three parts:
 
   1. The inspector web application, found in the `./inspector` directory.
 
      This is the page that will be used to inspect what's going on on the device remotely
-     from any browser.
+     from a browser.
      This page can also send instructions directly to the device (only through the page's
      console for now, as the user interface for this is not yet developped).
 
      Under the hood, this inspector relies on a [WebSocket](https://en.wikipedia.org/wiki/WebSocket)
-     connection with RxPaired's server to receive the device's source information (logs,
-     requests etc.) and it contains some logic to construct graphical "modules" based on
-     those logs: charts, curated information about playback etc.
+     connection with the  RxPaired's server to receive the device's source information
+     (logs, requests etc.) and it contains some logic to construct graphical "modules"
+     based on those logs: charts, curated information about playback etc.
 
      Note that multiple inspector pages can be created at the same time for multiple
      devices and multiple inspector pages can also be linked if they want to the same
-     device through a system of "tokens".
+     device. This is done through a system of "tokens", as explained in the inspector's
+     main web page.
 
   2. A client-side script to deploy on the device, found in the `./client` directory.
 
      This script mostly [monkey-patches](https://en.wikipedia.org/wiki/Monkey_patch) console
      and request-related functions so any interaction with those is communicated with
-     RxPaired's server through a WebSocket connection.
+     the RxPaired's server through a WebSocket connection.
 
      This script is also able to execute commands sent from the Inspector web-application
      (which goes through the exact same WebSocket connection).
@@ -92,17 +94,11 @@ RxPaired comes in three parts:
      The server listens on two ports for WebSocket connections: one for the inspector and
      the other for the client-side script.
 
-     The server is very configurable: it can for example set-up a set or random password
-     (or none at all), shutdown when abnormal behavior is detected (like too many device
-     or inspector connections, too many wrong password, too many WebSocket messages sent),
+     The server is very configurable: it can for example set-up a password to protect its
+     access, shutdown when abnormal behavior is detected (like too many device or
+     inspector connections, too many wrong password, too many WebSocket messages sent),
      create and keep log files for each inspected devices, give a maximum lifetime for
-     each token, change the ports it listens to among other options.
-
-     It can also keep an in-memory history of logs for any device currently sending logs,
-     whose maximum size is configurable.
-     Doing so allows other inspectors connecting later (e.g. other people looking at
-     what's going on on their side) to still receive logs that were sent before they
-     launched the inspector.
+     each token, change the ports it listens to etc.
 
 <a class="anchor" href="#how-to-run-it"></a>
 ## How to run it?
@@ -118,10 +114,10 @@ You can look at how to do just that by looking at the `README.md` file of each o
 subdirectories.
 
 You can run the server and client on your own PC or on a server.
-If you want to use HTTPS / WSS, which might be required on tested HTTPS applications,
-you'll need to perform HTTPS tunnelling to that server. This can either be performed
-through softwares like Apache or Nginx through configuration or by using a tunnelling
-tool like [`ngrok`](https://ngrok.com/).
+If you want to use HTTPS / WSS, which might be required on HTTPS applications, you'll need
+to perform HTTPS tunnelling to that server. This can either be performed through softwares
+like Apache or Nginx through configuration or by using a tunnelling tool like
+[`ngrok`](https://ngrok.com/).
 
 
 <a class="anchor" href="#why-creating-this-tool"></a>
@@ -129,20 +125,21 @@ tool like [`ngrok`](https://ngrok.com/).
 
 The RxPlayer is an advanced media player which is used to play contents on a large panel
 of devices. Like for most software, we sometimes need to start debugging sessions on one
-of those, e.g., to investivate curious behavior.
+of those, e.g., to investigate curious behavior.
 
 As a player for the web platform, the RxPlayer can often profit from already available
 remote web inspectors to do just that from our PC. Most notably, the featureful Chrome
 remote debugger is a complete tool that is most often available.
 In cases where it isn't, [weinre](https://people.apache.org/~pmuellr/weinre/docs/latest/Home.html)
-is also a very useful tool.
+was also a very useful tool in the past.
 
 However those tools have limitations on some devices.
 The one that hindered us the most, is that those tools often use a lot of resources:
 we're sometimes not even able to use the Chrome Remote Debugger for more than a minute on
-some extreme targets (smart TVs, set-top boxes, ChromeCast...) and even in the time window
-where we can, the resource usage those tools take might provoke large side-effects and is
-a very frequent source of [heisenbug](https://en.wikipedia.org/wiki/Heisenbug) for our team.
+some targets with low memory (smart TVs, set-top boxes, ChromeCast...) and even in the
+time window where we can, the resource usage those tools take might provoke large
+side-effects and is a very frequent source of [heisenbug](https://en.wikipedia.org/wiki/Heisenbug)
+for our team.
 
 When what we wanted to do was just to recuperate logs from the device, this became very
 annoying.

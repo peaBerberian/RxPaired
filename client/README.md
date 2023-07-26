@@ -1,7 +1,7 @@
 # RxPaired-client
 
 This directory is the home of the `RxPaired-client`, the script of RxPaired
-residing on the device.
+that will run on the device.
 
 This script mostly re-implement the console logging functions (`console.log`,
 `console.warn` etc.) to send logs through a WebSocket to the `RxPaired-server`
@@ -51,7 +51,8 @@ In your terminal, type:
 npm run build:min
 ```
 
-The script should now be built at `./client.js`.
+The script should now be built at `./client.js`. Note that it relies on ES6, if
+your devices are only ES5-compatible you can rely on `./client.es5.js` instead.
 
 ### Optionally serving the script
 
@@ -61,12 +62,13 @@ At last, you have two choices in how to deploy that script:
     indicate its URI to the `RxPaired-inspector` (more information on that
     in its directory: `../inspector`).
 
+    This is the recommended choice.
     If you choose to go this way, the `RxPaired-inspector` will conveniently
     provide you updated URLs (it adds a number-sign token to it) as well as
     an handy HTML `<script>` element to include on your application's HTML
     page(s) (the one running on the device).
 
   - Or if you don't want to involve an HTTP(S) server in here, you may just need
-    to manually deploy the whole script yourself on your applications.
+    to manually deploy the whole script yourself on your applications manually.
 
-In both cases, `RxPaired-inspector` should give you all the necessary instructions.
+In both cases, `RxPaired-inspector` will give you all the necessary instructions.
