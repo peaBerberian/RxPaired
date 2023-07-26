@@ -131,7 +131,7 @@ export default function generateLiveDebuggingPage(
             const { value } = signal;
             if (typeof value.id === "string") {
               const emphasizedId = emphasizeForConsole(value.id as string);
-              console.log(`RESULT OF INSTRUCTION ${emphasizedId}: ${value.data}`);
+              console.log(`---> Result of instruction ${emphasizedId}: ${value.data}`);
             }
           } else if (signal.type === "eval-error") {
             const { value } = signal;
@@ -143,7 +143,7 @@ export default function generateLiveDebuggingPage(
                 errorString += ": " + (value.error.message as string);
               }
               const emphasizedId = emphasizeForConsole(value.id as string);
-              console.log(`FAILURE OF INSTRUCTION ${emphasizedId}: ${errorString}`);
+              console.log(`---> Failure of instruction ${emphasizedId}: ${errorString}`);
             }
           }
           /* eslint-enable @typescript-eslint/restrict-template-expressions */
@@ -177,7 +177,7 @@ export default function generateLiveDebuggingPage(
       },
     }));
     const emphasizedId = emphasizeForConsole(id);
-    console.log(`INSTRUCTION ${emphasizedId} sent`);
+    console.log(`<--- Instruction ${emphasizedId} sent`);
   }
 }
 
