@@ -4,30 +4,33 @@ import activeTokensList from "./active_tokens_list.js";
 import logger from "./logger.js";
 
 export default function createCheckers({
-  debugSocket,
-  htmlClientSocket,
+  deviceSocket,
+  htmlInspectorSocket,
   maxTokenDuration,
-  clientMessageLimit,
+  inspectorMessageLimit,
   deviceMessageLimit,
   wrongPasswordLimit,
-  clientConnectionLimit,
+  inspectorConnectionLimit,
   deviceConnectionLimit,
 } : {
-  debugSocket : WebSocketServer;
-  htmlClientSocket : WebSocketServer;
+  deviceSocket : WebSocketServer;
+  htmlInspectorSocket : WebSocketServer;
   maxTokenDuration : number;
-  clientMessageLimit : number;
+  inspectorMessageLimit : number;
   deviceMessageLimit : number;
   wrongPasswordLimit : number;
-  clientConnectionLimit : number;
+  inspectorConnectionLimit : number;
   deviceConnectionLimit : number;
 }) {
 
   /** Count the number of device messages received in the current 24 hours considered. */
   let deviceMessageInCurrent24Hours = 0;
 
-  /** Count the number of client messages received in the current 24 hours considered. */
-  let clientMessageInCurrent24Hours = 0;
+  /**
+   * Count the number of inspector messages received in the current 24 hours
+   * considered.
+   */
+  let inspectorMessageInCurrent24Hours = 0;
 
   /**
    * Has a new element each time a new bad password in the last 24h has been
@@ -38,11 +41,11 @@ export default function createCheckers({
   const badPasswordEvents : number[] = [];
 
   /**
-   * Has a new element each time a new client has connected in the last 24h.
+   * Has a new element each time a new inspector has connected in the last 24h.
    * Each element is the timestamp, in terms of `performance.now()`, at which the
-   * new client has connected.
+   * new inspector has connected.
    */
-  const newClientEvents : number[] = [];
+  const newInspectorEvents : number[] = [];
 
   /**
    * Has a new element each time a new device has connected in the last 24h.
@@ -54,7 +57,7 @@ export default function createCheckers({
   /* Clear list of bad events older than 24 hours every 10 minutes. */
   setInterval(() => {
     const now = performance.now();
-    [badPasswordEvents, newClientEvents, newDeviceEvents].forEach(evts => {
+    [badPasswordEvents, newInspectorEvents, newDeviceEvents].forEach(evts => {
       while (evts.length > 0 && now - evts[0] > 24 * 60 * 60 * 1000) {
         evts.shift();
       }
@@ -75,11 +78,11 @@ export default function createCheckers({
           tokenInfo.device.close();
           tokenInfo.device = null;
         }
-        while (tokenInfo.clients.length > 0) {
-          const clientInfo = tokenInfo.clients.pop();
-          if (clientInfo !== undefined) {
-            clientInfo.webSocket.close();
-            clearInterval(clientInfo.pingInterval);
+        while (tokenInfo.inspectors.length > 0) {
+          const inspectorInfo = tokenInfo.inspectors.pop();
+          if (inspectorInfo !== undefined) {
+            inspectorInfo.webSocket.close();
+            clearInterval(inspectorInfo.pingInterval);
           }
         }
       }
@@ -88,19 +91,19 @@ export default function createCheckers({
 
   setInterval(() => {
     deviceMessageInCurrent24Hours = 0;
-    clientMessageInCurrent24Hours = 0;
+    inspectorMessageInCurrent24Hours = 0;
   }, 24 * 60 * 60 * 1000);
 
   return {
-    checkClientMessageLimit() {
-      if (clientMessageLimit === undefined) {
+    checkInspectorMessageLimit() {
+      if (inspectorMessageLimit === undefined) {
         return;
-      } else if (++clientMessageInCurrent24Hours > clientMessageLimit) {
-        logger.warn("Maximum number of client messages per 24h reached, " +
+      } else if (++inspectorMessageInCurrent24Hours > inspectorMessageLimit) {
+        logger.warn("Maximum number of inspector messages per 24h reached, " +
                     "closing everything",
-                    clientMessageInCurrent24Hours);
-        htmlClientSocket.close();
-        debugSocket.close();
+                    inspectorMessageInCurrent24Hours);
+        htmlInspectorSocket.close();
+        deviceSocket.close();
         process.exit(1);
       }
     },
@@ -112,8 +115,8 @@ export default function createCheckers({
         logger.warn("Maximum number of device messages per 24h reached, " +
                     "closing everything",
                     deviceMessageInCurrent24Hours);
-        htmlClientSocket.close();
-        debugSocket.close();
+        htmlInspectorSocket.close();
+        deviceSocket.close();
         process.exit(1);
       }
     },
@@ -125,18 +128,18 @@ export default function createCheckers({
       badPasswordEvents.push(performance.now());
       if (badPasswordEvents.length > wrongPasswordLimit) {
         logger.warn("Maximum number of bad passwords reached, closing everything");
-        htmlClientSocket.close();
-        debugSocket.close();
+        htmlInspectorSocket.close();
+        deviceSocket.close();
         process.exit(1);
       }
     },
 
-    checkNewClientLimit()  {
-      newClientEvents.push(performance.now());
-      if (newClientEvents.length > clientConnectionLimit) {
-        logger.warn("Maximum number of new clients reached, closing everything");
-        htmlClientSocket.close();
-        debugSocket.close();
+    checkNewInspectorLimit()  {
+      newInspectorEvents.push(performance.now());
+      if (newInspectorEvents.length > inspectorConnectionLimit) {
+        logger.warn("Maximum number of new inspectors reached, closing everything");
+        htmlInspectorSocket.close();
+        deviceSocket.close();
         process.exit(1);
       }
     },
@@ -148,8 +151,8 @@ export default function createCheckers({
       newDeviceEvents.push(performance.now());
       if (newDeviceEvents.length > deviceConnectionLimit) {
         logger.warn("Maximum number of new devices reached, closing everything");
-        htmlClientSocket.close();
-        debugSocket.close();
+        htmlInspectorSocket.close();
+        deviceSocket.close();
         process.exit(1);
       }
     },

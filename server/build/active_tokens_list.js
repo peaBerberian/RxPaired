@@ -69,7 +69,7 @@ export default new (class ActiveTokensList {
     }
 })();
 /**
- * For a given token ID, list store all clients and the potential device linked
+ * For a given token ID, list store all inspectors and the potential device linked
  * to it.
  * @class TokenMetadata
  */
@@ -82,7 +82,7 @@ export class TokenMetadata {
     constructor(tokenId, historySize) {
         this.tokenId = tokenId;
         this.timestamp = performance.now();
-        this.clients = [];
+        this.inspectors = [];
         this.device = null;
         this.pingInterval = null;
         this._initData = null;

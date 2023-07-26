@@ -20,14 +20,14 @@ const DEFAULT_MAX_TOKEN_DURATION = 4 * 60 * 60;
 const DEFAULT_MAX_LOG_LENGTH = 3000;
 const DEFAULT_WRONG_PASSWORD_LIMIT = 50;
 const DEFAULT_DEVICE_CONNECTION_LIMIT = 500;
-const DEFAULT_CLIENT_CONNECTION_LIMIT = 500;
+const DEFAULT_INSPECTOR_CONNECTION_LIMIT = 500;
 const DEFAULT_DEVICE_MESSAGE_LIMIT = 1e6;
-const DEFAULT_CLIENT_MESSAGE_LIMIT = 1000;
+const DEFAULT_INSPECTOR_MESSAGE_LIMIT = 1000;
 const DEFAULT_LOG_FILE_PATH = "server_logs.txt";
 const { program } = commander;
 program
     .description("RxPaired - RxPlayer's Light Remote Inspector")
-    .option("-cp, --inspector-port <port>", "Port used for inspector to server communication. " +
+    .option("-cp, --inspector-port <port>", "Port used for inspector-to-server communication. " +
     `Defaults to ${DEFAULT_INSPECTOR_PORT}.`)
     .option("-dp, --device-port <port>", "Port used for device-to-server communication. " +
     `Defaults to ${DEFAULT_DEVICE_PORT}.`)
@@ -35,7 +35,7 @@ program
     "day (server time) this token is used, in the current directory.")
     .option("--force-password <password>", "Force the password to be a given string")
     .option("--no-password", "Disable the usage of a password.")
-    .option("--history-size <size>", "Number of logs kept in memory for each token in case of clients (re-)" +
+    .option("--history-size <size>", "Number of logs kept in memory for each token in case of web inspectors (re-)" +
     "connecting after the device already emitted logs." +
     ` ${DEFAULT_HISTORY_SIZE} by default.`)
     .option("--max-token-duration <duration>", "Maximum number of seconds a new token is created for, in seconds. " +
@@ -45,9 +45,9 @@ program
     .option("--wrong-password-limit <number>", "Maximum authorized number of bad passwords received in 24 hours. " +
     "Exceeding that limit will stop the server. " +
     `Defaults to ${DEFAULT_WRONG_PASSWORD_LIMIT}.`)
-    .option("--client-connection-limit <number>", "Maximum authorized number of web client connection per 24 hours. " +
+    .option("--inspector-connection-limit <number>", "Maximum authorized number of web inspector connection per 24 hours. " +
     "Exceeding that limit will stop the server. " +
-    ` Defaults to ${DEFAULT_CLIENT_CONNECTION_LIMIT}.`)
+    ` Defaults to ${DEFAULT_INSPECTOR_CONNECTION_LIMIT}.`)
     .option("--device-connection-limit <number>", "Maximum authorized number of device connection per 24 hours. " +
     "Exceeding that limit will stop the server. " +
     ` Defaults to ${DEFAULT_DEVICE_CONNECTION_LIMIT}.`)
@@ -55,9 +55,9 @@ program
     "per 24 hours. " +
     "Exceeding that limit will stop the server. " +
     ` Defaults to ${DEFAULT_DEVICE_MESSAGE_LIMIT}.`)
-    .option("--client-message-limit <number>", "Maximum authorized number of message any web client can send per 24 hours. " +
-    "Exceeding that limit will stop the server. " +
-    ` Defaults to ${DEFAULT_CLIENT_MESSAGE_LIMIT}.`)
+    .option("--inspector-message-limit <number>", "Maximum authorized number of message any web inspector can send per 24 " +
+    "hours. Exceeding that limit will stop the server. " +
+    ` Defaults to ${DEFAULT_INSPECTOR_MESSAGE_LIMIT}.`)
     .option("--log-file <path>", "Path to the server's log file. " +
     ` Defaults to ${DEFAULT_LOG_FILE_PATH}.`);
 program.parse(process.argv);
@@ -92,13 +92,13 @@ const wrongPasswordLimit = options.wrongPasswordLimit === undefined ?
     DEFAULT_WRONG_PASSWORD_LIMIT :
     +options.wrongPasswordLimit;
 /**
- * Maximum new clients that should at connect per 24 hours rolling.
+ * Maximum new web inspectors that should at connect per 24 hours rolling.
  * it.
  * If that limit is exceeded, the server will stop.
  */
-const clientConnectionLimit = options.clientConnectionLimit === undefined ?
-    DEFAULT_CLIENT_CONNECTION_LIMIT :
-    +options.clientConnectionLimit;
+const inspectorConnectionLimit = options.inspectorConnectionLimit === undefined ?
+    DEFAULT_INSPECTOR_CONNECTION_LIMIT :
+    +options.inspectorConnectionLimit;
 /**
  * Maximum new devices that should at connect per 24 hours rolling.
  * it.
@@ -110,9 +110,9 @@ const deviceConnectionLimit = options.deviceConnectionLimit === undefined ?
 const deviceMessageLimit = options.deviceMessageLimit === undefined ?
     DEFAULT_DEVICE_MESSAGE_LIMIT :
     +options.deviceMessageLimit;
-const clientMessageLimit = options.clientMessageLimit === undefined ?
-    DEFAULT_CLIENT_MESSAGE_LIMIT :
-    +options.clientMessageLimit;
+const inspectorMessageLimit = options.inspectorMessageLimit === undefined ?
+    DEFAULT_INSPECTOR_MESSAGE_LIMIT :
+    +options.inspectorMessageLimit;
 const logFile = typeof options.logFile === "string" ?
     options.logFile :
     undefined;
@@ -125,9 +125,9 @@ logger.setLogFile(logFile !== null && logFile !== void 0 ? logFile : DEFAULT_LOG
     [historySize, "--history-size"],
     [deviceMessageLimit, "--device-message-limit"],
     [wrongPasswordLimit, "--wrong-password-limit"],
-    [clientConnectionLimit, "--client-connection-limit"],
+    [inspectorConnectionLimit, "--inspector-connection-limit"],
     [deviceConnectionLimit, "--device-connection-limit"],
-    [clientMessageLimit, "--client-message-limit"],
+    [inspectorMessageLimit, "--inspector-message-limit"],
 ].forEach((opt) => {
     if (isNaN(+opt[0])) {
         console.error(`Invalid "${opt[1]}" option, not a number.`);
@@ -144,19 +144,19 @@ if (usePassword) {
     }
     console.log("Generated password:", password);
 }
-const debugSocket = new WebSocketServer({ port: devicePort });
-const htmlClientSocket = new WebSocketServer({ port: inspectorPort });
+const deviceSocket = new WebSocketServer({ port: devicePort });
+const htmlInspectorSocket = new WebSocketServer({ port: inspectorPort });
 const checkers = createCheckers({
-    debugSocket,
-    htmlClientSocket,
+    deviceSocket,
+    htmlInspectorSocket,
     maxTokenDuration,
-    clientMessageLimit,
+    inspectorMessageLimit,
     deviceMessageLimit,
     wrongPasswordLimit,
-    clientConnectionLimit,
+    inspectorConnectionLimit,
     deviceConnectionLimit,
 });
-debugSocket.on("connection", (ws, req) => {
+deviceSocket.on("connection", (ws, req) => {
     if (req.url === undefined) {
         ws.close();
         return;
@@ -182,11 +182,11 @@ debugSocket.on("connection", (ws, req) => {
         activeTokensList.removeIndex(existingTokenIndex);
         existingToken.device.close();
         existingToken.device = null;
-        while (existingToken.clients.length > 0) {
-            const clientInfo = existingToken.clients.pop();
-            if (clientInfo !== undefined) {
-                clientInfo.webSocket.close();
-                clearInterval(clientInfo.pingInterval);
+        while (existingToken.inspectors.length > 0) {
+            const inspectorInfo = existingToken.inspectors.pop();
+            if (inspectorInfo !== undefined) {
+                inspectorInfo.webSocket.close();
+                clearInterval(inspectorInfo.pingInterval);
             }
         }
         return;
@@ -235,8 +235,8 @@ debugSocket.on("connection", (ws, req) => {
         if (existingToken.getDeviceInitData() === null) {
             return;
         }
-        for (const client of existingToken.clients) {
-            sendMessageToClient(messageStr, client.webSocket, req, tokenId);
+        for (const inspector of existingToken.inspectors) {
+            sendMessageToInspector(messageStr, inspector.webSocket, req, tokenId);
         }
     });
     ws.on("close", () => {
@@ -245,7 +245,7 @@ debugSocket.on("connection", (ws, req) => {
             clearInterval(existingToken.pingInterval);
         }
         existingToken.device = null;
-        if (existingToken.clients.length === 0) {
+        if (existingToken.inspectors.length === 0) {
             const indexOfToken = activeTokensList.findIndex(tokenId);
             if (indexOfToken === -1) {
                 writeLog("warn", "Closing device's token not found", { tokenId });
@@ -256,7 +256,7 @@ debugSocket.on("connection", (ws, req) => {
         }
     });
 });
-htmlClientSocket.on("connection", (ws, req) => {
+htmlInspectorSocket.on("connection", (ws, req) => {
     let tokenId;
     if (req.url === undefined) {
         ws.close();
@@ -266,7 +266,7 @@ htmlClientSocket.on("connection", (ws, req) => {
         // format of a request: /<PASSWORD>/<TOKEN>
         const receivedPassword = req.url.substring(1, password.length + 1);
         if (receivedPassword !== password) {
-            writeLog("warn", "Received client request with invalid password: " +
+            writeLog("warn", "Received inspector request with invalid password: " +
                 receivedPassword, { address: req.socket.remoteAddress });
             ws.close();
             checkers.checkBadPasswordLimit();
@@ -278,31 +278,31 @@ htmlClientSocket.on("connection", (ws, req) => {
         // format of a request: /<TOKEN>
         tokenId = req.url.substring(1);
     }
-    checkers.checkNewClientLimit();
+    checkers.checkNewInspectorLimit();
     if (tokenId.length > 100) {
-        writeLog("warn", "Received client request with token too long: " +
+        writeLog("warn", "Received inspector request with token too long: " +
             String(tokenId.length));
         ws.close();
         return;
     }
     else if (!/[a-z0-9]+/.test(tokenId)) {
-        writeLog("warn", "Received client request with invalid token.", { tokenId });
+        writeLog("warn", "Received inspector request with invalid token.", { tokenId });
         ws.close();
         return;
     }
-    writeLog("log", "Client: Received authorized client connection.", { address: req.socket.remoteAddress, tokenId });
+    writeLog("log", "Inspector: Received authorized inspector connection.", { address: req.socket.remoteAddress, tokenId });
     let existingToken = activeTokensList.find(tokenId);
     if (existingToken === undefined) {
         writeLog("log", "Creating new token", { tokenId, remaining: activeTokensList.size() + 1 });
         existingToken = activeTokensList.create(tokenId, historySize);
     }
     else {
-        writeLog("log", "Adding new client to token.", { tokenId });
+        writeLog("log", "Adding new inspector to token.", { tokenId });
     }
     const pingInterval = setInterval(() => {
         ws.send("ping");
     }, 10000);
-    existingToken.clients.push({
+    existingToken.inspectors.push({
         webSocket: ws,
         pingInterval,
     });
@@ -319,10 +319,10 @@ htmlClientSocket.on("connection", (ws, req) => {
                 maxHistorySize,
             },
         });
-        sendMessageToClient(message, ws, req, tokenId);
+        sendMessageToInspector(message, ws, req, tokenId);
     }
     ws.on("message", message => {
-        checkers.checkClientMessageLimit();
+        checkers.checkInspectorMessageLimit();
         const messageStr = message.toString();
         if (messageStr === "pong") {
             return;
@@ -332,19 +332,19 @@ htmlClientSocket.on("connection", (ws, req) => {
             messageObj = JSON.parse(messageStr);
         }
         catch (err) {
-            writeLog("warn", "Could not parse message given by client.", { address: req.socket.remoteAddress,
+            writeLog("warn", "Could not parse message given by inspector.", { address: req.socket.remoteAddress,
                 tokenId,
                 message: messageStr.length < 200 ? messageStr : undefined });
         }
         if (!isEvalMessage(messageObj)) {
-            writeLog("warn", "Unknown message type received by client", { address: req.socket.remoteAddress, tokenId });
+            writeLog("warn", "Unknown message type received by inspector", { address: req.socket.remoteAddress, tokenId });
             return;
         }
         if (existingToken === undefined || existingToken.device === null) {
             writeLog("warn", "Could not send eval message: no device connected", { address: req.socket.remoteAddress, tokenId });
             return;
         }
-        writeLog("log", "Eval message received by client.", { address: req.socket.remoteAddress, tokenId });
+        writeLog("log", "Eval message received by inspector.", { address: req.socket.remoteAddress, tokenId });
         try {
             existingToken.device.send(messageStr);
         }
@@ -356,19 +356,19 @@ htmlClientSocket.on("connection", (ws, req) => {
         if (existingToken === undefined || tokenId === undefined) {
             return;
         }
-        writeLog("log", "Client disconnected.", { address: req.socket.remoteAddress, tokenId });
-        const indexOfClient = existingToken.clients
+        writeLog("log", "Inspector disconnected.", { address: req.socket.remoteAddress, tokenId });
+        const indexOfInspector = existingToken.inspectors
             .findIndex((obj) => obj.webSocket === ws);
-        if (indexOfClient === -1) {
-            writeLog("warn", "Closing client not found.", { tokenId });
+        if (indexOfInspector === -1) {
+            writeLog("warn", "Closing inspector not found.", { tokenId });
             return;
         }
-        clearInterval(existingToken.clients[indexOfClient].pingInterval);
-        existingToken.clients.splice(indexOfClient, 1);
-        if (existingToken.clients.length === 0 && existingToken.device === null) {
+        clearInterval(existingToken.inspectors[indexOfInspector].pingInterval);
+        existingToken.inspectors.splice(indexOfInspector, 1);
+        if (existingToken.inspectors.length === 0 && existingToken.device === null) {
             const indexOfToken = activeTokensList.findIndex(tokenId);
             if (indexOfToken === -1) {
-                writeLog("warn", "Closing client's token not found.", { tokenId });
+                writeLog("warn", "Closing inspector's token not found.", { tokenId });
                 return;
             }
             writeLog("log", "Removing token.", { tokenId, remaining: activeTokensList.size() - 1 });
@@ -376,15 +376,15 @@ htmlClientSocket.on("connection", (ws, req) => {
         }
     });
 });
-logger.log(`Emitting to web clients at ws://127.0.0.1:${inspectorPort}`);
+logger.log(`Emitting to web inspectors at ws://127.0.0.1:${inspectorPort}`);
 logger.log(`Listening for device logs at ws://127.0.0.1:${devicePort}`);
-function sendMessageToClient(message, client, req, tokenId) {
+function sendMessageToInspector(message, inspector, req, tokenId) {
     var _a, _b;
     try {
-        client.send(message);
+        inspector.send(message);
     }
     catch (err) {
-        writeLog("warn", "Error while sending log to a client", {
+        writeLog("warn", "Error while sending log to an inspector", {
             address: (_b = (_a = req.socket) === null || _a === void 0 ? void 0 : _a.remoteAddress) !== null && _b !== void 0 ? _b : undefined,
             tokenId,
         });

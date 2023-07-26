@@ -106,14 +106,14 @@ interface LogHistoryData {
 }
 
 /**
- * For a given token ID, list store all clients and the potential device linked
+ * For a given token ID, list store all inspectors and the potential device linked
  * to it.
  * @class TokenMetadata
  */
 export class TokenMetadata {
   /**
    * ID identifying this token.
-   * Used by clients and devices connecting through it.
+   * Used by inspectors and devices connecting through it.
    */
   public tokenId : string;
 
@@ -121,10 +121,10 @@ export class TokenMetadata {
   public timestamp : number;
 
   /**
-   * Information on each web "client" (remote debugger) connected with this
+   * Information on each web "inspector" (remote debugger) connected with this
    * token.
    */
-  public clients : Array<{
+  public inspectors : Array<{
     /** Corresponding WebSocket on which logs are sent. */
     webSocket : WebSocket.WebSocket;
     /**
@@ -169,7 +169,7 @@ export class TokenMetadata {
   constructor(tokenId : string, historySize : number) {
     this.tokenId = tokenId;
     this.timestamp = performance.now();
-    this.clients = [];
+    this.inspectors = [];
     this.device = null;
     this.pingInterval = null;
     this._initData = null;
