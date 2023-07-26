@@ -9,6 +9,19 @@ import { displayError } from "../utils";
 import { createClearStoredConfigButton, createDarkLightModeButton } from "./utils";
 
 /**
+ * Some minor features are detected to be only present on chromium-based
+ * browsers for now but are sadly neither polyfillable nor feature-detectable.
+ *
+ * I'm mainly talking here about ANSI escape code in the JavaScript console,
+ * which fortunately is only a very small feature.
+ *
+ * It is with great sadness that I only enable it on Chromium-based browsers
+ * this way.
+ */
+// eslint-disable-next-line
+const isChromiumBasedBrowser = (window as any).chrome != null;
+
+/**
  * Generate the HTML page linked to live debugging.
  * @param {string} password - The password currently used for server
  * interaction.
@@ -115,8 +128,23 @@ export default function generateLiveDebuggingPage(
               inspectorState.commitUpdates();
             }
           } else if (signal.type === "eval-result") {
-            const { id, data } = signal.value;
-            console.log(`RESULT OF INSTRUCTION \u001b[32m${id}\u001b[0m: ${data}`);
+            const { value } = signal;
+            if (typeof value.id === "string") {
+              const emphasizedId = emphasizeForConsole(value.id as string);
+              console.log(`RESULT OF INSTRUCTION ${emphasizedId}: ${value.data}`);
+            }
+          } else if (signal.type === "eval-error") {
+            const { value } = signal;
+            if (typeof value.id === "string") {
+              let errorString = typeof value.error?.name === "string" ?
+                value.error.name :
+                "Unknown Error";
+              if (typeof value.error.message === "string") {
+                errorString += ": " + (value.error.message as string);
+              }
+              const emphasizedId = emphasizeForConsole(value.id as string);
+              console.log(`FAILURE OF INSTRUCTION ${emphasizedId}: ${errorString}`);
+            }
           }
           /* eslint-enable @typescript-eslint/restrict-template-expressions */
           /* eslint-enable @typescript-eslint/no-unsafe-assignment */
@@ -148,7 +176,8 @@ export default function generateLiveDebuggingPage(
         instruction,
       },
     }));
-    console.log(`INSTRUCTION \u001b[32m${id}\u001b[0m sent`);
+    const emphasizedId = emphasizeForConsole(id);
+    console.log(`INSTRUCTION ${emphasizedId} sent`);
   }
 }
 
@@ -279,4 +308,19 @@ function startWebsocketConnection(
   const wsUrl = `${SERVER_URL}/${password}/${tokenId}`;
   const socket = new WebSocket(wsUrl);
   return socket;
+}
+
+/**
+ * Add ANSI escape sequences to colorize the given text if supported on the
+ * current browser (sadly this is not easily detectable, so the browsers where
+ * this is happening is hardcoded for now).
+ *
+ * Keep the text in the default color on user agents which are not known to
+ * support ANSI escape sequences.
+ * @param {string} text
+ */
+function emphasizeForConsole(text : string) : string {
+  return isChromiumBasedBrowser ?
+    `\u001b[32m${text}\u001b[0m` :
+    text;
 }
