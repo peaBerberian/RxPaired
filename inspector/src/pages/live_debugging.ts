@@ -23,13 +23,13 @@ const isChromiumBasedBrowser = (window as any).chrome != null;
 
 /**
  * Generate the HTML page linked to live debugging.
- * @param {string} password - The password currently used for server
- * interaction.
+ * @param {string|null} password - The password currently used for server
+ * interaction. `null` for no password.
  * @param {string} tokenId - The current used token.
  * @param {Object} configState
  */
 export default function generateLiveDebuggingPage(
-  password : string,
+  password : string | null,
   tokenId : string,
   configState : ObservableState<ConfigState>
 ) : void {
@@ -302,10 +302,12 @@ function exportLogs(inspectorState : ObservableState<InspectorState>) : void {
  * @returns {WebSocket.WebSocket}
  */
 function startWebsocketConnection(
-  password : string,
+  password : string | null,
   tokenId : string
 ) : WebSocket {
-  const wsUrl = `${SERVER_URL}/${password}/${tokenId}`;
+  const wsUrl = password === null ?
+    `${SERVER_URL}/${tokenId}` :
+    `${SERVER_URL}/${password}/${tokenId}`;
   const socket = new WebSocket(wsUrl);
   return socket;
 }

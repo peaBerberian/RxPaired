@@ -8,9 +8,11 @@ export default function generatePasswordPage() : void {
     textContent: "RxPaired-inspector",
   });
   pageTitle.style.fontFamily = "monospace";
-  const pageInstr = createElement("div", {
-    textContent: "Enter the password of the linked RxPaired-server",
-  });
+  const pageInstr = createCompositeElement("div", [
+    "Enter the password of the linked RxPaired-server",
+    createElement("br"),
+    "(leave empty if it has no password)",
+  ]);
   pageInstr.style.fontSize = "1.1em";
   pageInstr.style.fontWeight = "bold";
   pageInstr.style.marginBottom = "15px";
@@ -35,7 +37,7 @@ function createPasswordInputElement() : HTMLElement {
     }
   };
   const passwordSendElt = createButton({
-    textContent: "Set password",
+    textContent: "Validate password",
     onClick: sendPassword,
   });
   passwordSendElt.style.marginLeft = "5px";

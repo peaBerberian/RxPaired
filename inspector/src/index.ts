@@ -28,10 +28,13 @@ const passStr = initialHashValues.filter((val) => val.startsWith("pass="))[0];
 
 if (isPost) {
   generatePostAnalysisPage(configState);
-} else if (passStr === undefined || passStr.length < 6) {
+} else if (passStr === undefined) {
   generatePasswordPage();
 } else {
-  const password = passStr.substring("pass=".length);
+  let password: string | null = passStr.substring("pass=".length);
+  password = password.length === 0 ?
+    null :
+    password;
   const tokenStr = initialHashValues.filter((val) => val.startsWith("token="))[0];
   if (tokenStr === undefined) {
     generateTokenPage(password);

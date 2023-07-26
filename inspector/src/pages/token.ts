@@ -3,10 +3,10 @@ import { checkTokenValidity } from "../utils";
 
 /**
  * Generate the HTML page asking for the wanted token.
- * @param {string} password - The password currently used for server
- * interaction.
+ * @param {string|null} password - The password currently used for server
+ * interaction. `null` for no password.
  */
-export default function generateTokenPage(password : string) : void {
+export default function generateTokenPage(password : string | null) : void {
   const pageTitle = createElement("h1", {
     textContent: "RxPaired-inspector",
   });
@@ -41,27 +41,27 @@ export default function generateTokenPage(password : string) : void {
 
 /**
  * Returns an HTML element corresponding to token generation.
- * @param {string} password - The password currently used for server
- * interaction.
+ * @param {string|null} password - The password currently used for server
+ * interaction. `null` for no password.
  * @returns {HTMLElement}
  */
-function createGenerateTokenButton(password : string) : HTMLButtonElement {
+function createGenerateTokenButton(password : string | null) : HTMLButtonElement {
   return createButton({
     className: "btn-generate-token",
     textContent: "Generate Token",
     onClick() {
       const tokenId = generateToken();
-      window.location.hash = `#!pass=${password}!token=${tokenId}`;
+      window.location.hash = `#!pass=${password ?? ""}!token=${tokenId}`;
     },
   });
 }
 
 /**
- * @param {string} password - The password currently used for server
- * interaction.
+ * @param {string|null} password - The password currently used for server
+ * interaction. `null` for no password.
  * @returns {HTMLElement}
  */
-function createTokenInputElement(password : string) : HTMLElement {
+function createTokenInputElement(password : string | null) : HTMLElement {
   const tokenInputElt = createElement("input");
   tokenInputElt.placeholder = "Enter the wanted token";
   tokenInputElt.onkeyup = function(evt) {
@@ -79,7 +79,7 @@ function createTokenInputElement(password : string) : HTMLElement {
   function setToken() {
     const val = tokenInputElt.value;
     checkTokenValidity(val);
-    location.hash = "#!pass=" + password + "!token=" + val;
+    location.hash = "#!pass=" + (password ?? "") + "!token=" + val;
   }
 }
 
