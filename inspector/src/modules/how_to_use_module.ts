@@ -10,21 +10,35 @@ export default function HowToUseModule(
   }
   const noteInspectorBeforeClient = [
     createElement("span", { className: "emphasized", textContent: "IMPORTANT" }),
-    ": You should always first start the inspector with a given token ",
+    ": You should always first start this inspector page with the wanted token ",
     createElement("span", { className: "emphasized", textContent: "BEFORE" }),
-    " starting the device with that same token. Otherwise, the server might " +
-      "decide to not accept the device's connection (as that token was not yet created).",
+    " starting the device with that same token. Otherwise, the server will " +
+      "refuse the device's connection.",
   ];
   const noteSendInstruction = [
     createElement("span", { className: "emphasized", textContent: "NOTE" }),
-    ": You can send JavaScript commands to be executed on the device by passing " +
-    "the corresponding code as a string to the ",
+    ": You can also send JavaScript commands which will be run on the device by " +
+    "providing the corresponding code as a string argument to the ",
     createElement("span", { className: "emphasized", textContent: "sendInstruction" }),
-    " function defined globally (open the inspector's JavaScript console of the " +
-    "current page to call it).",
-    createElement("br"),
-    "To get a result in the console, you can use `return` as if returning from a " +
-    "Function",
+    " function defined globally on this page (open the inspector's JavaScript console " +
+    "of the current page to call it). ",
+    "Moreover, to get a result in the console, you can use `return` as if returning " +
+    "from a function:",
+    createCompositeElement("details", [
+      createElement("summary", {
+        textContent: "code examples",
+      }),
+      createElement("pre", {
+        textContent: `// example to obtain the device's user-agent in this page's console:
+sendInstruction(\`return navigator.userAgent\`)
+
+// You may also log it, in which way you'll see it in the inspector's logs
+sendInstruction(\`console.warn("USER-AGENT:", navigator.userAgent)\`)
+
+// Note that by using backticks (\`) to enclose your code, it can span
+// multiple lines. This is useful for complex code.`,
+      }),
+    ], { className: "code-details" }),
   ];
   if (CLIENT_SCRIPT_URL === "") {
     const howToBodyElt = createCompositeElement("div", [
@@ -104,7 +118,7 @@ export default function HowToUseModule(
         textContent: "<RX_PLAYER_CLASS>",
       }),
       " is a reference to the RxPlayer's class in your code",
-    ]),
+    ], { className: "code-details" }),
   ]);
 
   const howToBodyElt = createCompositeElement("div", [
