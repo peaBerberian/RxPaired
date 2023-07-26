@@ -1,12 +1,11 @@
 /** To set to the token given. */
 const __TOKEN__ = "";
 
-(function() {
+function init(currentScriptSrc, playerClass) {
   const wsUrl = _DEVICE_DEBUGGER_URL_;
 
   let token = __TOKEN__;
   if (token === "") {
-    const currentScriptSrc = document.currentScript.src;
     if (currentScriptSrc == null) {
       return;
     }
@@ -442,9 +441,36 @@ const __TOKEN__ = "";
     }
     return processed;
   }
-  window.__RX_PLAYER_DEBUG_MODE__ = true;
-})();
+
+  if (playerClass) {
+    // Try to force the RxPlayer to redefine its console function.
+    // May break at any time.
+    playerClass.LogLevel = "DEBUG";
+  } else {
+    window.__RX_PLAYER_DEBUG_MODE__ = true;
+  }
+}
 
 function evaluate(obj){
   return Function(`"use strict"; ${obj}`)();
+}
+
+if (document.currentScript !== null) {
+  // Regular JavaScript script included in the page. Run it directly.
+  init(document.currentScript.src, null);
+} else {
+  // Imported as an ES6 module.
+
+  // We sadly cannot call `export` without breaking non-ES6 module cases, so we
+  // define an ugly-named (to avoid potential conflicts) function in the global
+  // scope instead.
+  //
+  // The importing script will then have to call it, communicating the module's
+  // own URL in argument as an `url` property and the RxPlayer instance as a
+  // `playerClass` property inside that function's unique object parameter.
+  //
+  // If the RxPlayer isn't imported yet, `playerClass` can be set to `null`.
+  window.__RX_INSPECTOR_RUN__ = function run({ url, playerClass }) {
+    init(url, playerClass);
+  };
 }
