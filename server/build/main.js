@@ -33,7 +33,8 @@ program
     `Defaults to ${DEFAULT_DEVICE_PORT}.`)
     .option("-f, --create-log-files", "If set, a log file will also be written for each token and for each " +
     "day (server time) this token is used, in the current directory.")
-    .option("--force-password <password>", "Force the password to be a given string")
+    .option("--force-password <password>", "Force the password to be a given string" +
+    " (must be alphanumeric, case-sentive)")
     .option("--no-password", "Disable the usage of a password.")
     .option("--history-size <size>", "Number of logs kept in memory for each token in case of web inspectors (re-)" +
     "connecting after the device already emitted logs." +
@@ -137,6 +138,11 @@ logger.setLogFile(logFile !== null && logFile !== void 0 ? logFile : DEFAULT_LOG
 let password = null;
 if (usePassword) {
     if (forcePassword !== undefined) {
+        if (!isAlphaNumeric(forcePassword)) {
+            console.error("Invalid password. It can only contains A-Z, a-z, " +
+                " and 0-9 set of latin letters and numbers");
+            process.exit(1);
+        }
         password = forcePassword;
     }
     else {
@@ -426,4 +432,21 @@ function writeLog(level, msg, infos = {}) {
         args.push(`remaining=${infos.remaining}`);
     }
     logger[level](...args);
+}
+/**
+ * Returns `true` if the given string is only composed of alphanumeric
+ * characters (upper-case A-Z letters, lower-case a-z letters, numbers).
+ * @param {string} str
+ * @returns {Boolean}
+ */
+function isAlphaNumeric(str) {
+    for (let i = 0, len = str.length; i < len; i++) {
+        const code = str.charCodeAt(i);
+        if (!(code > 47 && code < 58) && // numeric (0-9)
+            !(code > 64 && code < 91) && // upper alpha (A-Z)
+            !(code > 96 && code < 123)) { // lower alpha (a-z)
+            return false;
+        }
+    }
+    return true;
 }
