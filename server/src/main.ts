@@ -4,7 +4,9 @@ import { IncomingMessage } from "http";
 import process from "process";
 import * as commander from "commander";
 import WebSocket, { WebSocketServer } from "ws";
-import activeTokensList from "./active_tokens_list.js";
+import activeTokensList, {
+  TokenMetadata,
+} from "./active_tokens_list.js";
 import logger from "./logger.js";
 import createCheckers from "./safe_checks.js";
 
@@ -79,7 +81,13 @@ program
           ` Defaults to ${DEFAULT_INSPECTOR_MESSAGE_LIMIT}.`)
   .option("--log-file <path>",
           "Path to the server's log file. " +
-          ` Defaults to ${DEFAULT_LOG_FILE_PATH}.`);
+          ` Defaults to ${DEFAULT_LOG_FILE_PATH}.`)
+  .option("--allow-no-token",
+          "Devices can send logs without creating a \"token\" by requesting the " +
+          "\"/!notoken/<PASSWORD>\" path from this server, where <PASSWORD> is " +
+          "that server's password, or just \"/!notoken\" if no password is set.\n" +
+          "To combine with the \"-f\"/\"--create-log-files\" option, in which " +
+          "case the log's file name suffix will be randomly generated");
 
 program.parse(process.argv);
 const options = program.opts();
@@ -148,6 +156,8 @@ const logFile = typeof options.logFile === "string" ?
   options.logFile :
   undefined;
 
+const allowNoToken = options.allowNoToken === true;
+
 logger.setLogFile(logFile ?? DEFAULT_LOG_FILE_PATH);
 
 [
@@ -202,20 +212,59 @@ deviceSocket.on("connection", (ws, req) => {
     ws.close();
     return;
   }
-  const tokenId = req.url.substring(1);
-  const existingTokenIndex = activeTokensList.findIndex(tokenId);
-  if (existingTokenIndex === -1) {
-    writeLog("warn", "Received device request with invalid token.",
-             // Avoid filling the logging storage with bad tokens
-             { tokenId: tokenId.length > 100 ? undefined : tokenId });
-    ws.close();
-    return;
+
+  let tokenId = req.url.substring(1);
+  let logFileName = tokenId;
+  let existingToken: TokenMetadata;
+  let existingTokenIndex: number;
+  if (allowNoToken && tokenId.startsWith("!notoken/")) {
+    if (usePassword && password !== null) {
+      const pw = tokenId.substring("!notoken/".length);
+      if (pw !== password) {
+        writeLog("warn", "Received inspector request with invalid password: " +
+                 pw,
+                 { address: req.socket.remoteAddress });
+        ws.close();
+        checkers.checkBadPasswordLimit();
+        return;
+      }
+    }
+
+    const address = req.socket.remoteAddress;
+    if (address !== undefined && address !== "") {
+      // Strip last part of address for fear of GDPR compliancy
+      const lastDotIdx = address.lastIndexOf(".");
+      if (lastDotIdx > 0) {
+        logFileName = address.substring(0, lastDotIdx);
+      } else {
+        const lastColonIdx = address.lastIndexOf(".");
+        if (lastColonIdx > 0) {
+          logFileName = address.substring(0, lastColonIdx);
+        }
+      }
+    }
+    tokenId = generatePassword();
+    logFileName += `-${tokenId}`;
+    existingToken = activeTokensList.create(tokenId, historySize);
+    existingTokenIndex = activeTokensList.findIndex(tokenId);
+  } else {
+    existingTokenIndex = activeTokensList.findIndex(tokenId);
+    if (existingTokenIndex === -1) {
+      writeLog("warn", "Received device request with invalid token.",
+               // Avoid filling the logging storage with bad tokens
+               { tokenId: tokenId.length > 100 ? undefined : tokenId });
+      ws.close();
+      return;
+    } else {
+      const token = activeTokensList.getFromIndex(existingTokenIndex);
+      if (token === undefined) {
+        // should never happen
+        return;
+      }
+      existingToken = token;
+    }
   }
-  const existingToken = activeTokensList.getFromIndex(existingTokenIndex);
-  if (existingToken === undefined) {
-    // should never happen
-    return;
-  }
+
   if (existingToken.device !== null) {
     writeLog("warn",
              "A device was already connected with this token. " +
@@ -272,7 +321,7 @@ deviceSocket.on("connection", (ws, req) => {
     } else {
       existingToken?.addLogToHistory(messageStr);
       if (shouldCreateLogFiles) {
-        appendFile(getLogFileName(tokenId), messageStr + "\n", function() {
+        appendFile(getLogFileName(logFileName), messageStr + "\n", function() {
           // on finished. Do nothing for now.
         });
       }
