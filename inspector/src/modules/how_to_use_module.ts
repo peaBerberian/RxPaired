@@ -98,15 +98,11 @@ sendInstruction(\`console.warn("USER-AGENT:", navigator.userAgent)\`)
       createElement("pre", {
         textContent: `import("${CLIENT_SCRIPT_URL}#${tokenId}")
   .then(() => {
-    try {
-      window.__RX_INSPECTOR_RUN__({
-        url: "${CLIENT_SCRIPT_URL}#${tokenId}",
-        playerClass: <RX_PLAYER_CLASS>,
-      });
-      console.info("Inspector initialized with success:", inspectorUrl);
-    } catch (error) {
-      console.error("Failed to initialize inspector:", error);
-    }
+    window.__RX_INSPECTOR_RUN__({
+      url: "${CLIENT_SCRIPT_URL}#${tokenId}",
+      playerClass: <RX_PLAYER_CLASS>,
+    });
+    console.info("Inspector initialized with success:", inspectorUrl);
   })
   .catch((error) =>
     console.error("Failed to dynamically import inspector:", error)
