@@ -15,6 +15,16 @@ export default new (class ActiveTokensList {
         return tokenMetadata;
     }
     /**
+     * Returns public information that can be accessed by inspectors about all
+     * active tokens.
+     * @returns {Array.<Object>}
+     */
+    listPublicInformation() {
+        return this._tokensList.map((t) => {
+            return { tokenId: t.tokenId, date: t.date };
+        });
+    }
+    /**
      * Retrieve an active token from its index number (which can be from `0` to
      * one minus the list's size that can be known by calling the `size` method).
      *
@@ -82,6 +92,7 @@ export class TokenMetadata {
     constructor(tokenId, historySize) {
         this.tokenId = tokenId;
         this.timestamp = performance.now();
+        this.date = Date.now();
         this.inspectors = [];
         this.device = null;
         this.pingInterval = null;

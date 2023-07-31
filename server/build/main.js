@@ -328,6 +328,21 @@ htmlInspectorSocket.on("connection", (ws, req) => {
         // format of a request: /<TOKEN>
         tokenId = req.url.substring(1);
     }
+    // Special token "list" request:
+    // Regularly returns the list of currently active tokens
+    if (tokenId === "!list") {
+        writeLog("log", "Received inspector request for list of tokens" +
+            JSON.stringify(activeTokensList.listPublicInformation()), { address: req.socket.remoteAddress });
+        const itv = setInterval(sendCurrentListOfTokens, 3000);
+        sendCurrentListOfTokens();
+        ws.onclose = () => {
+            clearInterval(itv);
+        };
+        function sendCurrentListOfTokens() {
+            ws.send(JSON.stringify(activeTokensList.listPublicInformation()));
+        }
+        return;
+    }
     checkers.checkNewInspectorLimit();
     if (tokenId.length > 100) {
         writeLog("warn", "Received inspector request with token too long: " +

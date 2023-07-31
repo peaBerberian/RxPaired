@@ -1,37 +1,45 @@
-import { createButton, createCompositeElement, createElement } from "../dom-utils";
+import {
+  createButton,
+  createCompositeElement,
+  createElement,
+} from "../dom-utils";
+import { reGeneratePageUrl } from "../utils";
 
 /**
  * Generate the HTML page asking for the password.
  */
-export default function generatePasswordPage() : void {
+export default function generatePasswordPage(): void {
   const pageTitle = createElement("h1", {
     textContent: "RxPaired-inspector",
+    style: { fontFamily: "monospace" },
   });
-  pageTitle.style.fontFamily = "monospace";
-  const pageInstr = createCompositeElement("div", [
-    "Enter the password of the linked RxPaired-server",
-    createElement("br"),
-    "(leave empty if it has no password)",
-  ]);
-  pageInstr.style.fontSize = "1.1em";
-  pageInstr.style.fontWeight = "bold";
-  pageInstr.style.marginBottom = "15px";
+  const pageInstr = createCompositeElement(
+    "div",
+    [
+      "Enter the password of the linked RxPaired-server " +
+        "(leave empty if it has no password):",
+    ],
+    {
+      style: {
+        marginBottom: "5px",
+      },
+    }
+  );
   const pageBody = createCompositeElement("div", [
     pageTitle,
     pageInstr,
     createPasswordInputElement(),
   ]);
-  pageBody.style.textAlign = "center";
   document.body.appendChild(pageBody);
 }
 
 /**
  * @returns {HTMLElement}
  */
-function createPasswordInputElement() : HTMLElement {
+function createPasswordInputElement(): HTMLElement {
   const passwordInputElt = createElement("input");
   passwordInputElt.placeholder = "Enter server password";
-  passwordInputElt.onkeyup = function(evt) {
+  passwordInputElt.onkeyup = function (evt) {
     if (evt.key === "Enter" || evt.keyCode === 13) {
       sendPassword();
     }
@@ -39,13 +47,12 @@ function createPasswordInputElement() : HTMLElement {
   const passwordSendElt = createButton({
     textContent: "Validate password",
     onClick: sendPassword,
+    style: { marginLeft: "5px" },
   });
-  passwordSendElt.style.marginLeft = "5px";
-  return createCompositeElement("div", [ passwordInputElt, passwordSendElt ]);
+  return createCompositeElement("div", [passwordInputElt, passwordSendElt]);
 
   function sendPassword() {
     const val = passwordInputElt.value;
-    location.hash = "#!pass=" + val;
+    location.href = reGeneratePageUrl(val, undefined);
   }
 }
-

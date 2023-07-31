@@ -4,9 +4,11 @@ import generateLiveDebuggingPage from "./pages/live_debugging";
 import generatePasswordPage from "./pages/password";
 import generatePostAnalysisPage from "./pages/post-analysis";
 import generateTokenPage from "./pages/token";
-import { checkTokenValidity } from "./utils";
+import { checkTokenValidity, parseUrl } from "./utils";
 
-window.addEventListener("hashchange", () => { window.location.reload(); });
+window.addEventListener("hashchange", () => {
+  window.location.reload();
+});
 
 const configState = new ObservableState<ConfigState>();
 configState.subscribe(STATE_PROPS.CSS_MODE, () => {
@@ -19,37 +21,21 @@ configState.subscribe(STATE_PROPS.CSS_MODE, () => {
 
 initializeGlobalConfig();
 
-// format of the hash:
-// #!pass=<SERVER_SIDE_CHECKED_PASSWORD>!token=<TOKEN>
-// The password is mandatory, the token is only set if it has been generated.
-const initialHashValues = window.location.hash.split("!");
-const isPost = initialHashValues.filter((val) => val.startsWith("post"))[0];
-const passStr = initialHashValues.filter((val) => val.startsWith("pass="))[0];
+const urlInfo = parseUrl();
 
-if (isPost) {
+if (urlInfo.isPostDebugger) {
   generatePostAnalysisPage(configState);
-} else if (passStr === undefined) {
+} else if (urlInfo.password === undefined) {
   generatePasswordPage();
+} else if (urlInfo.tokenId === undefined) {
+  generateTokenPage(urlInfo.password);
 } else {
-  let password: string | null = passStr.substring("pass=".length);
-  password = password.length === 0 ?
-    null :
-    password;
-  const tokenStr = initialHashValues.filter((val) => val.startsWith("token="))[0];
-  if (tokenStr === undefined) {
-    generateTokenPage(password);
-  } else {
-    const tokenId = tokenStr.substring("token=".length);
-    checkTokenValidity(tokenId);
-    generateLiveDebuggingPage(password, tokenId, configState);
-  }
+  checkTokenValidity(urlInfo.tokenId);
+  generateLiveDebuggingPage(urlInfo.password, urlInfo.tokenId, configState);
 }
 
-/**
- * @param {Object} configState
- */
 function initializeGlobalConfig() {
-  let currentModuleConfig : ConfigState = {};
+  let currentModuleConfig: ConfigState = {};
   const storedModulesInfo = localStorage.getItem(MODULE_CONFIG_LS_ITEM);
   if (typeof storedModulesInfo === "string") {
     try {
@@ -63,12 +49,15 @@ function initializeGlobalConfig() {
 
   let currentMode = configState.getCurrentState(STATE_PROPS.CSS_MODE);
   if (currentMode === undefined) {
-    currentMode = localStorage.getItem(STATE_PROPS.CSS_MODE) === "dark" ?
-      "dark" :
-      "light";
+    currentMode =
+      localStorage.getItem(STATE_PROPS.CSS_MODE) === "dark" ? "dark" : "light";
   }
 
-  configState.updateState(STATE_PROPS.CSS_MODE, UPDATE_TYPE.REPLACE, currentMode);
+  configState.updateState(
+    STATE_PROPS.CSS_MODE,
+    UPDATE_TYPE.REPLACE,
+    currentMode
+  );
   configState.updateState(
     STATE_PROPS.CLOSED_MODULES,
     UPDATE_TYPE.REPLACE,
@@ -95,24 +84,39 @@ function initializeGlobalConfig() {
     localStorage.setItem(STATE_PROPS.CSS_MODE, isDark ? "dark" : "light");
   });
   configState.subscribe(STATE_PROPS.CLOSED_MODULES, () => {
-    const closedModules = configState.getCurrentState(STATE_PROPS.CLOSED_MODULES) ?? [];
+    const closedModules =
+      configState.getCurrentState(STATE_PROPS.CLOSED_MODULES) ?? [];
     currentModuleConfig[STATE_PROPS.CLOSED_MODULES] = closedModules;
-    localStorage.setItem(MODULE_CONFIG_LS_ITEM, JSON.stringify(currentModuleConfig));
+    localStorage.setItem(
+      MODULE_CONFIG_LS_ITEM,
+      JSON.stringify(currentModuleConfig)
+    );
   });
   configState.subscribe(STATE_PROPS.WIDTH_RATIOS, () => {
-    const closedModules = configState.getCurrentState(STATE_PROPS.WIDTH_RATIOS) ?? {};
+    const closedModules =
+      configState.getCurrentState(STATE_PROPS.WIDTH_RATIOS) ?? {};
     currentModuleConfig[STATE_PROPS.WIDTH_RATIOS] = closedModules;
-    localStorage.setItem(MODULE_CONFIG_LS_ITEM, JSON.stringify(currentModuleConfig));
+    localStorage.setItem(
+      MODULE_CONFIG_LS_ITEM,
+      JSON.stringify(currentModuleConfig)
+    );
   });
   configState.subscribe(STATE_PROPS.MINIMIZED_MODULES, () => {
-    const closedModules = configState
-      .getCurrentState(STATE_PROPS.MINIMIZED_MODULES) ?? [];
+    const closedModules =
+      configState.getCurrentState(STATE_PROPS.MINIMIZED_MODULES) ?? [];
     currentModuleConfig[STATE_PROPS.MINIMIZED_MODULES] = closedModules;
-    localStorage.setItem(MODULE_CONFIG_LS_ITEM, JSON.stringify(currentModuleConfig));
+    localStorage.setItem(
+      MODULE_CONFIG_LS_ITEM,
+      JSON.stringify(currentModuleConfig)
+    );
   });
   configState.subscribe(STATE_PROPS.MODULES_ORDER, () => {
-    const closedModules = configState.getCurrentState(STATE_PROPS.MODULES_ORDER) ?? [];
+    const closedModules =
+      configState.getCurrentState(STATE_PROPS.MODULES_ORDER) ?? [];
     currentModuleConfig[STATE_PROPS.MODULES_ORDER] = closedModules;
-    localStorage.setItem(MODULE_CONFIG_LS_ITEM, JSON.stringify(currentModuleConfig));
+    localStorage.setItem(
+      MODULE_CONFIG_LS_ITEM,
+      JSON.stringify(currentModuleConfig)
+    );
   });
 }

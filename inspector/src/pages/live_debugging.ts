@@ -1,12 +1,24 @@
-import { ConfigState, InspectorState, SERVER_URL, STATE_PROPS } from "../constants";
+import {
+  ConfigState,
+  InspectorState,
+  SERVER_URL,
+  STATE_PROPS,
+} from "../constants";
 import createModules from "../create_modules";
-import { createCompositeElement, createElement } from "../dom-utils";
+import {
+  createCompositeElement,
+  createElement,
+  createLinkElement,
+} from "../dom-utils";
 import ObservableState, { UPDATE_TYPE } from "../observable_state";
 import updateStateFromLog, {
   updateStatesFromLogGroup,
 } from "../update_state_from_log";
-import { displayError } from "../utils";
-import { createClearStoredConfigButton, createDarkLightModeButton } from "./utils";
+import { displayError, reGeneratePageUrl } from "../utils";
+import {
+  createClearStoredConfigButton,
+  createDarkLightModeButton,
+} from "./utils";
 
 /**
  * Some minor features are detected to be only present on chromium-based
@@ -29,22 +41,26 @@ const isChromiumBasedBrowser = (window as any).chrome != null;
  * @param {Object} configState
  */
 export default function generateLiveDebuggingPage(
-  password : string | null,
-  tokenId : string,
-  configState : ObservableState<ConfigState>
-) : void {
-  (window as unknown as Record<string, unknown>).sendInstruction = sendInstruction;
+  password: string | null,
+  tokenId: string,
+  configState: ObservableState<ConfigState>
+): void {
+  (window as unknown as Record<string, unknown>).sendInstruction =
+    sendInstruction;
 
   const inspectorState = new ObservableState<InspectorState>();
   /**
    * WebSocket instance used to exchange with the debug server.
    * @type {WebSocket.WebSocket}
    */
-  const currentSocket : WebSocket = startWebsocketConnection(password, tokenId);
-  const headerElt = createLiveDebuggerHeaderElement(tokenId,
-                                                    currentSocket,
-                                                    configState,
-                                                    inspectorState);
+  const currentSocket: WebSocket = startWebsocketConnection(password, tokenId);
+  const headerElt = createLiveDebuggerHeaderElement(
+    tokenId,
+    password,
+    currentSocket,
+    configState,
+    inspectorState
+  );
   document.body.appendChild(headerElt);
   const modulesContainerElt = createElement("div");
   document.body.appendChild(modulesContainerElt);
@@ -54,19 +70,20 @@ export default function generateLiveDebuggingPage(
     const selectedLogIdx = allState[STATE_PROPS.SELECTED_LOG_INDEX];
     const history = allState[STATE_PROPS.LOGS_HISTORY] ?? [];
     /* eslint-disable-next-line */
-    (Object.keys(allState) as unknown as Array<keyof InspectorState>)
-      .forEach((stateProp: keyof InspectorState) => {
+    (Object.keys(allState) as unknown as Array<keyof InspectorState>).forEach(
+      (stateProp: keyof InspectorState) => {
         if (
           stateProp !== STATE_PROPS.LOGS_HISTORY &&
           stateProp !== STATE_PROPS.SELECTED_LOG_INDEX
         ) {
           inspectorState.updateState(stateProp, UPDATE_TYPE.REPLACE, undefined);
         }
-      });
+      }
+    );
     if (selectedLogIdx === undefined) {
       updateStatesFromLogGroup(inspectorState, history);
       inspectorState.commitUpdates();
-      return ;
+      return;
     } else {
       const consideredLogs = history.slice(0, selectedLogIdx + 1);
       updateStatesFromLogGroup(inspectorState, consideredLogs);
@@ -96,8 +113,9 @@ export default function generateLiveDebuggingPage(
         displayError("Invalid message format received");
         return;
       }
-      const hasSelectedLog = inspectorState
-        .getCurrentState(STATE_PROPS.SELECTED_LOG_INDEX) !== undefined;
+      const hasSelectedLog =
+        inspectorState.getCurrentState(STATE_PROPS.SELECTED_LOG_INDEX) !==
+        undefined;
 
       if (event.data === "ping") {
         currentSocket.send("pong");
@@ -113,15 +131,18 @@ export default function generateLiveDebuggingPage(
           if (signal.type === "Init") {
             const initTimestamp = signal.value?.timestamp;
             if (typeof initTimestamp === "number") {
-              const initLog =
-                `${initTimestamp.toFixed(2)} [Init] Local-Date:${signal.value.dateMs}`;
+              const initLog = `${initTimestamp.toFixed(2)} [Init] Local-Date:${
+                signal.value.dateMs
+              }`;
               let updates = [initLog];
               if (signal.value?.history?.length > 0) {
                 updates = updates.concat(signal.value.history as string[]);
               }
-              inspectorState.updateState(STATE_PROPS.LOGS_HISTORY,
-                                         UPDATE_TYPE.PUSH,
-                                         updates);
+              inspectorState.updateState(
+                STATE_PROPS.LOGS_HISTORY,
+                UPDATE_TYPE.PUSH,
+                updates
+              );
               if (!hasSelectedLog) {
                 updateStatesFromLogGroup(inspectorState, updates);
               }
@@ -131,19 +152,24 @@ export default function generateLiveDebuggingPage(
             const { value } = signal;
             if (typeof value.id === "string") {
               const emphasizedId = emphasizeForConsole(value.id as string);
-              console.log(`---> Result of instruction ${emphasizedId}: ${value.data}`);
+              console.log(
+                `---> Result of instruction ${emphasizedId}: ${value.data}`
+              );
             }
           } else if (signal.type === "eval-error") {
             const { value } = signal;
             if (typeof value.id === "string") {
-              let errorString = typeof value.error?.name === "string" ?
-                value.error.name :
-                "Unknown Error";
+              let errorString =
+                typeof value.error?.name === "string"
+                  ? value.error.name
+                  : "Unknown Error";
               if (typeof value.error.message === "string") {
                 errorString += ": " + (value.error.message as string);
               }
               const emphasizedId = emphasizeForConsole(value.id as string);
-              console.log(`---> Failure of instruction ${emphasizedId}: ${errorString}`);
+              console.log(
+                `---> Failure of instruction ${emphasizedId}: ${errorString}`
+              );
             }
           }
           /* eslint-enable @typescript-eslint/restrict-template-expressions */
@@ -156,9 +182,9 @@ export default function generateLiveDebuggingPage(
         }
       } else {
         const newLog = event.data;
-        inspectorState.updateState(STATE_PROPS.LOGS_HISTORY,
-                                   UPDATE_TYPE.PUSH,
-                                   [newLog]);
+        inspectorState.updateState(STATE_PROPS.LOGS_HISTORY, UPDATE_TYPE.PUSH, [
+          newLog,
+        ]);
         if (!hasSelectedLog) {
           updateStateFromLog(inspectorState, event.data);
         }
@@ -167,15 +193,17 @@ export default function generateLiveDebuggingPage(
     });
   }
 
-  function sendInstruction(instruction : string) {
+  function sendInstruction(instruction: string) {
     const id = String(Math.random().toString(36)).substring(2);
-    currentSocket.send(JSON.stringify({
-      type: "eval",
-      value: {
-        id,
-        instruction,
-      },
-    }));
+    currentSocket.send(
+      JSON.stringify({
+        type: "eval",
+        value: {
+          id,
+          instruction,
+        },
+      })
+    );
     const emphasizedId = emphasizeForConsole(id);
     console.log(`<--- Instruction ${emphasizedId} sent`);
   }
@@ -184,41 +212,75 @@ export default function generateLiveDebuggingPage(
 /**
  * Returns an HTML element corresponding to the Live Debugger's header.
  * @param {string} tokenId
+ * @param {string|null} password
  * @param {WebSocket.WebSocket} currentSocket
  * @param {Object} inspectorState
  * @returns {HTMLElement}
  */
 function createLiveDebuggerHeaderElement(
-  tokenId : string,
-  currentSocket : WebSocket,
-  configState : ObservableState<ConfigState>,
-  inspectorState : ObservableState<InspectorState>
-) : HTMLElement {
-  return createCompositeElement("div", [
+  tokenId: string,
+  password: string | null,
+  currentSocket: WebSocket,
+  configState: ObservableState<ConfigState>,
+  inspectorState: ObservableState<InspectorState>
+): HTMLElement {
+  return createCompositeElement(
+    "div",
+    [
+      createCompositeElement(
+        "div",
+        [
+          createCompositeElement(
+            "span",
+            [
+              createLinkElement({
+                textContent: "Home",
+                href: reGeneratePageUrl(undefined, undefined),
+              }),
+              " > ",
+              createLinkElement({
+                textContent: "Token",
+                href: reGeneratePageUrl(password, undefined),
+              }),
+              " > Live Debugging",
+            ],
+            {
+              className: "header-item page-title",
+            }
+          ),
 
-    createCompositeElement("div", [
+          createCompositeElement(
+            "span",
+            [
+              createElement("span", {
+                className: "token-title-desc",
+                textContent: "Token: ",
+              }),
+              createElement("span", {
+                className: "token-title-val",
+                textContent: tokenId,
+              }),
+            ],
+            { className: "header-item token-header-value" }
+          ),
+        ],
+        { className: "token-title" }
+      ),
 
-      createElement("span", {
-        className: "header-item page-title",
-        textContent: "RxPaired Live Debugger",
-      }),
-
-      createCompositeElement("span", [
-        createElement("span", { className: "token-title-desc", textContent: "Token: " }),
-        createElement("span", { className: "token-title-val", textContent: tokenId }),
-      ], { className: "header-item token-header-value" }),
-
-    ], { className: "token-title" }),
-
-    createCompositeElement("div", [
-      createExportLogsButton(inspectorState),
-      createCloseConnectionButton(currentSocket),
-      createClearAllButton(inspectorState),
-      createClearStoredConfigButton(configState),
-      createDarkLightModeButton(configState),
-    ], { className: "header-item" }),
-
-  ], { className: "header" });
+      createCompositeElement(
+        "div",
+        [
+          createExportLogsButton(inspectorState),
+          createCloseConnectionButton(currentSocket),
+          createClearAllButton(inspectorState),
+          createClearStoredConfigButton(configState),
+          createDarkLightModeButton(configState),
+        ],
+        { className: "header-item" }
+      ),
+    ],
+    { className: "header" }
+  );
 }
 
 /**
@@ -227,10 +289,10 @@ function createLiveDebuggerHeaderElement(
  * @param {WebSocket.WebSocket} currentSocket
  * @returns {HTMLElement}
  */
-function createCloseConnectionButton(currentSocket : WebSocket) : HTMLElement {
+function createCloseConnectionButton(currentSocket: WebSocket): HTMLElement {
   const buttonElt = document.createElement("button");
   buttonElt.textContent = "✋ Stop listening";
-  buttonElt.onclick = function() {
+  buttonElt.onclick = function () {
     if (currentSocket !== null) {
       currentSocket.close();
     }
@@ -244,11 +306,11 @@ function createCloseConnectionButton(currentSocket : WebSocket) : HTMLElement {
  * @returns {HTMLButtonElement}
  */
 function createExportLogsButton(
-  inspectorState : ObservableState<InspectorState>
-) : HTMLButtonElement {
+  inspectorState: ObservableState<InspectorState>
+): HTMLButtonElement {
   const buttonElt = document.createElement("button");
   buttonElt.textContent = "💾 Export";
-  buttonElt.onclick = function() {
+  buttonElt.onclick = function () {
     exportLogs(inspectorState);
   };
   return buttonElt;
@@ -259,15 +321,15 @@ function createExportLogsButton(
  * @returns {HTMLButtonElement}
  */
 function createClearAllButton(
-  inspectorState : ObservableState<InspectorState>
-) : HTMLButtonElement {
+  inspectorState: ObservableState<InspectorState>
+): HTMLButtonElement {
   const buttonElt = document.createElement("button");
   buttonElt.textContent = "🧹 Clear all logs";
-  buttonElt.onclick = function() {
-    const allProps = Object.keys(
-      inspectorState.getCurrentState()
-    ) as Array<keyof InspectorState>;
-    allProps.forEach(prop => {
+  buttonElt.onclick = function () {
+    const allProps = Object.keys(inspectorState.getCurrentState()) as Array<
+      keyof InspectorState
+    >;
+    allProps.forEach((prop) => {
       inspectorState.updateState(prop, UPDATE_TYPE.REPLACE, undefined);
     });
     inspectorState.commitUpdates();
@@ -279,11 +341,12 @@ function createClearAllButton(
  * Download all logs in a txt file.
  * @param {Object} inspectorState
  */
-function exportLogs(inspectorState : ObservableState<InspectorState>) : void {
+function exportLogs(inspectorState: ObservableState<InspectorState>): void {
   const aElt = document.createElement("a");
   aElt.style.display = "none";
   document.body.appendChild(aElt);
-  const logsHistory = inspectorState.getCurrentState(STATE_PROPS.LOGS_HISTORY) ?? [];
+  const logsHistory =
+    inspectorState.getCurrentState(STATE_PROPS.LOGS_HISTORY) ?? [];
   const logExport = logsHistory.join("\n");
   const blob = new Blob([logExport], { type: "octet/stream" });
   const url = window.URL.createObjectURL(blob);
@@ -302,12 +365,13 @@ function exportLogs(inspectorState : ObservableState<InspectorState>) : void {
  * @returns {WebSocket.WebSocket}
  */
 function startWebsocketConnection(
-  password : string | null,
-  tokenId : string
-) : WebSocket {
-  const wsUrl = password === null ?
-    `${SERVER_URL}/${tokenId}` :
-    `${SERVER_URL}/${password}/${tokenId}`;
+  password: string | null,
+  tokenId: string
+): WebSocket {
+  const wsUrl =
+    password === null
+      ? `${SERVER_URL}/${tokenId}`
+      : `${SERVER_URL}/${password}/${tokenId}`;
   const socket = new WebSocket(wsUrl);
   return socket;
 }
@@ -321,8 +385,6 @@ function startWebsocketConnection(
  * support ANSI escape sequences.
  * @param {string} text
  */
-function emphasizeForConsole(text : string) : string {
-  return isChromiumBasedBrowser ?
-    `\u001b[32m${text}\u001b[0m` :
-    text;
+function emphasizeForConsole(text: string): string {
+  return isChromiumBasedBrowser ? `\u001b[32m${text}\u001b[0m` : text;
 }
