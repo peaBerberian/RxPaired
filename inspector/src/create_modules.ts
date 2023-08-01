@@ -41,7 +41,7 @@ export default function createModules({
   tokenId?: string | undefined;
   configState: ObservableState<ConfigState>;
   inspectorState: ObservableState<InspectorState>;
-  context: "live-debugging" | "post-analysis";
+  context: "live-debugging" | "post-debugger";
 }): () => void {
   let storedModulesOrder =
     configState.getCurrentState(STATE_PROPS.MODULES_ORDER) ?? [];

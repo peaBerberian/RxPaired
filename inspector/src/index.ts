@@ -2,7 +2,7 @@ import { ConfigState, MODULE_CONFIG_LS_ITEM, STATE_PROPS } from "./constants";
 import ObservableState, { UPDATE_TYPE } from "./observable_state";
 import generateLiveDebuggingPage from "./pages/live_debugging";
 import generatePasswordPage from "./pages/password";
-import generatePostAnalysisPage from "./pages/post-analysis";
+import generatePostDebuggerPage from "./pages/post-debugger";
 import generateTokenPage from "./pages/token";
 import { displayError, isTokenValid, parseUrl } from "./utils";
 
@@ -32,7 +32,7 @@ function onUrlChange() {
   if (urlInfo.password === undefined) {
     currentPageCleanUp = generatePasswordPage();
   } else if (urlInfo.isPostDebugger) {
-    currentPageCleanUp = generatePostAnalysisPage(urlInfo.password, configState);
+    currentPageCleanUp = generatePostDebuggerPage(urlInfo.password, configState);
   } else if (urlInfo.tokenId === undefined) {
     currentPageCleanUp = generateTokenPage(urlInfo.password);
   } else {

@@ -27,7 +27,7 @@ const ALL_MODULES : ModuleInformation[] = [
     moduleFn: PlayerGeneralInfoModule,
     isClosable: true,
     isHalfWidthByDefault: false,
-    contexts: ["live-debugging", "post-analysis"],
+    contexts: ["live-debugging", "post-debugger"],
   },
 
   {
@@ -36,7 +36,7 @@ const ALL_MODULES : ModuleInformation[] = [
     moduleFn: LogModule,
     isClosable: false,
     isHalfWidthByDefault: true,
-    contexts: ["live-debugging", "post-analysis"],
+    contexts: ["live-debugging", "post-debugger"],
   },
 
   {
@@ -45,7 +45,7 @@ const ALL_MODULES : ModuleInformation[] = [
     moduleFn: BufferSizeModule,
     isClosable: true,
     isHalfWidthByDefault: true,
-    contexts: ["live-debugging", "post-analysis"],
+    contexts: ["live-debugging", "post-debugger"],
   },
 
   {
@@ -54,7 +54,7 @@ const ALL_MODULES : ModuleInformation[] = [
     moduleFn: generateAudioVideoBufferContentModule("video"),
     isClosable: true,
     isHalfWidthByDefault: true,
-    contexts: ["live-debugging", "post-analysis"],
+    contexts: ["live-debugging", "post-debugger"],
   },
 
   {
@@ -63,7 +63,7 @@ const ALL_MODULES : ModuleInformation[] = [
     moduleFn: generateAudioVideoBufferContentModule("audio"),
     isClosable: true,
     isHalfWidthByDefault: true,
-    contexts: ["live-debugging", "post-analysis"],
+    contexts: ["live-debugging", "post-debugger"],
   },
 
   {
@@ -72,7 +72,7 @@ const ALL_MODULES : ModuleInformation[] = [
     moduleFn: BufferContentModule,
     isClosable: true,
     isHalfWidthByDefault: true,
-    contexts: ["live-debugging", "post-analysis"],
+    contexts: ["live-debugging", "post-debugger"],
   },
 ];
 
@@ -101,10 +101,10 @@ export interface ModuleInformation {
    * Pages in which the current module can appear:
    *   - "live-debugging": If present, this module will appear when doing
    *      live-debugging.
-   *   - "post-analysis": If present, this module will also appear when doing
-   *     post-analysis (non-live-debugging)
+   *   - "post-debugger": If present, this module will also appear when doing
+   *     post-debugger (non-live-debugging)
    */
-  contexts: Array<"live-debugging" | "post-analysis">;
+  contexts: Array<"live-debugging" | "post-debugger">;
 }
 
 export type ModuleFunction = (args : ModuleFunctionArguments) =>

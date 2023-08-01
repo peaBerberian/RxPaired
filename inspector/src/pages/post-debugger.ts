@@ -13,7 +13,7 @@ const START_LOG_LINE_REGEXP = /^[0-9]+\.[0-9]{2} \[/;
  * @returns {Function} - Call this function to clean up all resources created
  * by this page. Should be called when the page is disposed.
  */
-export default function generatePostAnalysisPage(
+export default function generatePostDebuggerPage(
   password: string | null,
   configState : ObservableState<ConfigState>
 ): () => void {
@@ -59,7 +59,7 @@ export default function generatePostAnalysisPage(
 
   const disposeModules = createModules({
     containerElt: modulesContainerElt,
-    context: "post-analysis",
+    context: "post-debugger",
     configState,
     inspectorState,
   });
