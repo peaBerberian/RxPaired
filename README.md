@@ -37,7 +37,13 @@ Its key features are:
 To quickly check if this tool can help you, you can start testing it by doing
 the following:
 
-  1. In a first terminal, you'll run the RxPaired server by running those commands at
+  1. Clone this repository by running in a terminal:
+     ```sh
+     git clone https://github.com/peaBerberian/RxPaired.git
+     cd RxPaired
+     ```
+
+  2. In a first terminal, you'll run the RxPaired server by running those commands at
      the root of the RxPaired repository:
      ```sh
      cd ./server
@@ -46,7 +52,7 @@ the following:
      node ./RxPaired-server --no-password # run it (no need of password for now)
      ```
 
-  2. In a second terminal build both the client and inspector and serve them by
+  3. In a second terminal build both the client and inspector and serve them by
      running those commands at the root of the RxPaired repository:
      ```sh
      cd client
@@ -62,14 +68,14 @@ the following:
      node utils/static_http_server.mjs --include-inspector-files --include-client-file
      ```
 
-  3. Go to the inspector page which now should be at
+  4. Go to the inspector page which now should be at
      [http://127.0.0.1:8695](http://127.0.0.1:8695) and validate an empty password.
 
-  4. For our test, we will use the `example` token. Define it in the corresponding
+  5. For our test, we will use the `example` token. Define it in the corresponding
      input and click on the button to set it. You will be redirected to the
      inspector main page.
 
-  5. In another browser tab, go to [the RxPlayer demo
+  6. In another browser tab, go to [the RxPlayer demo
      page](https://developers.canal-plus.com/rx-player/) (any page with the
      RxPlayer will do, but the `RxPlayer` JavaScript class needs to be
      accessible, see the script below).
@@ -91,10 +97,10 @@ the following:
        );
      ```
 
-   6. Play a content in that page.
+  7. Play a content in that page.
 
-   7. Go back to the inspector page. You should now see logs and graphs about
-      playback!
+  8. Go back to the inspector page. You should now see logs and graphs about
+     playback!
 
 If you want to understand how it all works and how to use this in more complex
 cases, keep reading below.
