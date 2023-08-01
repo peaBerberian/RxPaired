@@ -494,7 +494,7 @@ export default function createModules({
       const unsub = configState.subscribe(
         STATE_PROPS.CLOSED_MODULES,
         (updateType: string) => {
-          if (updateType === UPDATE_TYPE.PUSH) {
+          if (updateType as UPDATE_TYPE === UPDATE_TYPE.PUSH) {
             return;
           }
           const closedModules =

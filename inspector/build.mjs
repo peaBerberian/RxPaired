@@ -37,6 +37,27 @@ if (argv.includes("-h") || argv.includes("--help")) {
 }
 const shouldWatch = argv.includes("-w") || argv.includes("--watch");
 const shouldMinify = argv.includes("-m") || argv.includes("--minify");
+
+const consolePlugin = {
+  name: "onEnd",
+  setup(build) {
+    build.onStart(() => {
+      console.log(`\x1b[33m[${getHumanReadableHours()}]\x1b[0m ` +
+        "New inspector build started");
+    })
+    build.onEnd(result => {
+      if (result.errors.length > 0 || result.warnings.length > 0) {
+        const { errors, warnings } = result;
+        console.log(`\x1b[33m[${getHumanReadableHours()}]\x1b[0m ` +
+          `inspector re-built with ${errors.length} error(s) and ` +
+          ` ${warnings.length} warning(s) `);
+        return;
+      }
+      console.log(`\x1b[32m[${getHumanReadableHours()}]\x1b[0m ` +
+        "inspector built!");
+    });
+  },
+};
 buildWebInspector({ minify: shouldMinify, watch: shouldWatch });
 
 /**
@@ -49,49 +70,23 @@ buildWebInspector({ minify: shouldMinify, watch: shouldWatch });
 function buildWebInspector(options) {
   const minify = !!options.minify;
   const watch = !!options.watch;
-  let beforeTime = process.hrtime.bigint();
-
-  esbuild.build({
+  const esbuildOpts = {
     entryPoints: [path.join(currentDirName, "src", "index.ts")],
     bundle: true,
     minify,
-    watch: !watch ? undefined : {
-      onRebuild(error, result) {
-        if (error) {
-          console.error(`\x1b[31m[${getHumanReadableHours()}]\x1b[0m Inspector re-build failed:`,
-                        err);
-        } else {
-          if (result.errors > 0 || result.warnings > 0) {
-            const { errors, warnings } = result;
-            console.log(`\x1b[33m[${getHumanReadableHours()}]\x1b[0m ` +
-                        `Inspector re-built with ${errors.length} error(s) and ` +
-                        ` ${warnings.length} warning(s) ` +
-                        `(in ${stats.endTime - stats.startTime} ms).`);
-          }
-          console.log(`\x1b[32m[${getHumanReadableHours()}]\x1b[0m ` +
-                      "Inspector re-built!");
-        }
-      },
-    },
+    plugins: [consolePlugin],
     outfile: path.join(currentDirName, "inspector.js"),
     define: {
       _INSPECTOR_DEBUGGER_URL_: JSON.stringify(inspectorDebuggerUrl),
       __DEVICE_SCRIPT_URL__: JSON.stringify(process.env.npm_config_device_script_url),
-    }
-  }).then(
-  (result) => {
-    if (result.errors > 0 || result.warnings > 0) {
-      const { errors, warnings } = result;
-      console.log(`\x1b[33m[${getHumanReadableHours()}]\x1b[0m ` +
-                  `Inspector built with ${errors.length} error(s) and ` +
-                  ` ${warnings.length} warning(s) ` +
-                  `(in ${stats.endTime - stats.startTime} ms).`);
-    }
-    const fullTime = (process.hrtime.bigint() - beforeTime) / 1000000n;
-    console.log(`\x1b[32m[${getHumanReadableHours()}]\x1b[0m ` +
-                `Inspector build done in ${fullTime}ms`);
-  },
-  (err) => {
+    },
+  };
+  let prom = watch ?
+    esbuild.context(esbuildOpts).then(context => {
+      context.watch();
+    }) :
+    esbuild.build(esbuildOpts);
+  prom.catch((err) => {
     console.error(`\x1b[31m[${getHumanReadableHours()}]\x1b[0m Inspector build failed:`,
                   err);
     process.exit(1);
