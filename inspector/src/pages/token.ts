@@ -1,4 +1,4 @@
-import { SERVER_URL } from "../constants";
+import { CLIENT_SCRIPT_URL, SERVER_URL } from "../constants";
 import {
   createButton,
   createCompositeElement,
@@ -93,7 +93,6 @@ export default function generateTokenPage(password: string | null): () => void {
           margin: "10px",
           border: "1px dotted black",
           padding: "10px",
-          position: "absolute",
           width: "auto",
         },
       }
@@ -102,6 +101,8 @@ export default function generateTokenPage(password: string | null): () => void {
 
   document.body.appendChild(pageBody);
 
+  let hasAddedNoTokenTutorial = false;
+
   // Refresh list of tokens
   const wsUrl =
     password === null
@@ -109,7 +110,21 @@ export default function generateTokenPage(password: string | null): () => void {
       : `${SERVER_URL}/${password}/!list`;
   const socket = new WebSocket(wsUrl);
   socket.onmessage = function (evt) {
-    onListWebSocketMessage(evt, activeTokensListElt, password);
+    let data;
+    if (Array.isArray(evt.data)) {
+      data = evt.data as unknown as ParsedTokenListServerMessage;
+    } else if (typeof evt.data === "string") {
+      data = JSON.parse(evt.data) as unknown as ParsedTokenListServerMessage;
+    } else {
+      console.error("Unrecognized list data");
+      return;
+    }
+    onActiveTokenListUpdate(data.tokenList, activeTokensListElt, password);
+
+    if (!hasAddedNoTokenTutorial) {
+      document.body.appendChild(createNoTokenTutorialElement(password));
+      hasAddedNoTokenTutorial = true;
+    }
   };
   socket.onclose = function () {
     activeTokensListElt.innerHTML = "Error: WebSocket connection closed";
@@ -171,67 +186,171 @@ function generateToken(): string {
   return Math.random().toString(36).substring(2, 8); // remove `0.`
 }
 
+function createNoTokenTutorialElement(password: string | null): HTMLElement {
+  const fakeTokenStr = `!notoken${password === null ? "" : "/" + password}`;
+  const liElt1 = createCompositeElement("li", [
+    'Load in your HTML page the following script before all other running scripts: "',
+    createElement("span", {
+      textContent: `${CLIENT_SCRIPT_URL}#${fakeTokenStr}`,
+      className: "emphasized",
+    }),
+    '"',
+    createElement("br"),
+    "For example, you can just add before the first script tag: ",
+    createElement("span", {
+      textContent: `<script src="${CLIENT_SCRIPT_URL.replace(
+        /"/g,
+        '\\"'
+      )}#${fakeTokenStr}"></script>`,
+      className: "emphasized",
+    }),
+  ]);
+
+  const link = createElement("a", { textContent: CLIENT_SCRIPT_URL });
+  link.href = CLIENT_SCRIPT_URL;
+  const liElt2 = createCompositeElement("li", [
+    "Add manually the content of this script to the beginning of the " +
+      "first script tag of your page: ",
+    link,
+    " and manually set the `",
+    createElement("span", {
+      className: "emphasized",
+      textContent: "__TOKEN__",
+    }),
+    "` variable on top of that script to ",
+    createElement("span", {
+      className: "emphasized",
+      textContent: `"${fakeTokenStr}"`,
+    }),
+    ".",
+  ]);
+
+  const liElt3 = createCompositeElement("li", [
+    "Import dynamically the script in your code by writing something like:",
+    createCompositeElement(
+      "details",
+      [
+        createElement("summary", {
+          textContent: "code",
+        }),
+        createElement("pre", {
+          textContent: `import("${CLIENT_SCRIPT_URL}")
+  .then(() => {
+    window.__RX_INSPECTOR_RUN__({
+      url: "${CLIENT_SCRIPT_URL}#${fakeTokenStr}",
+      playerClass: <RX_PLAYER_CLASS>,
+    });
+    console.info("Inspector initialized with success:", inspectorUrl);
+  })
+  .catch((error) =>
+    console.error("Failed to dynamically import inspector:", error)
+  );`,
+        }),
+        "Where ",
+        createElement("span", {
+          className: "emphasized",
+          textContent: "<RX_PLAYER_CLASS>",
+        }),
+        " is a reference to the RxPlayer's class in your code",
+      ],
+      { className: "code-details" }
+    ),
+  ]);
+  return createCompositeElement(
+    "div",
+    [
+      createElement("span", {
+        className: "emphasized",
+        textContent:
+          "If you want to start logging without running the inspector:",
+      }),
+      createElement("br"),
+      createElement("span", {
+        textContent:
+          " You can now also start debugging on the device without " +
+          "having to create a token first, by replacing on the client script " +
+          "the token by ",
+      }),
+      createElement("span", {
+        className: "emphasized",
+        textContent:
+          password === null ? "!notoken" : "!notoken/<SERVER_PASSWORD>",
+      }),
+      createElement("span", {
+        textContent: ".",
+      }),
+      createElement("br"),
+      createElement("span", {
+        textContent: "This can be done in any of the following way:",
+      }),
+      createCompositeElement("ol", [liElt1, liElt2, liElt3]),
+    ],
+    {
+      style: {
+        maxWidth: "800px",
+        margin: "10px",
+        fontSize: "0.97em",
+      },
+    }
+  );
+}
+
 /**
  * Function to call when the WebSocket maintained to update the list of current
  * tokens receives a message.
- * @param {Object} evt - The message received.
+ * @param {Array.<Object>} activeTokensList
  * @param {HTMLElement} activeTokensListElt - The HTMLElement which will be
  * updated to the list of available tokens regularly.
  * @param {string|null} password - The current server password. `null` if the
  * server has no password.
  */
-function onListWebSocketMessage(
-  evt: MessageEvent,
+function onActiveTokenListUpdate(
+  activeTokensList: Array<{ date: number; tokenId: string }>,
   activeTokensListElt: HTMLElement,
   password: string | null
 ): void {
-  let data;
-  if (Array.isArray(evt.data)) {
-    data = evt.data as unknown as Array<{
-      date: number;
-      tokenId: string;
-    }>;
-  } else if (typeof evt.data === "string") {
-    data = JSON.parse(evt.data) as unknown as Array<{
-      date: number;
-      tokenId: string;
-    }>;
-  } else {
-    console.error("Unrecognized list data");
-    return;
-  }
-
-  if (data.length === 0) {
+  if (activeTokensList.length === 0) {
     activeTokensListElt.innerHTML = "No active token";
   } else {
-    data.sort((a, b) => b.date - a.date);
-    const activeTokenDataElt: HTMLElement = data.reduce((acc, d) => {
-      const date = new Date(d.date);
-      const listElt = createCompositeElement(
-        "li",
-        [
-          createElement("span", {
-            textContent:
-              date.toLocaleDateString() + " @ " + date.toLocaleTimeString(),
-          }),
-          " ",
-          createElement("span", {
-            textContent: d.tokenId,
-          }),
-        ],
-        {
-          onClick: () => setToken(password, d.tokenId),
-          style: {
-            cursor: "pointer",
-            marginBottom: "5px",
-            textDecoration: "underline",
-          },
-        }
-      );
-      acc.appendChild(listElt);
-      return acc;
-    }, createElement("ul", {}));
+    activeTokensList.sort((a, b) => b.date - a.date);
+    const activeTokenDataElt: HTMLElement = activeTokensList.reduce(
+      (acc, d) => {
+        const date = new Date(d.date);
+        const listElt = createCompositeElement(
+          "li",
+          [
+            createElement("span", {
+              textContent:
+                date.toLocaleDateString() + " @ " + date.toLocaleTimeString(),
+            }),
+            " ",
+            createElement("span", {
+              textContent: d.tokenId,
+            }),
+          ],
+          {
+            onClick: () => setToken(password, d.tokenId),
+            style: {
+              cursor: "pointer",
+              marginBottom: "5px",
+              textDecoration: "underline",
+            },
+          }
+        );
+        acc.appendChild(listElt);
+        return acc;
+      },
+      createElement("ul", {})
+    );
     activeTokensListElt.innerHTML = "";
     activeTokensListElt.appendChild(activeTokenDataElt);
   }
+}
+
+interface ParsedTokenListServerMessage {
+  isNoTokenEnabled: boolean;
+  tokenList: Array<{
+    date: number;
+    tokenId: string;
+  }>;
 }

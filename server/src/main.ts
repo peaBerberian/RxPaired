@@ -82,12 +82,9 @@ program
   .option("--log-file <path>",
           "Path to the server's log file. " +
           ` Defaults to ${DEFAULT_LOG_FILE_PATH}.`)
-  .option("--allow-no-token",
-          "Devices can send logs without creating a \"token\" by requesting the " +
-          "\"/!notoken/<PASSWORD>\" path from this server, where <PASSWORD> is " +
-          "that server's password, or just \"/!notoken\" if no password is set.\n" +
-          "To combine with the \"-f\"/\"--create-log-files\" option, in which " +
-          "case the log's file name suffix will be randomly generated");
+  .option("--disable-no-token",
+          "Disable \"no-token\" mode, where devices can send logs without having " +
+          "to create a \"token\" first through the inspector. ");
 
 program.parse(process.argv);
 const options = program.opts();
@@ -156,7 +153,7 @@ const logFile = typeof options.logFile === "string" ?
   options.logFile :
   undefined;
 
-const allowNoToken = options.allowNoToken === true;
+const disableNoToken = options.disableNoToken === true;
 
 logger.setLogFile(logFile ?? DEFAULT_LOG_FILE_PATH);
 
@@ -214,10 +211,10 @@ deviceSocket.on("connection", (ws, req) => {
   }
 
   let tokenId = req.url.substring(1);
-  let logFileName = tokenId;
+  let logFileNameSuffix = tokenId;
   let existingToken: TokenMetadata;
   let existingTokenIndex: number;
-  if (allowNoToken && tokenId.startsWith("!notoken/")) {
+  if (!disableNoToken && tokenId.startsWith("!notoken/")) {
     if (usePassword && password !== null) {
       const pw = tokenId.substring("!notoken/".length);
       if (pw !== password) {
@@ -235,16 +232,16 @@ deviceSocket.on("connection", (ws, req) => {
       // Strip last part of address for fear of GDPR compliancy
       const lastDotIdx = address.lastIndexOf(".");
       if (lastDotIdx > 0) {
-        logFileName = address.substring(0, lastDotIdx);
+        logFileNameSuffix = address.substring(0, lastDotIdx);
       } else {
         const lastColonIdx = address.lastIndexOf(".");
         if (lastColonIdx > 0) {
-          logFileName = address.substring(0, lastColonIdx);
+          logFileNameSuffix = address.substring(0, lastColonIdx);
         }
       }
     }
     tokenId = generatePassword();
-    logFileName += `-${tokenId}`;
+    logFileNameSuffix += `-${tokenId}`;
     existingToken = activeTokensList.create(tokenId, historySize);
     existingTokenIndex = activeTokensList.findIndex(tokenId);
   } else {
@@ -321,7 +318,7 @@ deviceSocket.on("connection", (ws, req) => {
     } else {
       existingToken?.addLogToHistory(messageStr);
       if (shouldCreateLogFiles) {
-        appendFile(getLogFileName(logFileName), messageStr + "\n", function() {
+        appendFile(getLogFileName(logFileNameSuffix), messageStr + "\n", function() {
           // on finished. Do nothing for now.
         });
       }
@@ -389,7 +386,10 @@ htmlInspectorSocket.on("connection", (ws, req) => {
       clearInterval(itv);
     };
     function sendCurrentListOfTokens() {
-      ws.send(JSON.stringify(activeTokensList.listPublicInformation()));
+      ws.send(JSON.stringify({
+        isNoTokenEnabled: !disableNoToken,
+        tokenList: activeTokensList.listPublicInformation(),
+      }));
     }
     return;
   }
