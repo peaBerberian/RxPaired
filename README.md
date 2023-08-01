@@ -77,8 +77,8 @@ the following:
 
   6. In another browser tab, go to [the RxPlayer demo
      page](https://developers.canal-plus.com/rx-player/) (any page with the
-     RxPlayer will do, but the `RxPlayer` JavaScript class needs to be
-     accessible, see the script below).
+     RxPlayer will do, but the `RxPlayer` JavaScript class - **not an
+     instance** - needs to be accessible, see the script below).
 
      Open your browser's JavaScript console on that page and enter this code to
      dynamically link the inspector:
