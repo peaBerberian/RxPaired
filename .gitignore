@@ -10,3 +10,4 @@
 /server/node_modules/
 /server/server-logs.txt
 /server/logs-*.txt
+/server/build
