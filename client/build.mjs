@@ -35,6 +35,28 @@ if (argv.includes("-h") || argv.includes("--help")) {
 }
 const shouldWatch = argv.includes("-w") || argv.includes("--watch");
 const shouldMinify = argv.includes("-m") || argv.includes("--minify");
+
+const consolePlugin = {
+  name: "onEnd",
+  setup(build) {
+    build.onStart(() => {
+      console.log(`\x1b[33m[${getHumanReadableHours()}]\x1b[0m ` +
+        "New client build started");
+    })
+    build.onEnd(result => {
+      if (result.errors.length > 0 || result.warnings.length > 0) {
+        const { errors, warnings } = result;
+        console.log(`\x1b[33m[${getHumanReadableHours()}]\x1b[0m ` +
+          `client re-built with ${errors.length} error(s) and ` +
+          ` ${warnings.length} warning(s) `);
+        return;
+      }
+      console.log(`\x1b[32m[${getHumanReadableHours()}]\x1b[0m ` +
+        "client built!");
+    });
+  },
+};
+
 buildClient({ minify: shouldMinify, watch: shouldWatch });
 
 /**
@@ -47,49 +69,23 @@ buildClient({ minify: shouldMinify, watch: shouldWatch });
 function buildClient(options) {
   const minify = !!options.minify;
   const watch = !!options.watch;
-  let beforeTime = process.hrtime.bigint();
-
-  esbuild.build({
+  const esbuildOpts = {
     entryPoints: [path.join(currentDirName, "src", "client.js")],
     bundle: true,
     minifySyntax: minify,
     target: "es6",
     outfile: path.join(currentDirName, "client.js"),
-    watch: !watch ? undefined : {
-      onRebuild(error, result) {
-        if (error) {
-          console.error(`\x1b[31m[${getHumanReadableHours()}]\x1b[0m Client re-build failed:`,
-                        err);
-        } else {
-          if (result.errors > 0 || result.warnings > 0) {
-            const { errors, warnings } = result;
-            console.log(`\x1b[33m[${getHumanReadableHours()}]\x1b[0m ` +
-                        `Client re-built with ${errors.length} error(s) and ` +
-                        ` ${warnings.length} warning(s) ` +
-                        `(in ${stats.endTime - stats.startTime} ms).`);
-          }
-          console.log(`\x1b[32m[${getHumanReadableHours()}]\x1b[0m ` +
-                      "Client re-built!");
-        }
-      },
-    },
+    plugins: [consolePlugin],
     define: {
       _DEVICE_DEBUGGER_URL_: JSON.stringify(deviceDebuggerUrl),
     }
-  }).then(
-  (result) => {
-    if (result.errors > 0 || result.warnings > 0) {
-      const { errors, warnings } = result;
-      console.log(`\x1b[33m[${getHumanReadableHours()}]\x1b[0m ` +
-                  `Client built with ${errors.length} error(s) and ` +
-                  ` ${warnings.length} warning(s) ` +
-                  `(in ${stats.endTime - stats.startTime} ms).`);
-    }
-    const fullTime = (process.hrtime.bigint() - beforeTime) / 1000000n;
-    console.log(`\x1b[32m[${getHumanReadableHours()}]\x1b[0m ` +
-                `Client build done in ${fullTime}ms`);
-  },
-  (err) => {
+  };
+  let prom = watch ?
+    esbuild.context(esbuildOpts).then(context => {
+      context.watch();
+    }) :
+    esbuild.build(esbuildOpts);
+  prom.catch((err) => {
     console.error(`\x1b[31m[${getHumanReadableHours()}]\x1b[0m Client build failed:`,
                   err);
     process.exit(1);
