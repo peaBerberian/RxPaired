@@ -290,6 +290,7 @@ deviceSocket.on("connection", (ws, req) => {
   }, 10000);
   ws.on("message", message => {
     checkers.checkDeviceMessageLimit();
+    /* eslint-disable-next-line @typescript-eslint/no-base-to-string */
     let messageStr = message.toString();
     if (messageStr.length > maxLogLength) {
       return;
@@ -444,6 +445,7 @@ htmlInspectorSocket.on("connection", (ws, req) => {
 
   ws.on("message", message => {
     checkers.checkInspectorMessageLimit();
+    /* eslint-disable-next-line @typescript-eslint/no-base-to-string */
     const messageStr = message.toString();
 
     if (messageStr === "pong") {
