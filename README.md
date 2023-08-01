@@ -25,11 +25,79 @@ Its key features are:
 
 ## Table Of Contents
 
+  - [Quick start](#quick-start)
   - [What is it?](#what-is-it)
   - [How does it work?](#how-it-works)
   - [How to run it?](#how-to-run-it)
   - [Why creating this tool?](#why-creating-this-tool)
 
+<a class="anchor" href="#quick-start"></a>
+## Quick start
+
+To quickly check if this tool can help you, you can start testing it by doing
+the following:
+
+  1. In a first terminal, you'll run the RxPaired server by running those commands at
+     the root of the RxPaired repository:
+     ```sh
+     cd ./server
+     npm install # install the RxPaired-server's dependencies
+     npm run build # build the server
+     node ./RxPaired-server --no-password # run it (no need of password for now)
+     ```
+
+  2. In a second terminal build both the client and inspector and serve them by
+     running those commands at the root of the RxPaired repository:
+     ```sh
+     cd client
+     npm install # install the RxPaired-client's dependencies
+     cp .npmrc.sample .npmrc # set default config
+     npm run build # build it
+     cd ../inspector # Go back to the RxPaired-inspector now
+     npm install # install the RxPaired-inspector's dependencies
+     cp .npmrc.sample .npmrc # set default config
+     npm run build # build it
+     cd .. # Go back to the repository's root
+     # Now serve them
+     node utils/static_http_server.mjs --include-inspector-files --include-client-file
+     ```
+
+  3. Go to the inspector page which now should be at
+     [http://127.0.0.1:8695](http://127.0.0.1:8695) and validate an empty password.
+
+  4. For our test, we will use the `example` token. Define it in the corresponding
+     input and click on the button to set it. You will be redirected to the
+     inspector main page.
+
+  5. In another browser tab, go to [the RxPlayer demo
+     page](https://developers.canal-plus.com/rx-player/) (any page with the
+     RxPlayer will do, but the `RxPlayer` JavaScript class needs to be
+     accessible, see the script below).
+
+     Open your browser's JavaScript console on that page and enter this code to
+     dynamically link the inspector:
+     ```js
+     import("http://127.0.0.1:8695/client.js#example")
+       .then(() => {
+         window.__RX_INSPECTOR_RUN__({
+           url: "http://127.0.0.1:8695/client.js#example",
+           playerClass: RxPlayer, // For other pages: the RxPlayer class needs
+                                  // to be accessible and communicated here
+         });
+         console.info("Inspector initialized with success!");
+       })
+       .catch((error) =>
+         console.error("Failed to dynamically import inspector:", error)
+       );
+     ```
+
+   6. Play a content in that page.
+
+   7. Go back to the inspector page. You should now see logs and graphs about
+      playback!
+
+If you want to understand how it all works and how to use this in more complex
+cases, keep reading below.
 
 <a class="anchor" href="#what-is-it"></a>
 ## What is it?

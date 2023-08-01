@@ -11,4 +11,4 @@ inspector_debugger_url = "ws://127.0.0.1:22625"
 ; Can be left empty if you do not wish to serve this script, in which case
 ; you will have to copy/paste it manually into the HTML page running on the
 ; device.
-device_script_url = ""
+device_script_url = "http://127.0.0.1:8695/client.js"

@@ -6,7 +6,7 @@
  * maintenance burden than installing a whole dependency (and perhaps needing
  * to update those regularly due to some obscure bug that most likely didn't
  * even concern us).
- * As for gziping, caching, CORS and whatnot, those are not real needs for the
+ * As for gziping, caching and whatnot, those are not real needs for the
  * scale this file is predicted to be used for, at least for now.
  */
 
@@ -97,7 +97,10 @@ export default function startStaticServer(files, port) {
       console.log(
         `\u001b[31mReceived request for unknown resource: ${wantedFile}\u001b[39m`
       );
-      response.writeHead(404, { "Content-Type": "text/plain; charset=UTF-8" });
+      response.writeHead(404, {
+        "Access-Control-Allow-Origin": "*",
+        "Content-Type": "text/plain; charset=UTF-8",
+      });
       response.end("No file found at the corresponding URL", "utf-8");
       return;
     }
@@ -110,7 +113,10 @@ export default function startStaticServer(files, port) {
           console.log(
             `\u001b[31mFile not reachable: ${fileToRead}\u001b[39m`
           );
-          response.writeHead(404, { "Content-Type": "text/plain; charset=UTF-8" });
+          response.writeHead(404, {
+            "Access-Control-Allow-Origin": "*",
+            "Content-Type": "text/plain; charset=UTF-8",
+          });
           response.end("No file found at the corresponding URL", "utf-8");
           return;
         } else {
@@ -118,12 +124,18 @@ export default function startStaticServer(files, port) {
             `\u001b[31mAn error occured while trying to read: ${fileToRead}\n` +
             `error: ${error.code}\u001b[39mA`
           );
-          response.writeHead(500, { "Content-Type": "text/plain; charset=UTF-8" });
+          response.writeHead(500, {
+            "Access-Control-Allow-Origin": "*",
+            "Content-Type": "text/plain; charset=UTF-8",
+          });
           response.end("An error occured: " + String(error.code), "utf-8");
           response.end();
         }
       } else {
-        response.writeHead(200, { "Content-Type": contentType });
+        response.writeHead(200, {
+          "Access-Control-Allow-Origin": "*",
+          "Content-Type": contentType,
+        });
         response.end(fileContent, "utf-8");
       }
     });
