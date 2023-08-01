@@ -9,10 +9,12 @@ const START_LOG_LINE_REGEXP = /^[0-9]+\.[0-9]{2} \[/;
 
 /**
  * @param {Object} configState
+ * @returns {Function} - Call this function to clean up all resources created
+ * by this page. Should be called when the page is disposed.
  */
 export default function generatePostAnalysisPage(
   configState : ObservableState<ConfigState>
-) : void {
+): () => void {
   const inspectorState = new ObservableState<InspectorState>();
   const headerElt = createPostDebuggerHeaderElement(configState, inspectorState);
   document.body.appendChild(headerElt);
@@ -44,12 +46,18 @@ export default function generatePostAnalysisPage(
     }
   });
 
-  createModules({
+  const disposeModules = createModules({
     containerElt: modulesContainerElt,
     context: "post-analysis",
     configState,
     inspectorState,
   });
+
+  return () => {
+    disposeModules();
+    inspectorState.dispose();
+    document.body.removeChild(headerElt);
+  };
 }
 
 /**

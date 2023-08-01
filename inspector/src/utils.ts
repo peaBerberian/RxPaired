@@ -21,9 +21,9 @@ export function reGeneratePageUrl(
 ): string {
   const originalUrl = new URL(document.location.href);
   originalUrl.hash = "";
-  let url = originalUrl.toString();
+  let url = originalUrl.toString() + "#";
   if (withPassword !== undefined) {
-    url += "#!pass=" + (withPassword ?? "");
+    url += "!pass=" + (withPassword ?? "");
     if (withToken !== undefined) {
       url += "!token=" + withToken;
     }
@@ -67,6 +67,8 @@ export function parseUrl(): {
 }
 
 /**
+ * Returns `true` if the given token can be considered valid.
+ * Returns `false` otherwise.
  * @param {string} tokenId
  */
 export function isTokenValid(tokenId: string): boolean {
@@ -103,6 +105,10 @@ export function displayError(err?: unknown): void {
 }
 
 /**
+ * Returns the default order in which inspector modules should be displayed,
+ * from left-to-right and top-to-bottom.
+ *
+ * The returned value is an array of the module's id in that order.
  * @returns {Array.<string>}
  */
 export function getDefaultModuleOrder(): string[] {

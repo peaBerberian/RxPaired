@@ -27,6 +27,8 @@ import { getDefaultModuleOrder } from "./utils";
  * Supplementary information is also necessary for both stylisation and module
  * configuration.
  * @param {Object} config
+ * @returns {Function} - Call this function to clean up all resources
+ * `createModules` have created. Should be called when the page is disposed.
  */
 export default function createModules({
   containerElt,
@@ -40,7 +42,7 @@ export default function createModules({
   configState: ObservableState<ConfigState>;
   inspectorState: ObservableState<InspectorState>;
   context: "live-debugging" | "post-analysis";
-}): void {
+}): () => void {
   let storedModulesOrder =
     configState.getCurrentState(STATE_PROPS.MODULES_ORDER) ?? [];
   if (storedModulesOrder.length === 0) {
@@ -58,6 +60,7 @@ export default function createModules({
   const leftModulesToIterateOn = modules.filter(({ contexts }) =>
     contexts.includes(context)
   );
+  const activeModuleIds = leftModulesToIterateOn.map((m) => m.moduleId);
   for (const storedModuleId of storedModulesOrder) {
     const index = leftModulesToIterateOn.findIndex(
       ({ moduleId }) => moduleId === storedModuleId
@@ -65,7 +68,9 @@ export default function createModules({
     if (index !== -1) {
       modulesInOrder.push(leftModulesToIterateOn[index]);
       leftModulesToIterateOn.splice(index, 1);
-    } else {
+    } else if (
+      modules.find((m) => storedModuleId === m.moduleId) === undefined
+    ) {
       console.warn(`Stored module id ${storedModuleId} does not exist anymore`);
       someModuleWasMissing = true;
     }
@@ -75,8 +80,6 @@ export default function createModules({
   modulesInOrder.push(...leftModulesToIterateOn);
 
   if (someModuleWasMissing || leftModulesToIterateOn.length > 0) {
-    // ♫ And I'm not the kind that likes to tell you
-    // Just what you want me to ♫
     const newOrder = modulesInOrder.map(({ moduleId }) => moduleId);
     configState.updateState(
       STATE_PROPS.MODULES_ORDER,
@@ -86,9 +89,13 @@ export default function createModules({
   }
   configState.commitUpdates();
 
+  /** Callbacks to call on clean-up */
+  const onDestroyCbs: Array<() => void> = [];
+
   const resizeObserver = new ResizeObserver(() =>
     reSyncModulesPlacement(containerElt)
   );
+  onDestroyCbs.push(() => resizeObserver.disconnect());
   for (const moduleInfo of modulesInOrder) {
     const moduleWrapperElt = createModule(moduleInfo);
     if (moduleWrapperElt !== null) {
@@ -99,11 +106,43 @@ export default function createModules({
   }
   reSyncModulesPlacement(containerElt);
 
-  configState.subscribe(STATE_PROPS.MODULES_ORDER, () => {
+  configState.subscribe(STATE_PROPS.MODULES_ORDER, onModulesOrderChange);
+  onDestroyCbs.push(() =>
+    configState.unsubscribe(STATE_PROPS.MODULES_ORDER, onModulesOrderChange)
+  );
+
+  /** clean-up */
+  return () => {
+    onDestroyCbs.slice().forEach((disposeFn) => disposeFn());
+
+    const moduleWrapperElts =
+      containerElt.getElementsByClassName("module-wrapper");
+    for (let i = moduleWrapperElts.length - 1; i >= 0; i--) {
+      const moduleWrapperElt = moduleWrapperElts[i];
+      const parent = moduleWrapperElt.parentElement;
+      if (parent !== null) {
+        parent.removeChild(moduleWrapperElt);
+      }
+    }
+
+    const closedModulesElt =
+      containerElt.getElementsByClassName("closed-modules");
+    for (let i = closedModulesElt.length - 1; i >= 0; i--) {
+      const moduleWrapperElt = closedModulesElt[i];
+      const parent = moduleWrapperElt.parentElement;
+      if (parent !== null) {
+        parent.removeChild(moduleWrapperElt);
+      }
+    }
+  };
+
+  function onModulesOrderChange() {
     let moduleWrapperElts =
       containerElt.getElementsByClassName("module-wrapper");
     const newModuleIdOrder =
-      configState.getCurrentState(STATE_PROPS.MODULES_ORDER) ?? [];
+      configState
+        .getCurrentState(STATE_PROPS.MODULES_ORDER)
+        ?.filter((id) => activeModuleIds.includes(id)) ?? [];
 
     let modWrapIdx;
     for (modWrapIdx = 0; modWrapIdx < moduleWrapperElts.length; modWrapIdx++) {
@@ -194,7 +233,7 @@ export default function createModules({
       }
     }
     reSyncModulesPlacement(containerElt);
-  });
+  }
 
   function createModule(moduleInfo: ModuleInformation) {
     const moduleContext = { tokenId, state: inspectorState, configState };
@@ -281,13 +320,14 @@ export default function createModules({
     );
     configState.subscribe(STATE_PROPS.WIDTH_RATIOS, onWidthRatioChange, true);
     configState.subscribe(STATE_PROPS.MODULES_ORDER, onModuleOrderChange, true);
+    onDestroyCbs.push(disposeModule);
 
     return moduleWrapperElt;
 
     function onModuleOrderChange() {
       const moduleIdOrder = configState.getCurrentState(
         STATE_PROPS.MODULES_ORDER
-      );
+      )?.filter(id => activeModuleIds.includes(id));
       moveUpButton.disabled = moduleId === moduleIdOrder?.[0];
       moveDownButton.disabled =
         moduleId === moduleIdOrder?.[moduleIdOrder.length - 1];
@@ -389,7 +429,26 @@ export default function createModules({
       if (value === undefined || !value.includes(moduleId)) {
         return;
       }
+      disposeModule();
 
+      const idxInOnDestroy = onDestroyCbs.indexOf(disposeModule);
+      if (idxInOnDestroy !== -1) {
+        onDestroyCbs.splice(idxInOnDestroy, 1);
+      }
+
+      const parent = moduleWrapperElt.parentElement;
+      if (parent !== null) {
+        parent.removeChild(moduleWrapperElt);
+      }
+
+      putModuleInClosedElements();
+      configState.commitUpdates();
+    }
+
+    /**
+     * Perform clean-up on module destruction.
+     */
+    function disposeModule(): void {
       configState.unsubscribe(STATE_PROPS.CLOSED_MODULES, onModuleClosing);
       configState.unsubscribe(STATE_PROPS.MINIMIZED_MODULES, onMinimizedModule);
       configState.unsubscribe(STATE_PROPS.WIDTH_RATIOS, onWidthRatioChange);
@@ -401,27 +460,30 @@ export default function createModules({
           "Module: `destroy` should either be a function or undefined"
         );
       }
-      const parent = moduleWrapperElt.parentElement;
-      if (parent !== null) {
-        parent.removeChild(moduleWrapperElt);
-      }
-
-      putModuleInClosedElements();
-      configState.commitUpdates();
     }
 
     function moveModuleUp() {
       const modulesOrder =
         configState.getCurrentState(STATE_PROPS.MODULES_ORDER) ?? [];
       const indexOfModuleId = modulesOrder.indexOf(moduleId);
-      if (indexOfModuleId === 0) {
-        return;
-      }
+      const skippedModuleIds = modulesOrder
+        .filter(id => !activeModuleIds.includes(id));
+
+      let prevIndex = indexOfModuleId - 1;
       if (indexOfModuleId === -1) {
         modulesOrder.push(moduleId);
       } else {
-        modulesOrder[indexOfModuleId] = modulesOrder[indexOfModuleId - 1];
-        modulesOrder[indexOfModuleId - 1] = moduleId;
+        while (true) {
+          if (prevIndex < 0) {
+            return;
+          } else if (skippedModuleIds.includes(modulesOrder[prevIndex])) {
+            prevIndex--;
+          } else {
+            modulesOrder[indexOfModuleId] = modulesOrder[prevIndex];
+            modulesOrder[prevIndex] = moduleId;
+            break;
+          }
+        }
       }
       configState.updateState(
         STATE_PROPS.MODULES_ORDER,
@@ -435,14 +497,24 @@ export default function createModules({
       const modulesOrder =
         configState.getCurrentState(STATE_PROPS.MODULES_ORDER) ?? [];
       const indexOfModuleId = modulesOrder.indexOf(moduleId);
-      if (indexOfModuleId === modulesOrder.length - 1) {
-        return;
-      }
+      const skippedModuleIds = modulesOrder
+        .filter(id => !activeModuleIds.includes(id));
+
+      let nextModule = indexOfModuleId + 1;
       if (indexOfModuleId === -1) {
         modulesOrder.push(moduleId);
       } else {
-        modulesOrder[indexOfModuleId] = modulesOrder[indexOfModuleId + 1];
-        modulesOrder[indexOfModuleId + 1] = moduleId;
+        while (true) {
+          if (nextModule > modulesOrder.length) {
+            return;
+          } else if (skippedModuleIds.includes(modulesOrder[nextModule])) {
+            nextModule++;
+          } else {
+            modulesOrder[indexOfModuleId] = modulesOrder[nextModule];
+            modulesOrder[nextModule] = moduleId;
+            break;
+          }
+        }
       }
       configState.updateState(
         STATE_PROPS.MODULES_ORDER,
@@ -494,7 +566,7 @@ export default function createModules({
       const unsub = configState.subscribe(
         STATE_PROPS.CLOSED_MODULES,
         (updateType: string) => {
-          if (updateType as UPDATE_TYPE === UPDATE_TYPE.PUSH) {
+          if ((updateType as UPDATE_TYPE) === UPDATE_TYPE.PUSH) {
             return;
           }
           const closedModules =
@@ -505,6 +577,7 @@ export default function createModules({
           reOpenClosedModule();
         }
       );
+      onDestroyCbs.push(unsub);
 
       closedModuleNameElt.onclick = () => {
         removeModuleIdFromState(
@@ -527,6 +600,10 @@ export default function createModules({
 
       function reOpenClosedModule() {
         unsub();
+        const idxInOnDestroy = onDestroyCbs.indexOf(disposeModule);
+        if (idxInOnDestroy !== -1) {
+          onDestroyCbs.splice(idxInOnDestroy, 1);
+        }
         if (closedModuleNameElt.parentElement !== null) {
           closedModuleNameElt.parentElement.removeChild(closedModuleNameElt);
         }

@@ -39,15 +39,19 @@ const isChromiumBasedBrowser = (window as any).chrome != null;
  * interaction. `null` for no password.
  * @param {string} tokenId - The current used token.
  * @param {Object} configState
+ * @returns {Function} - Call this function to clean up all resources created
+ * by this page. Should be called when the page is disposed.
  */
 export default function generateLiveDebuggingPage(
   password: string | null,
   tokenId: string,
   configState: ObservableState<ConfigState>
-): void {
+): () => void {
+  /** Define sendInstruction` globally, to send JS instructions to the device. */
   (window as unknown as Record<string, unknown>).sendInstruction =
     sendInstruction;
 
+  /** Store the state on which the inspector modules will depend. */
   const inspectorState = new ObservableState<InspectorState>();
   /**
    * WebSocket instance used to exchange with the debug server.
@@ -91,106 +95,121 @@ export default function generateLiveDebuggingPage(
     }
   });
 
-  createModules({
+  const disposeModules = createModules({
     containerElt: modulesContainerElt,
     context: "live-debugging",
     tokenId,
     configState,
     inspectorState,
   });
-  currentSocket.addEventListener("close", function () {
-    displayError("WebSocket connection closed");
-  });
-  currentSocket.addEventListener("error", function () {
-    displayError("WebSocket connection error");
-  });
-  if (currentSocket !== null) {
-    currentSocket.addEventListener("message", function onMessage(event) {
-      if (event == null || event.data == null) {
-        displayError("No message received from WebSocket");
-      }
-      if (typeof event.data !== "string") {
-        displayError("Invalid message format received");
-        return;
-      }
-      const hasSelectedLog =
-        inspectorState.getCurrentState(STATE_PROPS.SELECTED_LOG_INDEX) !==
-        undefined;
+  currentSocket.addEventListener("close", onWebSocketClose);
+  currentSocket.addEventListener("error", onWebSocketError);
+  currentSocket.addEventListener("message", onWebSocketMessage);
 
-      if (event.data === "ping") {
-        currentSocket.send("pong");
+  return () => {
+    currentSocket.removeEventListener("close", onWebSocketClose);
+    currentSocket.removeEventListener("error", onWebSocketError);
+    currentSocket.removeEventListener("message", onWebSocketMessage);
+    currentSocket.close();
+    disposeModules();
+    inspectorState.dispose();
+    delete (window as unknown as Record<string, unknown>).sendInstruction;
+    document.body.removeChild(headerElt);
+  };
+
+  function onWebSocketClose() {
+    displayError("WebSocket connection closed");
+  }
+
+  function onWebSocketError() {
+    displayError("WebSocket connection error");
+  }
+
+  function onWebSocketMessage(event: MessageEvent) {
+    if (event == null || event.data == null) {
+      displayError("No message received from WebSocket");
+    }
+    if (typeof event.data !== "string") {
+      displayError("Invalid message format received");
+      return;
+    }
+    const hasSelectedLog =
+      inspectorState.getCurrentState(STATE_PROPS.SELECTED_LOG_INDEX) !==
+      undefined;
+
+    if (event.data === "ping") {
+      currentSocket.send("pong");
+      return;
+    }
+    if (event.data[0] === "{") {
+      try {
+        // TODO better type all this mess.
+        /* eslint-disable @typescript-eslint/no-unsafe-assignment */
+        /* eslint-disable @typescript-eslint/no-unsafe-member-access */
+        /* eslint-disable @typescript-eslint/restrict-template-expressions */
+        const signal = JSON.parse(event.data);
+        if (signal.type === "Init") {
+          const initTimestamp = signal.value?.timestamp;
+          if (typeof initTimestamp === "number") {
+            const initLog = `${initTimestamp.toFixed(2)} [Init] Local-Date:${
+              signal.value.dateMs
+            }`;
+            let updates = [initLog];
+            if (signal.value?.history?.length > 0) {
+              updates = updates.concat(signal.value.history as string[]);
+            }
+            inspectorState.updateState(
+              STATE_PROPS.LOGS_HISTORY,
+              UPDATE_TYPE.PUSH,
+              updates
+            );
+            if (!hasSelectedLog) {
+              updateStatesFromLogGroup(inspectorState, updates);
+            }
+            inspectorState.commitUpdates();
+          }
+        } else if (signal.type === "eval-result") {
+          const { value } = signal;
+          if (typeof value.id === "string") {
+            const emphasizedId = emphasizeForConsole(value.id as string);
+            console.log(
+              `---> Result of instruction ${emphasizedId}: ${value.data}`
+            );
+          }
+        } else if (signal.type === "eval-error") {
+          const { value } = signal;
+          if (typeof value.id === "string") {
+            let errorString =
+              typeof value.error?.name === "string"
+                ? value.error.name
+                : "Unknown Error";
+            if (typeof value.error.message === "string") {
+              errorString += ": " + (value.error.message as string);
+            }
+            const emphasizedId = emphasizeForConsole(value.id as string);
+            console.log(
+              `---> Failure of instruction ${emphasizedId}: ${errorString}`
+            );
+          }
+        }
+        /* eslint-enable @typescript-eslint/restrict-template-expressions */
+        /* eslint-enable @typescript-eslint/no-unsafe-assignment */
+        /* eslint-enable @typescript-eslint/no-unsafe-member-access */
+      } catch (err) {
+        console.error("Could not parse signalling message", err);
+        displayError("Invalid signaling message format received");
         return;
       }
-      if (event.data[0] === "{") {
-        try {
-          // TODO better type all this mess.
-          /* eslint-disable @typescript-eslint/no-unsafe-assignment */
-          /* eslint-disable @typescript-eslint/no-unsafe-member-access */
-          /* eslint-disable @typescript-eslint/restrict-template-expressions */
-          const signal = JSON.parse(event.data);
-          if (signal.type === "Init") {
-            const initTimestamp = signal.value?.timestamp;
-            if (typeof initTimestamp === "number") {
-              const initLog = `${initTimestamp.toFixed(2)} [Init] Local-Date:${
-                signal.value.dateMs
-              }`;
-              let updates = [initLog];
-              if (signal.value?.history?.length > 0) {
-                updates = updates.concat(signal.value.history as string[]);
-              }
-              inspectorState.updateState(
-                STATE_PROPS.LOGS_HISTORY,
-                UPDATE_TYPE.PUSH,
-                updates
-              );
-              if (!hasSelectedLog) {
-                updateStatesFromLogGroup(inspectorState, updates);
-              }
-              inspectorState.commitUpdates();
-            }
-          } else if (signal.type === "eval-result") {
-            const { value } = signal;
-            if (typeof value.id === "string") {
-              const emphasizedId = emphasizeForConsole(value.id as string);
-              console.log(
-                `---> Result of instruction ${emphasizedId}: ${value.data}`
-              );
-            }
-          } else if (signal.type === "eval-error") {
-            const { value } = signal;
-            if (typeof value.id === "string") {
-              let errorString =
-                typeof value.error?.name === "string"
-                  ? value.error.name
-                  : "Unknown Error";
-              if (typeof value.error.message === "string") {
-                errorString += ": " + (value.error.message as string);
-              }
-              const emphasizedId = emphasizeForConsole(value.id as string);
-              console.log(
-                `---> Failure of instruction ${emphasizedId}: ${errorString}`
-              );
-            }
-          }
-          /* eslint-enable @typescript-eslint/restrict-template-expressions */
-          /* eslint-enable @typescript-eslint/no-unsafe-assignment */
-          /* eslint-enable @typescript-eslint/no-unsafe-member-access */
-        } catch (err) {
-          console.error("Could not parse signalling message", err);
-          displayError("Invalid signaling message format received");
-          return;
-        }
-      } else {
-        const newLog = event.data;
-        inspectorState.updateState(STATE_PROPS.LOGS_HISTORY, UPDATE_TYPE.PUSH, [
-          newLog,
-        ]);
-        if (!hasSelectedLog) {
-          updateStateFromLog(inspectorState, event.data);
-        }
-        inspectorState.commitUpdates();
+    } else {
+      const newLog = event.data;
+      inspectorState.updateState(STATE_PROPS.LOGS_HISTORY, UPDATE_TYPE.PUSH, [
+        newLog,
+      ]);
+      if (!hasSelectedLog) {
+        updateStateFromLog(inspectorState, event.data);
       }
-    });
+      inspectorState.commitUpdates();
+    }
   }
 
   function sendInstruction(instruction: string) {

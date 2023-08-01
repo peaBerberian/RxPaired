@@ -7,8 +7,9 @@ import { reGeneratePageUrl } from "../utils";
 
 /**
  * Generate the HTML page asking for the password.
+ * @returns {Function} - Perform clean-up if the page is exited.
  */
-export default function generatePasswordPage(): void {
+export default function generatePasswordPage(): () => void {
   const pageTitle = createElement("h1", {
     textContent: "RxPaired-inspector",
     style: { fontFamily: "monospace" },
@@ -31,6 +32,9 @@ export default function generatePasswordPage(): void {
     ], { className: "page-input-block" }),
   ]);
   document.body.appendChild(pageBody);
+  return () => {
+    document.body.removeChild(pageBody);
+  };
 }
 
 /**

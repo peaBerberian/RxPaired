@@ -106,16 +106,18 @@ export default function generateTokenPage(password: string | null): () => void {
     onActiveTokenListUpdate(data.tokenList, activeTokensListElt, password);
 
     if (!hasAddedNoTokenTutorial) {
-      document.body.appendChild(createNoTokenTutorialElement(password));
+      pageBody.appendChild(createNoTokenTutorialElement(password));
       hasAddedNoTokenTutorial = true;
     }
   };
-  socket.onclose = function () {
+  socket.onclose = function onWebSocketClose() {
     activeTokensListElt.innerHTML = "Error: WebSocket connection closed";
   };
 
   return () => {
+    socket.onclose = null;
     socket.close();
+    document.body.removeChild(pageBody);
   };
 }
 

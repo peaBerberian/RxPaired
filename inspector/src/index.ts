@@ -6,9 +6,8 @@ import generatePostAnalysisPage from "./pages/post-analysis";
 import generateTokenPage from "./pages/token";
 import { displayError, isTokenValid, parseUrl } from "./utils";
 
-window.addEventListener("hashchange", () => {
-  window.location.reload();
-});
+let currentPageCleanUp: (() => void) | undefined | void;
+window.addEventListener("hashchange", onUrlChange);
 
 const configState = new ObservableState<ConfigState>();
 configState.subscribe(STATE_PROPS.CSS_MODE, () => {
@@ -20,23 +19,35 @@ configState.subscribe(STATE_PROPS.CSS_MODE, () => {
 });
 
 initializeGlobalConfig();
+onUrlChange();
 
-const urlInfo = parseUrl();
+function onUrlChange() {
+  if (currentPageCleanUp !== undefined) {
+    currentPageCleanUp();
+    currentPageCleanUp = undefined;
+  }
 
-if (urlInfo.isPostDebugger) {
-  generatePostAnalysisPage(configState);
-} else if (urlInfo.password === undefined) {
-  generatePasswordPage();
-} else if (urlInfo.tokenId === undefined) {
-  generateTokenPage(urlInfo.password);
-} else {
-  if (!isTokenValid(urlInfo.tokenId)) {
-    const error = new Error(
-      "Error: A token must only contain alphanumeric characters"
-    );
-    displayError(error);
+  const urlInfo = parseUrl();
+
+  if (urlInfo.isPostDebugger) {
+    currentPageCleanUp = generatePostAnalysisPage(configState);
+  } else if (urlInfo.password === undefined) {
+    currentPageCleanUp = generatePasswordPage();
+  } else if (urlInfo.tokenId === undefined) {
+    currentPageCleanUp = generateTokenPage(urlInfo.password);
   } else {
-    generateLiveDebuggingPage(urlInfo.password, urlInfo.tokenId, configState);
+    if (!isTokenValid(urlInfo.tokenId)) {
+      const error = new Error(
+        "Error: A token must only contain alphanumeric characters"
+      );
+      displayError(error);
+    } else {
+      currentPageCleanUp = generateLiveDebuggingPage(
+        urlInfo.password,
+        urlInfo.tokenId,
+        configState
+      );
+    }
   }
 }
 

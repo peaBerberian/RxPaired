@@ -1,6 +1,3 @@
-// TODO a lot of type shortcuts are taken here.
-// It could probably be better written
-
 /**
  * Different types of updates that can be performed on a single state property.
  * It is advised to always communicate the more restrictive compatible type  for
@@ -17,38 +14,55 @@ export enum UPDATE_TYPE {
    */
   PUSH = "push",
   /**
-   * The update completely replaced
-   * elements at the end of this array.
-   * The value generally accompanying this updateType should be an array
-   * containing just the new elements pushed at the end.
+   * The update completely replaced the previous state property's value if one
+   * (or set it if this is a new property).
+   * The value generally accompanying this updateType should be the new state
+   * property's value.
    */
   REPLACE = "replace",
 }
 
 /* eslint-disable @typescript-eslint/no-empty-interface */
-interface Empty {
-}
+interface Empty {}
 /* eslint-enable @typescript-eslint/no-empty-interface */
 
+/**
+ * Type for state listeners, which listen to any of the `ObservableState`'s
+ * properties.
+ * @param {string} updateType - The type of update that was just performed.
+ * @param {*} value - The value which which the state was updated.
+ * Note: for `UPDATE_TYPE.PUSH`, those are only the newly pushed elements.
+ */
+export type StateListenerFunction<
+  TStateObject extends Empty,
+  K extends keyof TStateObject
+> = (updateType: UPDATE_TYPE, value: TStateObject[K]) => void;
+
+/**
+ * Class allowing to update a global state and to register callbacks to when
+ * one of its property changes.
+ *
+ * @class ObservableState
+ */
 export default class ObservableState<TStateObject extends Empty> {
-  private _currentState : {
-    [P in keyof TStateObject]? : TStateObject[P] | undefined
+  /** Value for the current state object. */
+  private _currentState: {
+    [K in keyof TStateObject]?: TStateObject[K] | undefined;
   };
 
-  private _callbacks : {
-    [P in keyof TStateObject]? : Array<
-      (
-        updateType : UPDATE_TYPE,
-        value : TStateObject[P]
-      ) => void
-    >;
+  /** All registered listeners for each of the state's property. */
+  private _callbacks: {
+    [K in keyof TStateObject]?: Array<StateListenerFunction<TStateObject, K>>;
   };
 
-  private _pendingUpdates : {
-    [P in keyof TStateObject]? : {
-      updateType : UPDATE_TYPE;
-      value : TStateObject[P];
-    }
+  /**
+   * Updates that not have been "commited" yet (see `commitUpdates`).
+   */
+  private _pendingUpdates: {
+    [K in keyof TStateObject]?: {
+      updateType: UPDATE_TYPE;
+      value: TStateObject[K];
+    };
   };
 
   /**
@@ -65,25 +79,27 @@ export default class ObservableState<TStateObject extends Empty> {
    * Returns `undefined` if the state property does not exist.
    * @param {string|undefined} [stateName] - The name of the wanted state
    * property.
+   * If not set or set to `undefined`, this method will return all properties
+   * as an object (whose keys are the property names and values their values).
    * @returns {*} - Current value of the state property or `undefined` if it
    * does not exist.
    */
   /* eslint-disable @typescript-eslint/no-unused-vars */
   /* eslint-disable @typescript-eslint/no-shadow */
-  public getCurrentState<P extends keyof TStateObject>(
-  ) : {
-    [P in keyof TStateObject]? : TStateObject[P] | undefined
+  public getCurrentState<K extends keyof TStateObject>(): {
+    [K in keyof TStateObject]?: TStateObject[K] | undefined;
   };
-  public getCurrentState<P extends keyof TStateObject>(
-    stateName : P
-  ) : TStateObject[P];
-  public getCurrentState<P extends keyof TStateObject>(
-    stateName? : P
-  ) : TStateObject[P] | {
-    [P in keyof TStateObject]? : TStateObject[P] | undefined
-  } | undefined {
-  /* eslint-enable @typescript-eslint/no-shadow */
-  /* eslint-enable @typescript-eslint/no-unused-vars */
+  public getCurrentState<K extends keyof TStateObject>(
+    stateName: K
+  ): TStateObject[K];
+  public getCurrentState<K extends keyof TStateObject>(
+    stateName?: K
+  ): TStateObject[K] |
+     { [K in keyof TStateObject]?: TStateObject[K] | undefined; } |
+     undefined
+  {
+    /* eslint-enable @typescript-eslint/no-shadow */
+    /* eslint-enable @typescript-eslint/no-unused-vars */
     if (stateName === undefined) {
       return { ...this._currentState };
     } else {
@@ -111,21 +127,21 @@ export default class ObservableState<TStateObject extends Empty> {
    * @param {*} value - The value of the update performed, according to the
    * `updateType` argument.
    */
-  public updateState<P extends keyof TStateObject>(
-    stateName : P,
-    updateType : UPDATE_TYPE,
-    value : TStateObject[P]
-  ) : void {
+  public updateState<K extends keyof TStateObject>(
+    stateName: K,
+    updateType: UPDATE_TYPE,
+    value: TStateObject[K]
+  ): void {
     const prevUpdate = this._pendingUpdates[stateName];
     if (prevUpdate === undefined) {
       (this._pendingUpdates[stateName] as {
-        updateType : UPDATE_TYPE;
-        value : TStateObject[P];
+        updateType: UPDATE_TYPE;
+        value: TStateObject[K];
       }) = { updateType, value };
     } else if (updateType !== UPDATE_TYPE.PUSH) {
       (this._pendingUpdates[stateName] as {
-        updateType : UPDATE_TYPE;
-        value : TStateObject[P];
+        updateType: UPDATE_TYPE;
+        value: TStateObject[K];
       }) = { updateType, value };
     } else {
       let allValues;
@@ -163,7 +179,7 @@ export default class ObservableState<TStateObject extends Empty> {
         } else {
           /* eslint-disable @typescript-eslint/no-unsafe-argument */
           /* eslint-disable @typescript-eslint/no-explicit-any */
-          (prevValue as any[]).push(...value as any);
+          (prevValue as any[]).push(...(value as any));
           /* eslint-enable @typescript-eslint/no-explicit-any */
           /* eslint-enable @typescript-eslint/no-unsafe-argument */
         }
@@ -177,11 +193,11 @@ export default class ObservableState<TStateObject extends Empty> {
    * Call callbacks registered for all state property updated (though the
    * `updateState` method) since the last `commitUpdates` call.
    */
-  public commitUpdates() : void {
+  public commitUpdates(): void {
     const currUpdates = this._pendingUpdates;
     this._pendingUpdates = {};
     const allkeys = Object.keys(currUpdates) as Array<keyof TStateObject>;
-    allkeys.forEach((stateName : keyof TStateObject) => {
+    allkeys.forEach((stateName: keyof TStateObject) => {
       if (this._callbacks[stateName] === undefined) {
         return;
       }
@@ -189,7 +205,7 @@ export default class ObservableState<TStateObject extends Empty> {
       /* eslint-disable @typescript-eslint/no-unsafe-assignment */
       const { updateType, value } = currUpdates[stateName] as any;
       /* eslint-enable @typescript-eslint/no-unsafe-assignment */
-      (this._callbacks[stateName] as any[]).slice().forEach(cb => {
+      (this._callbacks[stateName] as any[]).slice().forEach((cb) => {
         if (!(this._callbacks[stateName] as any[]).includes(cb)) {
           /* eslint-enable @typescript-eslint/no-explicit-any */
           return;
@@ -207,14 +223,14 @@ export default class ObservableState<TStateObject extends Empty> {
 
   /**
    * Subscribe a new callback for when the state property described by
-   * `stateName` has been updated and `commitUpdates` has been called.
+   * `stateName` has been updated _AND_ `commitUpdates` has been called.
    *
    * You can unsubscribe this callback at any time, either by:
    *   - Calling the function returned here
    *   - Calling `unsubscribe` with the same `stateName` and `cb` arguments.
    *
    * @param {string} stateName - The state property you wish to listen to
-   * updates to
+   * updates to.
    * @param {Function} cb - Callback that will be called once the state property
    * has been updated and `commitUpdates` has been called.
    * This callback takes the following arguments:
@@ -235,30 +251,24 @@ export default class ObservableState<TStateObject extends Empty> {
    * depending on what's more convenient for you.
    */
   public subscribe<P extends keyof TStateObject>(
-    stateName : P,
-    cb : (
-      updateType : (UPDATE_TYPE | "initial"),
-      value : TStateObject[P]
-    ) => void,
-    includeCurrent : true
-  ) : () => void;
+    stateName: P,
+    cb: (updateType: UPDATE_TYPE | "initial", value: TStateObject[P]) => void,
+    includeCurrent: true
+  ): () => void;
   public subscribe<P extends keyof TStateObject>(
-    stateName : P,
-    cb : (
-      updateType : UPDATE_TYPE,
-      value : TStateObject[P]
-    ) => void
-  ) : () => void;
+    stateName: P,
+    cb: StateListenerFunction<TStateObject, P>,
+  ): () => void;
   public subscribe<P extends keyof TStateObject>(
-    stateName : P,
-    cb : (
+    stateName: P,
+    cb: (
       /* eslint-disable @typescript-eslint/no-explicit-any */
-      updateType : any,
+      updateType: any,
       /* eslint-enable @typescript-eslint/no-explicit-any */
-      value : TStateObject[P]
+      value: TStateObject[P]
     ) => void,
-    includeCurrent? : true
-  ) : () => void {
+    includeCurrent?: true
+  ): () => void {
     let currentCbs = this._callbacks[stateName];
     if (currentCbs === undefined) {
       currentCbs = [];
@@ -284,10 +294,13 @@ export default class ObservableState<TStateObject extends Empty> {
    * call.
    */
   public unsubscribe<P extends keyof TStateObject>(
-    stateName : P,
-    cb : ((updateType : UPDATE_TYPE | "initial", value : TStateObject[P]) => void) |
-    ((updateType : UPDATE_TYPE, value : TStateObject[P]) => void)
-  ) : void {
+    stateName: P,
+    cb: (
+      (updateType: UPDATE_TYPE | "initial", value: TStateObject[P]) => void
+    ) | (
+      (updateType: UPDATE_TYPE, value: TStateObject[P]) => void
+    )
+  ): void {
     const cbs = this._callbacks[stateName];
     if (cbs === undefined) {
       console.error("Unsubscribing inexistant subscription.");
@@ -314,7 +327,7 @@ export default class ObservableState<TStateObject extends Empty> {
   /**
    * Free all resources used by this `ObservableState` instance.
    */
-  public dispose() : void {
+  public dispose(): void {
     this._currentState = {};
     this._pendingUpdates = {};
     this._callbacks = {};
