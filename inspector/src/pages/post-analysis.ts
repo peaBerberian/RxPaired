@@ -1,8 +1,9 @@
 import { ConfigState, InspectorState, STATE_PROPS } from "../constants";
 import createModules from "../create_modules";
-import { createCompositeElement, createElement } from "../dom-utils";
+import { createCompositeElement, createElement, createLinkElement } from "../dom-utils";
 import ObservableState, { UPDATE_TYPE } from "../observable_state";
 import { updateStatesFromLogGroup } from "../update_state_from_log";
+import { reGeneratePageUrl } from "../utils";
 import { createClearStoredConfigButton, createDarkLightModeButton } from "./utils";
 
 const START_LOG_LINE_REGEXP = /^[0-9]+\.[0-9]{2} \[/;
@@ -13,13 +14,23 @@ const START_LOG_LINE_REGEXP = /^[0-9]+\.[0-9]{2} \[/;
  * by this page. Should be called when the page is disposed.
  */
 export default function generatePostAnalysisPage(
+  password: string | null,
   configState : ObservableState<ConfigState>
 ): () => void {
   const inspectorState = new ObservableState<InspectorState>();
-  const headerElt = createPostDebuggerHeaderElement(configState, inspectorState);
-  document.body.appendChild(headerElt);
+  const headerElt = createPostDebuggerHeaderElement(password, configState);
   const modulesContainerElt = createElement("div");
-  document.body.appendChild(modulesContainerElt);
+  const bodyElement = createCompositeElement("div", [
+    headerElt,
+    createCompositeElement("div", [
+      createElement("span", {
+        textContent: "Log file to import: ",
+      }),
+      createImportFileButton(inspectorState),
+    ], { className: "page-input-block" }),
+    modulesContainerElt,
+  ]);
+  document.body.appendChild(bodyElement);
 
   inspectorState.subscribe(STATE_PROPS.SELECTED_LOG_INDEX, () => {
     const allState = inspectorState.getCurrentState();
@@ -56,35 +67,8 @@ export default function generatePostAnalysisPage(
   return () => {
     disposeModules();
     inspectorState.dispose();
-    document.body.removeChild(headerElt);
+    document.body.removeChild(bodyElement);
   };
-}
-
-/**
- * Returns an HTML element corresponding to the Post-Debugger's header.
- * @param {Object} configState
- * @returns {HTMLElement}
- */
-function createPostDebuggerHeaderElement(
-  configState : ObservableState<ConfigState>,
-  inspectorState : ObservableState<InspectorState>
-) : HTMLElement {
-  return createCompositeElement("div", [
-
-    createCompositeElement("div", [
-      createElement("span", {
-        className: "header-item page-title",
-        textContent: "RxPaired Post-Debugger",
-      }),
-    ], { className: "token-title" }),
-
-    createCompositeElement("div", [
-      createImportFileButton(inspectorState),
-      createClearStoredConfigButton(configState),
-      createDarkLightModeButton(configState),
-    ], { className: "header-item" }),
-
-  ], { className: "header" });
 }
 
 function createImportFileButton(
@@ -155,4 +139,55 @@ function createImportFileButton(
     reader.readAsText(file);
     return;
   }
+}
+
+/**
+ * Returns an HTML element corresponding to the Live Debugger's header.
+ * @param {string|null} password
+ * @param {Object} configState
+ * @returns {HTMLElement}
+ */
+function createPostDebuggerHeaderElement(
+  password: string | null,
+  configState: ObservableState<ConfigState>
+): HTMLElement {
+  return createCompositeElement(
+    "div",
+    [
+      createCompositeElement(
+        "div",
+        [
+          createCompositeElement(
+            "span",
+            [
+              createLinkElement({
+                textContent: "Home",
+                href: reGeneratePageUrl(undefined, undefined),
+              }),
+              " > ",
+              createLinkElement({
+                textContent: "Token",
+                href: reGeneratePageUrl(password, undefined),
+              }),
+              " > Post-Debugger",
+            ],
+            {
+              className: "header-item page-title",
+            }
+          ),
+        ],
+        { className: "token-title" }
+      ),
+
+      createCompositeElement(
+        "div",
+        [
+          createClearStoredConfigButton(configState),
+          createDarkLightModeButton(configState),
+        ],
+        { className: "header-item" }
+      ),
+    ],
+    { className: "header" }
+  );
 }

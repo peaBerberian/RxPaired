@@ -29,10 +29,10 @@ function onUrlChange() {
 
   const urlInfo = parseUrl();
 
-  if (urlInfo.isPostDebugger) {
-    currentPageCleanUp = generatePostAnalysisPage(configState);
-  } else if (urlInfo.password === undefined) {
+  if (urlInfo.password === undefined) {
     currentPageCleanUp = generatePasswordPage();
+  } else if (urlInfo.isPostDebugger) {
+    currentPageCleanUp = generatePostAnalysisPage(urlInfo.password, configState);
   } else if (urlInfo.tokenId === undefined) {
     currentPageCleanUp = generateTokenPage(urlInfo.password);
   } else {

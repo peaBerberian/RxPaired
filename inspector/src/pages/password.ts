@@ -12,7 +12,7 @@ import { reGeneratePageUrl } from "../utils";
 export default function generatePasswordPage(): () => void {
   const pageTitle = createElement("h1", {
     textContent: "RxPaired-inspector",
-    style: { fontFamily: "monospace" },
+    className: "header-item page-title",
   });
   const pageInstr = createCompositeElement(
     "div",
@@ -51,7 +51,7 @@ function createPasswordInputElement(): HTMLElement {
   const passwordSendElt = createButton({
     textContent: "Validate password",
     onClick: sendPassword,
-    style: { marginLeft: "5px" },
+    className: "button-input-right",
   });
   return createCompositeElement("div", [passwordInputElt, passwordSendElt]);
 

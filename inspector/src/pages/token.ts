@@ -23,10 +23,7 @@ export default function generateTokenPage(password: string | null): () => void {
       }),
       " > Token",
     ],
-    {
-      className: "header-item page-title",
-      style: { fontFamily: "monospace" },
-    }
+    { className: "header-item page-title" }
   );
 
   const generateInstrElt = createElement("div", {
@@ -47,9 +44,22 @@ export default function generateTokenPage(password: string | null): () => void {
     }
   );
 
+  const postDebuggingElt = createCompositeElement(
+    "div",
+    [
+      createElement("span", { className: "emphasized", textContent: "OR" }),
+      createElement("span", {
+        textContent: " import an already-generated log file (Post-Debugger page):",
+      }),
+    ],
+    {
+      className: "input-title",
+    }
+  );
+
   const currentListTitleElt = createElement("div", {
     textContent: "List of currently active tokens:",
-    style: { fontSize: "1.1em" },
+    className: "active-tokens-title",
   });
   const activeTokensListElt = createElement("pre", {
     className: "active-tokens-list",
@@ -75,6 +85,16 @@ export default function generateTokenPage(password: string | null): () => void {
         createCompositeElement("div", [
           inputInstrElt,
           createTokenInputElement(password),
+        ]),
+        createElement("br"),
+        createCompositeElement("div", [
+          postDebuggingElt,
+          createButton({
+            textContent: "Go to Post-Debugger page",
+            onClick() {
+              window.location.href = reGeneratePageUrl(password, undefined, true);
+            },
+          }),
         ]),
         createElement("br"),
         currentListElt,
@@ -322,7 +342,7 @@ function onActiveTokenListUpdate(
           })
         );
         const listElt = createCompositeElement("li", [link], {
-          style: { marginBottom: "5px" },
+          className: "button-input-right",
         });
         acc.appendChild(listElt);
         return acc;

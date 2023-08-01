@@ -13,18 +13,23 @@ import modules from "./modules/index";
  * `undefined` if no password has been inputed for now.
  * @param {string|undefined} withToken - Current token inputed.
  * `undefined` if no token has been inputed for now.
+ * @param {boolean} [isPostDebugger] - If the wanted page is the Post-Debugger
+ * page. `false` by default.
  * @returns {string}
  */
 export function reGeneratePageUrl(
   withPassword: string | null | undefined,
-  withToken: string | undefined
+  withToken: string | undefined,
+  isPostDebugger : boolean = false
 ): string {
   const originalUrl = new URL(document.location.href);
   originalUrl.hash = "";
   let url = originalUrl.toString() + "#";
   if (withPassword !== undefined) {
     url += "!pass=" + (withPassword ?? "");
-    if (withToken !== undefined) {
+    if (isPostDebugger) {
+      url += "!post";
+    } else if (withToken !== undefined) {
       url += "!token=" + withToken;
     }
   }
@@ -35,7 +40,7 @@ export function reGeneratePageUrl(
  * Parse information that can be gathered from the current URL
  * @returns {Object} urlInfo
  * @returns {boolean} urlInfo.isPostDebugger - If `true` we should be running
- * the "post-debugging" page.
+ * the "Post-Debugger" page.
  * @returns {string|null|undefined} urlInfo.password - Current password inputed.
  * `null` for no password.
  * `undefined` if no password has been inputed for now.

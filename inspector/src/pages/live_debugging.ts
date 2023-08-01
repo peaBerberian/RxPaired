@@ -233,6 +233,7 @@ export default function generateLiveDebuggingPage(
  * @param {string} tokenId
  * @param {string|null} password
  * @param {WebSocket.WebSocket} currentSocket
+ * @param {Object} configState
  * @param {Object} inspectorState
  * @returns {HTMLElement}
  */
