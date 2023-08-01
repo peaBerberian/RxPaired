@@ -16,8 +16,7 @@ export default function HowToUseModule(
       "refuse the device's connection.",
   ];
   const noteSendInstruction = [
-    createElement("span", { className: "emphasized", textContent: "NOTE" }),
-    ": You can also send JavaScript commands which will be run on the device by " +
+    "You can also send JavaScript commands which will be run on the device by " +
     "providing the corresponding code as a string argument to the ",
     createElement("span", { className: "emphasized", textContent: "sendInstruction" }),
     " function defined globally on this page (open the inspector's JavaScript console " +
@@ -40,6 +39,15 @@ sendInstruction(\`console.warn("USER-AGENT:", navigator.userAgent)\`)
       }),
     ], { className: "code-details" }),
   ];
+
+  const moduleLayoutTutorialElt = createElement("div", {
+    textContent: "You can move the \"modules\" around through the buttons " +
+      "located on their top right (hover it for a description). " +
+      "When taking \"half-width\", they are put in " +
+      "from left to right first, then from top to bottom. " +
+      "To reset the layout, click on the \"clear page config\" button on the top " +
+      "right of this page.",
+  });
   if (CLIENT_SCRIPT_URL === "") {
     const howToBodyElt = createCompositeElement("div", [
       "To start debugging, you have to add manually the content of the RxPaired's" +
@@ -55,6 +63,8 @@ sendInstruction(\`console.warn("USER-AGENT:", navigator.userAgent)\`)
       createElement("br"),
       createElement("br"),
       ...noteSendInstruction,
+      createElement("br"),
+      moduleLayoutTutorialElt,
     ]);
     return { body: howToBodyElt };
   }
@@ -130,6 +140,8 @@ sendInstruction(\`console.warn("USER-AGENT:", navigator.userAgent)\`)
     createElement("br"),
     createElement("br"),
     ...noteSendInstruction,
+    createElement("br"),
+    moduleLayoutTutorialElt,
   ]);
 
   return { body: howToBodyElt };
