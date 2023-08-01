@@ -4,7 +4,7 @@ import generateLiveDebuggingPage from "./pages/live_debugging";
 import generatePasswordPage from "./pages/password";
 import generatePostAnalysisPage from "./pages/post-analysis";
 import generateTokenPage from "./pages/token";
-import { checkTokenValidity, parseUrl } from "./utils";
+import { displayError, isTokenValid, parseUrl } from "./utils";
 
 window.addEventListener("hashchange", () => {
   window.location.reload();
@@ -30,8 +30,14 @@ if (urlInfo.isPostDebugger) {
 } else if (urlInfo.tokenId === undefined) {
   generateTokenPage(urlInfo.password);
 } else {
-  checkTokenValidity(urlInfo.tokenId);
-  generateLiveDebuggingPage(urlInfo.password, urlInfo.tokenId, configState);
+  if (!isTokenValid(urlInfo.tokenId)) {
+    const error = new Error(
+      "Error: A token must only contain alphanumeric characters"
+    );
+    displayError(error);
+  } else {
+    generateLiveDebuggingPage(urlInfo.password, urlInfo.tokenId, configState);
+  }
 }
 
 function initializeGlobalConfig() {

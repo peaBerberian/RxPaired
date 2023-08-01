@@ -29,6 +29,14 @@ canvas {
   max-width: 100%;
 }
 
+.light a {
+  color: #000;
+}
+
+.dark a {
+  color: #fff;
+}
+
 .code-details {
   padding: 2px 0px 0px 5px;
 }
@@ -37,6 +45,12 @@ canvas {
   background-color: #f5f5f5;
   padding: 4px;
   border: 1px dotted black;
+}
+
+.dark button {
+  background-color: #000;
+  border: 1px solid #444;
+  padding: 3px 8px;
 }
 
 .dark .code-details > pre {
@@ -106,11 +120,41 @@ summary {
   border: 1px dotted #868686;
 }
 
+.page-input-block {
+  margin: 10px;
+  padding: 10px;
+  width: auto;
+}
+
+.input-title {
+  font-weight: bold;
+  margin-bottom: 8px;
+}
+
+.light .page-input-block {
+  border: 1px solid #ececec;
+  box-shadow: rgba(100, 101, 111, 0.2) 0px 7px 29px 0px;
+  background-color: #f0f0f0;
+}
+
+.dark .page-input-block { border: rgb(229 255 222);
+  box-shadow: rgb(158 178 153 / 20%) 0px 7px 29px 8px;
+  background-color: rgb(12 14 11);
+}
+
 .token-header-value {
   border-radius: 5px;
   padding: 6px 13px;
   white-space: nowrap;
 }
+
+.no-token-tutorial {
+  font-size: 0.97em;
+  max-width: 800px;
+  margin: 10px;
+  padding: 10px;
+}
+
 .light .token-header-value {
   background-color: #cbcbcb;
 }

@@ -5,7 +5,7 @@ import {
   createElement,
   createLinkElement,
 } from "../dom-utils";
-import { checkTokenValidity, reGeneratePageUrl } from "../utils";
+import { displayError, isTokenValid, reGeneratePageUrl } from "../utils";
 
 /**
  * Generate the HTML page asking for the wanted token.
@@ -29,16 +29,13 @@ export default function generateTokenPage(password: string | null): () => void {
     }
   );
 
-  const generateInstrElt = createElement("span", {
+  const generateInstrElt = createElement("div", {
     textContent: "Generate a token:",
-    style: {
-      fontWeight: "bold",
-      marginRight: "8px",
-    },
+    className: "input-title",
   });
 
   const inputInstrElt = createCompositeElement(
-    "span",
+    "div",
     [
       createElement("span", { className: "emphasized", textContent: "OR" }),
       createElement("span", {
@@ -46,19 +43,13 @@ export default function generateTokenPage(password: string | null): () => void {
       }),
     ],
     {
-      style: {
-        fontWeight: "bold",
-        marginRight: "8px",
-      },
+      className: "input-title",
     }
   );
 
   const currentListTitleElt = createElement("div", {
-    textContent: "List of currently active tokens",
-    style: {
-      fontSize: "1.1em",
-      fontWeight: "bold",
-    },
+    textContent: "List of currently active tokens:",
+    style: { fontSize: "1.1em" },
   });
   const activeTokensListElt = createElement("pre", {
     className: "active-tokens-list",
@@ -88,14 +79,7 @@ export default function generateTokenPage(password: string | null): () => void {
         createElement("br"),
         currentListElt,
       ],
-      {
-        style: {
-          margin: "10px",
-          border: "1px dotted black",
-          padding: "10px",
-          width: "auto",
-        },
-      }
+      { className: "page-input-block" }
     ),
   ]);
 
@@ -174,7 +158,13 @@ function createTokenInputElement(password: string | null): HTMLElement {
 }
 
 function setToken(password: string | null, tokenValue: string): void {
-  checkTokenValidity(tokenValue);
+  if (!isTokenValid(tokenValue)) {
+    const error = new Error(
+      "Error: A token must only contain alphanumeric characters"
+    );
+    displayError(error);
+    return;
+  }
   window.location.href = reGeneratePageUrl(password, tokenValue);
 }
 
@@ -240,7 +230,7 @@ function createNoTokenTutorialElement(password: string | null): HTMLElement {
       url: "${CLIENT_SCRIPT_URL}#${fakeTokenStr}",
       playerClass: <RX_PLAYER_CLASS>,
     });
-    console.info("Inspector initialized with success:", inspectorUrl);
+    console.info("Inspector initialized with success!");
   })
   .catch((error) =>
     console.error("Failed to dynamically import inspector:", error)
@@ -280,17 +270,14 @@ function createNoTokenTutorialElement(password: string | null): HTMLElement {
         textContent: ".",
       }),
       createElement("br"),
+      createElement("br"),
       createElement("span", {
         textContent: "This can be done in any of the following way:",
       }),
-      createCompositeElement("ol", [liElt1, liElt2, liElt3]),
+      createCompositeElement("ul", [liElt1, liElt2, liElt3]),
     ],
     {
-      style: {
-        maxWidth: "800px",
-        margin: "10px",
-        fontSize: "0.97em",
-      },
+      className: "no-token-tutorial",
     }
   );
 }
@@ -316,31 +303,31 @@ function onActiveTokenListUpdate(
     const activeTokenDataElt: HTMLElement = activeTokensList.reduce(
       (acc, d) => {
         const date = new Date(d.date);
-        const listElt = createCompositeElement(
-          "li",
-          [
-            createElement("span", {
-              textContent:
-                date.toLocaleDateString() + " @ " + date.toLocaleTimeString(),
-            }),
-            " ",
-            createElement("span", {
-              textContent: d.tokenId,
-            }),
-          ],
-          {
-            onClick: () => setToken(password, d.tokenId),
-            style: {
-              cursor: "pointer",
-              marginBottom: "5px",
-              textDecoration: "underline",
-            },
-          }
+
+        const link = createLinkElement({
+          href: reGeneratePageUrl(password, d.tokenId),
+        });
+        link.appendChild(
+          createElement("span", {
+            textContent:
+              date.toLocaleDateString() + " @ " + date.toLocaleTimeString(),
+          })
         );
+        link.appendChild(document.createTextNode(" - "));
+        link.appendChild(
+          createElement("span", {
+            textContent: d.tokenId,
+          })
+        );
+        const listElt = createCompositeElement("li", [link], {
+          style: { marginBottom: "5px" },
+        });
         acc.appendChild(listElt);
         return acc;
       },
-      createElement("ul", {})
+      createElement("ul", {
+        className: "active-token-list",
+      })
     );
     activeTokensListElt.innerHTML = "";
     activeTokensListElt.appendChild(activeTokenDataElt);

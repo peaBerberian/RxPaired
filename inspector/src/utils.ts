@@ -69,14 +69,8 @@ export function parseUrl(): {
 /**
  * @param {string} tokenId
  */
-export function checkTokenValidity(tokenId: string): void {
-  if (!/^[A-Za-z0-9]+$/.test(tokenId)) {
-    const error = new Error(
-      "Error: Your token must only contain alphanumeric characters"
-    );
-    displayError(error);
-    throw error;
-  }
+export function isTokenValid(tokenId: string): boolean {
+  return /^[A-Za-z0-9]+$/.test(tokenId);
 }
 
 /**

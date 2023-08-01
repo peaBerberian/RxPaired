@@ -112,7 +112,7 @@ sendInstruction(\`console.warn("USER-AGENT:", navigator.userAgent)\`)
       url: "${CLIENT_SCRIPT_URL}#${tokenId}",
       playerClass: <RX_PLAYER_CLASS>,
     });
-    console.info("Inspector initialized with success:", inspectorUrl);
+    console.info("Inspector initialized with success!");
   })
   .catch((error) =>
     console.error("Failed to dynamically import inspector:", error)

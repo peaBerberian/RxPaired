@@ -325,7 +325,7 @@ export default function createModules({
           configState.commitUpdates();
         };
       } else {
-        moduleWrapperElt.style.width = "100%";
+        moduleWrapperElt.style.width = "calc(100% - 12px)";
         moduleWrapperElt.dataset.isHalfWidth = "false";
         resizeWidthButtonElt.innerHTML = halfWidthSvg;
         resizeWidthButtonElt.title = "Take half width";

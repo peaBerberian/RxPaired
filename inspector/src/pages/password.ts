@@ -20,15 +20,15 @@ export default function generatePasswordPage(): void {
         "(leave empty if it has no password):",
     ],
     {
-      style: {
-        marginBottom: "5px",
-      },
+      className: "input-title",
     }
   );
   const pageBody = createCompositeElement("div", [
     pageTitle,
-    pageInstr,
-    createPasswordInputElement(),
+    createCompositeElement("div", [
+      pageInstr,
+      createPasswordInputElement(),
+    ], { className: "page-input-block" }),
   ]);
   document.body.appendChild(pageBody);
 }
