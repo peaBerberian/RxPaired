@@ -58,6 +58,8 @@ export default function generateLiveDebuggingPage(
    * @type {WebSocket.WebSocket}
    */
   const currentSocket: WebSocket = startWebsocketConnection(password, tokenId);
+
+  const errorContainerElt = createElement("div");
   const headerElt = createLiveDebuggerHeaderElement(
     tokenId,
     password,
@@ -65,9 +67,13 @@ export default function generateLiveDebuggingPage(
     configState,
     inspectorState
   );
-  document.body.appendChild(headerElt);
   const modulesContainerElt = createElement("div");
-  document.body.appendChild(modulesContainerElt);
+  const liveDebuggingBodyElt = createCompositeElement("div", [
+    errorContainerElt,
+    headerElt,
+    modulesContainerElt,
+  ]);
+  document.body.appendChild(liveDebuggingBodyElt);
 
   inspectorState.subscribe(STATE_PROPS.SELECTED_LOG_INDEX, () => {
     const allState = inspectorState.getCurrentState();
@@ -114,23 +120,23 @@ export default function generateLiveDebuggingPage(
     disposeModules();
     inspectorState.dispose();
     delete (window as unknown as Record<string, unknown>).sendInstruction;
-    document.body.removeChild(headerElt);
+    document.body.removeChild(liveDebuggingBodyElt);
   };
 
   function onWebSocketClose() {
-    displayError("WebSocket connection closed");
+    displayError(errorContainerElt, "WebSocket connection closed");
   }
 
   function onWebSocketError() {
-    displayError("WebSocket connection error");
+    displayError(errorContainerElt, "WebSocket connection error");
   }
 
   function onWebSocketMessage(event: MessageEvent) {
     if (event == null || event.data == null) {
-      displayError("No message received from WebSocket");
+      displayError(errorContainerElt, "No message received from WebSocket");
     }
     if (typeof event.data !== "string") {
-      displayError("Invalid message format received");
+      displayError(errorContainerElt, "Invalid message format received");
       return;
     }
     const hasSelectedLog =
@@ -197,7 +203,7 @@ export default function generateLiveDebuggingPage(
         /* eslint-enable @typescript-eslint/no-unsafe-member-access */
       } catch (err) {
         console.error("Could not parse signalling message", err);
-        displayError("Invalid signaling message format received");
+        displayError(errorContainerElt, "Invalid signaling message format received");
         return;
       }
     } else {

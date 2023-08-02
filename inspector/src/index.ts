@@ -1,4 +1,5 @@
 import { ConfigState, MODULE_CONFIG_LS_ITEM, STATE_PROPS } from "./constants";
+import { createElement } from "./dom-utils";
 import ObservableState, { UPDATE_TYPE } from "./observable_state";
 import generateLiveDebuggingPage from "./pages/live_debugging";
 import generatePasswordPage from "./pages/password";
@@ -40,7 +41,14 @@ function onUrlChange() {
       const error = new Error(
         "Error: A token must only contain alphanumeric characters"
       );
-      displayError(error);
+      const errorDiv = createElement("div");
+      displayError(errorDiv, error, true);
+      document.body.appendChild(errorDiv);
+      const tokenPageCleanUp = generateTokenPage(urlInfo.password);
+      currentPageCleanUp = () => {
+        document.body.removeChild(errorDiv);
+        tokenPageCleanUp();
+      };
     } else {
       currentPageCleanUp = generateLiveDebuggingPage(
         urlInfo.password,

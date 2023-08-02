@@ -82,9 +82,16 @@ export function isTokenValid(tokenId: string): boolean {
 
 /**
  * Display error message given on the top of the page.
+ * @param {HTMLElement} errorWrapperElt - HTML
  * @param {Error|string} [err] - The Error encountered.
+ * @param {boolean|undefined} [fadeOut] - If `true`, the error fades out at 3
+ * seconds then disappears after 5 seconds.
  */
-export function displayError(err?: unknown): void {
+export function displayError(
+  errorWrapperElt: HTMLElement,
+  err?: unknown,
+  fadeOut?: boolean
+): void {
   let message;
   if (err != null) {
     if (typeof err === "string") {
@@ -101,11 +108,21 @@ export function displayError(err?: unknown): void {
     className: "error-msg",
     textContent: `${new Date().toISOString()}: Error: ${message}`,
   });
-  const bodyElements = document.body.children;
+  if (fadeOut === true) {
+    setTimeout(() => {
+      errorDiv.classList.add("fade-out");
+    }, 3000);
+    setTimeout(() => {
+      if (errorDiv.parentElement === errorWrapperElt) {
+        errorWrapperElt.removeChild(errorDiv);
+      }
+    }, 5000);
+  }
+  const bodyElements = errorWrapperElt.children;
   if (bodyElements.length > 0) {
-    document.body.insertBefore(errorDiv, bodyElements[0]);
+    errorWrapperElt.insertBefore(errorDiv, bodyElements[0]);
   } else {
-    document.body.appendChild(errorDiv);
+    errorWrapperElt.appendChild(errorDiv);
   }
 }
 

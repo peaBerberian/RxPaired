@@ -70,7 +70,9 @@ export default function generateTokenPage(password: string | null): () => void {
     activeTokensListElt,
   ]);
 
+  const errorContainerElt = createElement("div");
   const pageBody = createCompositeElement("div", [
+    errorContainerElt,
     createCompositeElement("div", [pageTitle], {
       className: "header",
     }),
@@ -79,12 +81,12 @@ export default function generateTokenPage(password: string | null): () => void {
       [
         createCompositeElement("div", [
           generateInstrElt,
-          createGenerateTokenButton(password),
+          createGenerateTokenButton(password, errorContainerElt),
         ]),
         createElement("br"),
         createCompositeElement("div", [
           inputInstrElt,
-          createTokenInputElement(password),
+          createTokenInputElement(password, errorContainerElt),
         ]),
         createElement("br"),
         createCompositeElement("div", [
@@ -145,15 +147,20 @@ export default function generateTokenPage(password: string | null): () => void {
  * Returns an HTML element corresponding to token generation.
  * @param {string|null} password - The password currently used for server
  * interaction. `null` for no password.
+ * @param {HTMLElement} errorContainerElt - HTMLElement on which might be
+ * displayed errors if the token is invalid.
  * @returns {HTMLElement}
  */
-function createGenerateTokenButton(password: string | null): HTMLButtonElement {
+function createGenerateTokenButton(
+  password: string | null,
+  errorContainerElt: HTMLElement
+): HTMLButtonElement {
   return createButton({
     className: "btn-generate-token",
     textContent: "Generate Token",
     onClick() {
       const tokenId = generateToken();
-      setToken(password, tokenId);
+      setToken(tokenId, password, errorContainerElt);
     },
   });
 }
@@ -161,30 +168,46 @@ function createGenerateTokenButton(password: string | null): HTMLButtonElement {
 /**
  * @param {string|null} password - The password currently used for server
  * interaction. `null` for no password.
+ * @param {HTMLElement} errorContainerElt - HTMLElement on which might be
+ * displayed errors if the token is invalid.
  * @returns {HTMLElement}
  */
-function createTokenInputElement(password: string | null): HTMLElement {
+function createTokenInputElement(
+  password: string | null,
+  errorContainerElt: HTMLElement
+): HTMLElement {
   const tokenInputElt = createElement("input");
   tokenInputElt.placeholder = "Enter the wanted token";
   tokenInputElt.onkeyup = function (evt) {
     if (evt.key === "Enter" || evt.keyCode === 13) {
-      setToken(password, tokenInputElt.value);
+      setToken(tokenInputElt.value, password, errorContainerElt);
     }
   };
   const tokenSendElt = createButton({
     textContent: "Set token",
-    onClick: () => setToken(password, tokenInputElt.value),
+    onClick: () => setToken(tokenInputElt.value, password, errorContainerElt),
   });
   tokenSendElt.style.marginLeft = "5px";
   return createCompositeElement("span", [tokenInputElt, tokenSendElt]);
 }
 
-function setToken(password: string | null, tokenValue: string): void {
+/**
+ * @param {string} tokenValue - The value of the token to set.
+ * @param {string|null} password - The password currently used for server
+ * interaction. `null` for no password.
+ * @param {HTMLElement} errorContainerElt - HTMLElement on which might be
+ * displayed errors if the token is invalid.
+ */
+function setToken(
+  tokenValue: string,
+  password: string | null,
+  errorContainerElt: HTMLElement
+): void {
   if (!isTokenValid(tokenValue)) {
     const error = new Error(
       "Error: A token must only contain alphanumeric characters"
     );
-    displayError(error);
+    displayError(errorContainerElt, error, true);
     return;
   }
   window.location.href = reGeneratePageUrl(password, tokenValue);

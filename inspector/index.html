@@ -37,6 +37,16 @@ canvas {
   color: #fff;
 }
 
+.fade-out {
+  opacity: 1;
+  animation: fadeout 2s linear;
+}
+
+@keyframes fadeout {
+  100% { opacity: 0 }
+  50% { opacity: 1 }
+}
+
 .code-details {
   padding: 2px 0px 0px 5px;
 }
