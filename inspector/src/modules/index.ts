@@ -6,6 +6,7 @@ import BufferSizeModule from "./buffer_size_module";
 import HowToUseModule from "./how_to_use_module";
 import LogModule from "./log_module";
 import PlayerGeneralInfoModule from "./player_general_info_module";
+import generateRequestHistoryModule from "./request_history";
 
 /**
  * All modules that are exported, in order of display
@@ -72,6 +73,31 @@ const ALL_MODULES : ModuleInformation[] = [
     moduleFn: BufferContentModule,
     isClosable: true,
     isHalfWidthByDefault: true,
+    contexts: ["live-debugging", "post-debugger"],
+  },
+
+  {
+    moduleTitle: "Video Request Information",
+    moduleId: "video-request-information",
+    moduleFn: generateRequestHistoryModule("video"),
+    isClosable: true,
+    isHalfWidthByDefault: false,
+    contexts: ["live-debugging", "post-debugger"],
+  },
+  {
+    moduleTitle: "Audio Request Information",
+    moduleId: "audio-request-information",
+    moduleFn: generateRequestHistoryModule("audio"),
+    isClosable: true,
+    isHalfWidthByDefault: false,
+    contexts: ["live-debugging", "post-debugger"],
+  },
+  {
+    moduleTitle: "Text Request Information",
+    moduleId: "text-request-information",
+    moduleFn: generateRequestHistoryModule("text"),
+    isClosable: true,
+    isHalfWidthByDefault: false,
     contexts: ["live-debugging", "post-debugger"],
   },
 ];

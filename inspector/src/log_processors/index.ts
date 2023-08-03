@@ -2,6 +2,7 @@ import {
   InspectorState,
   InventoryTimelineRangeInfo,
   InventoryTimelineRepresentationInfo,
+  RequestInformation,
   STATE_PROPS,
 } from "../constants";
 import { UPDATE_TYPE } from "../observable_state";
@@ -80,6 +81,24 @@ const LogProcessors : Array<LogProcessor<keyof InspectorState>> = [
       STATE_PROPS.CONTENT_DURATION,
       STATE_PROPS.VIDEO_INVENTORY,
       STATE_PROPS.AUDIO_INVENTORY,
+      STATE_PROPS.AUDIO_REQUEST_HISTORY,
+      STATE_PROPS.VIDEO_REQUEST_HISTORY,
+      STATE_PROPS.TEXT_REQUEST_HISTORY,
+    ],
+  },
+
+  {
+    filter: (log: string) : boolean =>
+      log.indexOf("SF: Beginning request") > -1 ||
+      log.indexOf("SF: Segment request ended") > -1 ||
+      log.indexOf("SF: Segment request failed") > -1 ||
+      log.indexOf("SF: Segment request cancelled") > -1,
+    processor: (log: string) : Array<StateUpdate<keyof InspectorState>> =>
+      processRequestLog(log),
+    updatedProps: [
+      STATE_PROPS.AUDIO_REQUEST_HISTORY,
+      STATE_PROPS.VIDEO_REQUEST_HISTORY,
+      STATE_PROPS.TEXT_REQUEST_HISTORY,
     ],
   },
 ];
@@ -256,6 +275,9 @@ function processPlayerStateChangeLog(
                       STATE_PROPS.CONTENT_DURATION |
                       STATE_PROPS.VIDEO_INVENTORY |
                       STATE_PROPS.AUDIO_INVENTORY |
+                      STATE_PROPS.AUDIO_REQUEST_HISTORY |
+                      STATE_PROPS.VIDEO_REQUEST_HISTORY |
+                      STATE_PROPS.TEXT_REQUEST_HISTORY |
                       STATE_PROPS.PLAYER_STATE>>
 {
   const stateUpdates : Array<
@@ -265,6 +287,9 @@ function processPlayerStateChangeLog(
                 STATE_PROPS.CONTENT_DURATION |
                 STATE_PROPS.VIDEO_INVENTORY |
                 STATE_PROPS.AUDIO_INVENTORY |
+                STATE_PROPS.AUDIO_REQUEST_HISTORY |
+                STATE_PROPS.VIDEO_REQUEST_HISTORY |
+                STATE_PROPS.TEXT_REQUEST_HISTORY |
                 STATE_PROPS.PLAYER_STATE>
   > = [];
   const stateRegex = /(\w+)$/;
@@ -303,6 +328,21 @@ function processPlayerStateChangeLog(
       });
       stateUpdates.push({
         property: STATE_PROPS.VIDEO_INVENTORY,
+        updateType: UPDATE_TYPE.REPLACE,
+        updateValue: undefined,
+      });
+      stateUpdates.push({
+        property: STATE_PROPS.AUDIO_REQUEST_HISTORY,
+        updateType: UPDATE_TYPE.REPLACE,
+        updateValue: undefined,
+      });
+      stateUpdates.push({
+        property: STATE_PROPS.VIDEO_REQUEST_HISTORY,
+        updateType: UPDATE_TYPE.REPLACE,
+        updateValue: undefined,
+      });
+      stateUpdates.push({
+        property: STATE_PROPS.TEXT_REQUEST_HISTORY,
         updateType: UPDATE_TYPE.REPLACE,
         updateValue: undefined,
       });
@@ -423,6 +463,121 @@ function processInventoryTimelineLog(
     }];
   }
   return [];
+}
+
+/**
+ * @param {string} logTxt
+ * @returns {Array.<Object>}
+ */
+function processRequestLog(
+  logTxt : string
+) : Array<StateUpdate<
+  STATE_PROPS.AUDIO_REQUEST_HISTORY |
+  STATE_PROPS.VIDEO_REQUEST_HISTORY |
+  STATE_PROPS.TEXT_REQUEST_HISTORY
+>> {
+  // Welcome to RegExp hell
+  let parsed : [string, RequestInformation] | null = null;
+  if (logTxt.indexOf("SF: Beginning request") >= 0) {
+    const regexDur =
+      /* eslint-disable-next-line max-len */
+      /(\d+\.\d+) \[log\] SF: Beginning request (\w+) P: ([^ ]+) A: ([^ ]+) R: ([^ ]+) S: (?:(?:(\d+(?:.\d+)?)-(\d+(?:.\d+)?))|(?:init))/;
+    const match = logTxt.match(regexDur);
+    parsed = parseRequestInformation(match, "start");
+    if (parsed === null) {
+      console.error("Unrecognized type. Has Beginning request log format changed?");
+      return [];
+    }
+  } else if (logTxt.indexOf("SF: Segment request ended") >= 0) {
+    const regexDur =
+      /* eslint-disable-next-line max-len */
+      /(\d+\.\d+) \[log\] SF: Segment request ended with success (\w+) P: ([^ ]+) A: ([^ ]+) R: ([^ ]+) S: (?:(?:(\d+(?:.\d+)?)-(\d+(?:.\d+)?))|(?:init))/;
+    const match = logTxt.match(regexDur);
+    parsed = parseRequestInformation(match, "success");
+    if (parsed === null) {
+      console.error("Unrecognized type. Has ending request log format changed?");
+      return [];
+    }
+  } else if (logTxt.indexOf("SF: Segment request failed") >= 0) {
+    const regexDur =
+      /* eslint-disable-next-line max-len */
+      /(\d+\.\d+) \[log\] SF: Segment request failed (\w+) P: ([^ ]+) A: ([^ ]+) R: ([^ ]+) S: (?:(?:(\d+(?:.\d+)?)-(\d+(?:.\d+)?))|(?:init))/;
+    const match = logTxt.match(regexDur);
+    parsed = parseRequestInformation(match, "failed");
+    if (parsed === null) {
+      console.error("Unrecognized type. Has ending request log format changed?");
+      return [];
+    }
+  } else if (logTxt.indexOf("SF: Segment request cancelled") >= 0) {
+    const regexDur =
+      /* eslint-disable-next-line max-len */
+      /(\d+\.\d+) \[log\] SF: Segment request cancelled (\w+) P: ([^ ]+) A: ([^ ]+) R: ([^ ]+) S: (?:(?:(\d+(?:.\d+)?)-(\d+(?:.\d+)?))|(?:init))/;
+    const match = logTxt.match(regexDur);
+    parsed = parseRequestInformation(match, "aborted");
+    if (parsed === null) {
+      console.error("Unrecognized type. Has ending request log format changed?");
+      return [];
+    }
+  }
+  if (parsed === null) {
+    return [];
+  }
+  const [mediaType, requestInfo] = parsed;
+  switch (mediaType) {
+    case "audio":
+      return [{
+        property: STATE_PROPS.AUDIO_REQUEST_HISTORY,
+        updateType: UPDATE_TYPE.PUSH,
+        updateValue: [requestInfo],
+      }];
+    case "video":
+      return [{
+        property: STATE_PROPS.VIDEO_REQUEST_HISTORY,
+        updateType: UPDATE_TYPE.PUSH,
+        updateValue: [requestInfo],
+      }];
+    case "text":
+      return [{
+        property: STATE_PROPS.TEXT_REQUEST_HISTORY,
+        updateType: UPDATE_TYPE.PUSH,
+        updateValue: [requestInfo],
+      }];
+    default:
+      console.error(
+        "Unrecognized type. Has Beginning request log format changed?",
+        mediaType
+      );
+  }
+  return [];
+
+  function parseRequestInformation(
+    match: RegExpMatchArray | null,
+    eventType: RequestInformation["eventType"]
+  ): [string, RequestInformation] | null {
+    if (match === null) {
+      return null;
+    }
+    const timestamp = +match[1];
+    const parsedMediaType = match[2];
+    const periodId = match[3];
+    const adaptationId = match[4];
+    const representationId = match[5];
+    const segmentStart = +(match[6] ?? -1);
+    const segmentDuration = +(match[7] ?? -1);
+    if (isNaN(timestamp) || isNaN(segmentStart) || isNaN(segmentDuration)) {
+      return null;
+    } else {
+      return [parsedMediaType, {
+        eventType,
+        timestamp,
+        periodId,
+        adaptationId,
+        representationId,
+        segmentStart,
+        segmentDuration,
+      }];
+    }
+  }
 }
 
 // TODO:

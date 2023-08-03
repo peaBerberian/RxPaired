@@ -88,6 +88,22 @@ export enum STATE_PROPS {
    * Set to the index in the `LOGS_HISTORY` array.
    */
   SELECTED_LOG_INDEX = "selectedLogIndex",
+  /**
+   * Request that is considered current for the audio type.
+   *
+   *   - `timestamp` {number}: time value when the request began, from a time
+   *      base choosen by the device.
+   *   - `periodId` {string}: The concerned Period's `id`
+   *   - `adaptationId` {string}: The concerned Adaptation's `id`
+   *   - `representationId` {string}: The concerned Representation's `id`
+   *   - `segmentStart` {number}: The segment's start time in seconds, `-1` for
+   *     initialization segments.
+   *   - `segmentDuration` {number}: The segment's duration in seconds, `-1` for
+   *     initialization segments.
+   */
+  AUDIO_REQUEST_HISTORY = "audioRequestHistory",
+  VIDEO_REQUEST_HISTORY = "videoRequestHistory",
+  TEXT_REQUEST_HISTORY = "textRequestHistory",
 }
 
 /**
@@ -107,6 +123,9 @@ export interface InspectorState {
   [STATE_PROPS.VIDEO_INVENTORY]? : InventoryTimelineInfo;
   [STATE_PROPS.AUDIO_INVENTORY]? : InventoryTimelineInfo;
   [STATE_PROPS.SELECTED_LOG_INDEX]? : number | undefined;
+  [STATE_PROPS.AUDIO_REQUEST_HISTORY]? : RequestInformation[];
+  [STATE_PROPS.VIDEO_REQUEST_HISTORY]? : RequestInformation[];
+  [STATE_PROPS.TEXT_REQUEST_HISTORY]? : RequestInformation[];
 }
 
 /** State linked to the Inspector page layout and configuration. */
@@ -160,4 +179,14 @@ export interface InventoryTimelineRangeInfo {
    * particular Representation.
    */
   letter: string;
+}
+
+export interface RequestInformation {
+  eventType: "start" | "success" | "failed" | "aborted";
+  timestamp: number;
+  periodId: string;
+  adaptationId: string;
+  representationId: string;
+  segmentStart: number;
+  segmentDuration: number;
 }
