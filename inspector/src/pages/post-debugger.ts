@@ -133,6 +133,7 @@ function createImportFileButton(
       }
 
       inspectorState.updateState(STATE_PROPS.LOGS_HISTORY, UPDATE_TYPE.REPLACE, logs);
+      updateStatesFromLogGroup(inspectorState, logs);
       inspectorState.commitUpdates();
     };
 
