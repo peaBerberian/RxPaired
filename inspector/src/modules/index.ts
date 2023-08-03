@@ -81,7 +81,7 @@ const ALL_MODULES : ModuleInformation[] = [
     moduleId: "video-request-information",
     moduleFn: generateRequestHistoryModule("video"),
     isClosable: true,
-    isHalfWidthByDefault: false,
+    isHalfWidthByDefault: true,
     contexts: ["live-debugging", "post-debugger"],
   },
   {
@@ -89,7 +89,7 @@ const ALL_MODULES : ModuleInformation[] = [
     moduleId: "audio-request-information",
     moduleFn: generateRequestHistoryModule("audio"),
     isClosable: true,
-    isHalfWidthByDefault: false,
+    isHalfWidthByDefault: true,
     contexts: ["live-debugging", "post-debugger"],
   },
   {
@@ -97,7 +97,7 @@ const ALL_MODULES : ModuleInformation[] = [
     moduleId: "text-request-information",
     moduleFn: generateRequestHistoryModule("text"),
     isClosable: true,
-    isHalfWidthByDefault: false,
+    isHalfWidthByDefault: true,
     contexts: ["live-debugging", "post-debugger"],
   },
 ];

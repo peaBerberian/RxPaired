@@ -3,6 +3,8 @@ import { createCompositeElement, createElement } from "../dom-utils";
 import ObservableState from "../observable_state";
 import { ModuleFunction } from ".";
 
+const MAX_REQ_ELEMENTS = 50;
+
 export default function generateRequestHistoryModule(
   mediaType: "audio" | "video" | "text"
 ): ModuleFunction {
@@ -15,7 +17,7 @@ export default function generateRequestHistoryModule(
       textContent: "No request information",
     });
     const moduleBodyElt = createCompositeElement("div", [requestDataElt], {
-      className: "module-body",
+      className: "request-history-body module-body",
     });
     const stateProp =
       mediaType === "audio"
@@ -152,7 +154,7 @@ export default function generateRequestHistoryModule(
                   }),
                 ])
               );
-              if (tableElt.childNodes.length >= 11) {
+              if (tableElt.childNodes.length >= MAX_REQ_ELEMENTS - 1) {
                 requestDataElt.appendChild(tableElt);
                 return;
               }
