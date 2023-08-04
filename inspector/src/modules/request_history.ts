@@ -32,7 +32,7 @@ export default function generateRequestHistoryModule(
       const requestInfo = state.getCurrentState(stateProp);
 
       if (requestInfo === undefined) {
-        requestDataElt.textContent = "No request information";
+        displayNoRequestInformation();
         return;
       }
       let canStillReceivePending = true;
@@ -156,6 +156,7 @@ export default function generateRequestHistoryModule(
               );
               if (tableElt.childNodes.length >= MAX_REQ_ELEMENTS - 1) {
                 requestDataElt.appendChild(tableElt);
+                moduleBodyElt.classList.remove("empty");
                 return;
               }
               break;
@@ -164,17 +165,23 @@ export default function generateRequestHistoryModule(
         }
       }
       if (tableElt.childNodes.length === 1) {
-        requestDataElt.textContent = "No request information";
+        displayNoRequestInformation();
         return;
       }
       requestDataElt.appendChild(tableElt);
-    });
+      moduleBodyElt.classList.remove("empty");
+    }, true);
     return {
       body: moduleBodyElt,
       destroy() {
         unsubscribeHistory();
       },
     };
+
+    function displayNoRequestInformation() {
+      requestDataElt.textContent = "No request information";
+      moduleBodyElt.classList.add("empty");
+    }
   };
 }
 

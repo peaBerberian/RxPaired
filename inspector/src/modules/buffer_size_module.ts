@@ -19,14 +19,14 @@ const HEIGHT_MARGIN_TOP = 20;
  * "Drawable" height of the canvas.
  * The drawable height is basically the full height minus height margins.
  */
-const DEFAULT_DRAWABLE_HEIGHT = 350;
+const DEFAULT_DRAWABLE_HEIGHT = 230;
 
 /**
  * "Drawable" with of the canvas.
  * The drawable width is basically the full width minus potential width
  * margins.
  */
-const DEFAULT_DRAWABLE_WIDTH = 850;
+const DEFAULT_DRAWABLE_WIDTH = 1500;
 
 /**
  * Maximum history of the buffer size that will be displayed, in milliseconds.

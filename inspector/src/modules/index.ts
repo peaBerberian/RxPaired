@@ -7,6 +7,7 @@ import HowToUseModule from "./how_to_use_module";
 import LogModule from "./log_module";
 import PlayerGeneralInfoModule from "./player_general_info_module";
 import generateRequestHistoryModule from "./request_history";
+import StateChangeInformationModule from "./state_change_history";
 
 /**
  * All modules that are exported, in order of display
@@ -96,6 +97,14 @@ const ALL_MODULES : ModuleInformation[] = [
     moduleTitle: "Text Request Information",
     moduleId: "text-request-information",
     moduleFn: generateRequestHistoryModule("text"),
+    isClosable: true,
+    isHalfWidthByDefault: true,
+    contexts: ["live-debugging", "post-debugger"],
+  },
+  {
+    moduleTitle: "Player State history",
+    moduleId: "player-state-history",
+    moduleFn: StateChangeInformationModule,
     isClosable: true,
     isHalfWidthByDefault: true,
     contexts: ["live-debugging", "post-debugger"],

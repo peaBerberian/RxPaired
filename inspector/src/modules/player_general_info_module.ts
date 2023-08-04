@@ -24,6 +24,12 @@ export default function PlayerGeneralInfoModule(
     textContent: getCurrentDurationTextContent(state),
     className: "emphasized",
   });
+  const initialLoadingTimeDataElt = createElement("span", {
+    textContent: getInitialLoadingTimeStr(
+      state.getCurrentState(STATE_PROPS.STATE_CHANGE_HISTORY) ?? []
+    ),
+    className: "emphasized",
+  });
   const generalInfoBodyElt = createCompositeElement("div", [
     createElement("span", { textContent: "Current state: " }),
     stateData,
@@ -36,10 +42,15 @@ export default function PlayerGeneralInfoModule(
     " - ",
     createElement("span", { textContent: "Duration: " }),
     durationData,
+    " - ",
+    createElement("span", { textContent: "Initial loading time: " }),
+    initialLoadingTimeDataElt,
   ], { className: "gen-info-body module-body" });
 
-  const unsubscribeState = state.subscribe(STATE_PROPS.PLAYER_STATE, () => {
-    const newState = state.getCurrentState(STATE_PROPS.PLAYER_STATE);
+  const unsubscribeState = state.subscribe(STATE_PROPS.PLAYER_STATE, (
+    _ut,
+    newState: string | undefined
+  ) => {
     stateData.textContent = newState ?? "Unknown";
   });
   const unsubscribePosition = state.subscribe(STATE_PROPS.POSITION, () => {
@@ -51,6 +62,14 @@ export default function PlayerGeneralInfoModule(
   const unsubscribeDuration = state.subscribe(STATE_PROPS.CONTENT_DURATION, () => {
     durationData.textContent = getCurrentDurationTextContent(state);
   });
+  const unsubscribeStateHistory = state.subscribe(
+    STATE_PROPS.STATE_CHANGE_HISTORY,
+    () => {
+      initialLoadingTimeDataElt.textContent = getInitialLoadingTimeStr(
+        state.getCurrentState(STATE_PROPS.STATE_CHANGE_HISTORY) ?? []
+      );
+    }
+  );
 
   return {
     body: generalInfoBodyElt,
@@ -59,8 +78,30 @@ export default function PlayerGeneralInfoModule(
       unsubscribePosition();
       unsubscribeBufferGaps();
       unsubscribeDuration();
+      unsubscribeStateHistory();
     },
   };
+}
+
+function getInitialLoadingTimeStr(
+  history: Array<{ state: string; timestamp: number }>
+): string {
+  for (let i = history.length - 1; i >= 0; i--) {
+    if (history[i].state === "LOADED") {
+      for (let j = i - 1; j >= 0; j--) {
+        if (history[j].state === "LOADING") {
+          const delta = history[i].timestamp - history[j].timestamp;
+          return String(delta.toFixed(2));
+        } else if (history[i].state === "STOPPED") {
+          return "Unknown";
+        }
+      }
+      return "Unknown";
+    } else if (history[i].state === "STOPPED") {
+      return "Unknown";
+    }
+  }
+  return "Unknown";
 }
 
 /**

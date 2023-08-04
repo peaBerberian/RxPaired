@@ -78,6 +78,7 @@ const LogProcessors : Array<LogProcessor<keyof InspectorState>> = [
       STATE_PROPS.BUFFER_GAPS,
       STATE_PROPS.BUFFERED_RANGES,
       STATE_PROPS.PLAYER_STATE,
+      STATE_PROPS.STATE_CHANGE_HISTORY,
       STATE_PROPS.CONTENT_DURATION,
       STATE_PROPS.VIDEO_INVENTORY,
       STATE_PROPS.AUDIO_INVENTORY,
@@ -90,9 +91,7 @@ const LogProcessors : Array<LogProcessor<keyof InspectorState>> = [
   {
     filter: (log: string) : boolean =>
       log.indexOf("SF: Beginning request") > -1 ||
-      log.indexOf("SF: Segment request ended") > -1 ||
-      log.indexOf("SF: Segment request failed") > -1 ||
-      log.indexOf("SF: Segment request cancelled") > -1,
+      log.indexOf("SF: Segment request ") > -1,
     processor: (log: string) : Array<StateUpdate<keyof InspectorState>> =>
       processRequestLog(log),
     updatedProps: [
@@ -278,6 +277,7 @@ function processPlayerStateChangeLog(
                       STATE_PROPS.AUDIO_REQUEST_HISTORY |
                       STATE_PROPS.VIDEO_REQUEST_HISTORY |
                       STATE_PROPS.TEXT_REQUEST_HISTORY |
+                      STATE_PROPS.STATE_CHANGE_HISTORY |
                       STATE_PROPS.PLAYER_STATE>>
 {
   const stateUpdates : Array<
@@ -290,12 +290,44 @@ function processPlayerStateChangeLog(
                 STATE_PROPS.AUDIO_REQUEST_HISTORY |
                 STATE_PROPS.VIDEO_REQUEST_HISTORY |
                 STATE_PROPS.TEXT_REQUEST_HISTORY |
+                STATE_PROPS.STATE_CHANGE_HISTORY |
                 STATE_PROPS.PLAYER_STATE>
   > = [];
   const stateRegex = /(\w+)$/;
   const match = logTxt.match(stateRegex);
   if (match !== null) {
     const playerState = match[1];
+    if (playerState === "STOPPED") {
+      stateUpdates.push({
+        property: STATE_PROPS.AUDIO_REQUEST_HISTORY,
+        updateType: UPDATE_TYPE.REPLACE,
+        updateValue: undefined,
+      });
+      stateUpdates.push({
+        property: STATE_PROPS.VIDEO_REQUEST_HISTORY,
+        updateType: UPDATE_TYPE.REPLACE,
+        updateValue: undefined,
+      });
+      stateUpdates.push({
+        property: STATE_PROPS.TEXT_REQUEST_HISTORY,
+        updateType: UPDATE_TYPE.REPLACE,
+        updateValue: undefined,
+      });
+      stateUpdates.push({
+        property: STATE_PROPS.STATE_CHANGE_HISTORY,
+        updateType: UPDATE_TYPE.REPLACE,
+        updateValue: undefined,
+      });
+    } else {
+      stateUpdates.push({
+        property: STATE_PROPS.STATE_CHANGE_HISTORY,
+        updateType: UPDATE_TYPE.PUSH,
+        updateValue: [{
+          timestamp: parseFloat(logTxt),
+          state: playerState,
+        }],
+      });
+    }
     if (
       playerState === "STOPPED" ||
       playerState === "RELOADING" ||
@@ -328,21 +360,6 @@ function processPlayerStateChangeLog(
       });
       stateUpdates.push({
         property: STATE_PROPS.VIDEO_INVENTORY,
-        updateType: UPDATE_TYPE.REPLACE,
-        updateValue: undefined,
-      });
-      stateUpdates.push({
-        property: STATE_PROPS.AUDIO_REQUEST_HISTORY,
-        updateType: UPDATE_TYPE.REPLACE,
-        updateValue: undefined,
-      });
-      stateUpdates.push({
-        property: STATE_PROPS.VIDEO_REQUEST_HISTORY,
-        updateType: UPDATE_TYPE.REPLACE,
-        updateValue: undefined,
-      });
-      stateUpdates.push({
-        property: STATE_PROPS.TEXT_REQUEST_HISTORY,
         updateType: UPDATE_TYPE.REPLACE,
         updateValue: undefined,
       });
@@ -579,9 +596,3 @@ function processRequestLog(
     }
   }
 }
-
-// TODO:
-
-// 3949.00 [info] Stream: Updating audio adaptation A: audio-en-audio/mp4 P: 0
-
-// 15471.00 [info] Stream: New active period 0

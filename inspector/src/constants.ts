@@ -88,22 +88,14 @@ export enum STATE_PROPS {
    * Set to the index in the `LOGS_HISTORY` array.
    */
   SELECTED_LOG_INDEX = "selectedLogIndex",
-  /**
-   * Request that is considered current for the audio type.
-   *
-   *   - `timestamp` {number}: time value when the request began, from a time
-   *      base choosen by the device.
-   *   - `periodId` {string}: The concerned Period's `id`
-   *   - `adaptationId` {string}: The concerned Adaptation's `id`
-   *   - `representationId` {string}: The concerned Representation's `id`
-   *   - `segmentStart` {number}: The segment's start time in seconds, `-1` for
-   *     initialization segments.
-   *   - `segmentDuration` {number}: The segment's duration in seconds, `-1` for
-   *     initialization segments.
-   */
+  /** History of network requests for audio segments for the current content. */
   AUDIO_REQUEST_HISTORY = "audioRequestHistory",
+  /** History of network requests for video segments for the current content. */
   VIDEO_REQUEST_HISTORY = "videoRequestHistory",
+  /** History of network requests for text segments for the current content. */
   TEXT_REQUEST_HISTORY = "textRequestHistory",
+  /** History of state changes for the current content. */
+  STATE_CHANGE_HISTORY = "stateChangeHistory",
 }
 
 /**
@@ -126,6 +118,10 @@ export interface InspectorState {
   [STATE_PROPS.AUDIO_REQUEST_HISTORY]? : RequestInformation[];
   [STATE_PROPS.VIDEO_REQUEST_HISTORY]? : RequestInformation[];
   [STATE_PROPS.TEXT_REQUEST_HISTORY]? : RequestInformation[];
+  [STATE_PROPS.STATE_CHANGE_HISTORY]? : Array<{
+    state : string;
+    timestamp : number;
+  }>;
 }
 
 /** State linked to the Inspector page layout and configuration. */
@@ -181,12 +177,36 @@ export interface InventoryTimelineRangeInfo {
   letter: string;
 }
 
+/** Information linked to a request for a media segment. */
 export interface RequestInformation {
+  /**
+   * Type of network-related  event encountered:
+   *   - `"start"`: The request just started
+   *   - `"success"`: The request finished with success
+   *   - `"failed"`: The request failed on an issue.
+   *   - `"aborted"`: The request was cancelled before it had a chance to
+   *     finish.
+   */
   eventType: "start" | "success" | "failed" | "aborted";
+  /**
+   * Time value, in milliseconds and relative to a device-defined monotically
+   * increasing time base, at which the event was encountered.
+   */
   timestamp: number;
+  /** `id` used in the RxPlayer to refer to that segment's Period. */
   periodId: string;
+  /** `id` used in the RxPlayer to refer to that segment's Adaptation. */
   adaptationId: string;
+  /** `id` used in the RxPlayer to refer to that segment's Representation. */
   representationId: string;
+  /**
+   * Time the segment starts at, in seconds.
+   * `-1` if this is an initialization segment.
+   */
   segmentStart: number;
+  /**
+   * Duration of that segment, in seconds.
+   * `-1` if this is an initialization segment.
+   */
   segmentDuration: number;
 }
