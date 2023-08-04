@@ -106,7 +106,7 @@ sendInstruction(\`console.warn("USER-AGENT:", navigator.userAgent)\`)
         textContent: "code",
       }),
       createElement("pre", {
-        textContent: `import("${CLIENT_SCRIPT_URL}#${tokenId}")
+        textContent: `import("${CLIENT_SCRIPT_URL}")
   .then(() => {
     window.__RX_INSPECTOR_RUN__({
       url: "${CLIENT_SCRIPT_URL}#${tokenId}",
@@ -124,6 +124,32 @@ sendInstruction(\`console.warn("USER-AGENT:", navigator.userAgent)\`)
         textContent: "<RX_PLAYER_CLASS>",
       }),
       " is a reference to the RxPlayer's class in your code",
+      createElement("br"),
+      createElement("br"),
+      " Alternatively, if that does not work because dynamic import is not ",
+      "supported by your building process or by the device, you may be able ",
+      "to rely on dynamic function creation instead:",
+      createElement("pre", {
+        textContent: `fetch("${CLIENT_SCRIPT_URL}")
+  .then((res) => res.text())
+  .then((code) => {
+    Function(code)();
+    window.__RX_INSPECTOR_RUN__({
+      url: "${CLIENT_SCRIPT_URL}#${tokenId}",
+      playerClass: <RX_PLAYER_CLASS>,
+    });
+    console.info("Inspector initialized with success!");
+  })
+  .catch((error) =>
+    console.error("Failed to dynamically import inspector:", error)
+  );`,
+      }),
+      "Likewise don't forget to replace ",
+      createElement("span", {
+        className: "emphasized",
+        textContent: "<RX_PLAYER_CLASS>",
+      }),
+      " by a reference to the RxPlayer's class in your code.",
     ], { className: "code-details" }),
   ]);
 
