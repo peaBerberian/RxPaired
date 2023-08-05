@@ -5,6 +5,7 @@ import BufferContentModule from "./buffer_content_module";
 import BufferSizeModule from "./buffer_size_module";
 import HowToUseModule from "./how_to_use_module";
 import LogModule from "./log_module";
+import ManifestParsingTimeHistoryModule from "./manifest_parsing_time_history";
 import PlayerGeneralInfoModule from "./player_general_info_module";
 import generateRequestHistoryModule from "./request_history";
 import StateChangeInformationModule from "./state_change_history";
@@ -105,6 +106,14 @@ const ALL_MODULES : ModuleInformation[] = [
     moduleTitle: "Player State history",
     moduleId: "player-state-history",
     moduleFn: StateChangeInformationModule,
+    isClosable: true,
+    isHalfWidthByDefault: true,
+    contexts: ["live-debugging", "post-debugger"],
+  },
+  {
+    moduleTitle: "Manifest parsing time history",
+    moduleId: "manifest-parsing-time-history",
+    moduleFn: ManifestParsingTimeHistoryModule,
     isClosable: true,
     isHalfWidthByDefault: true,
     contexts: ["live-debugging", "post-debugger"],

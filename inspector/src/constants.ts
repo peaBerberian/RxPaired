@@ -96,6 +96,8 @@ export enum STATE_PROPS {
   TEXT_REQUEST_HISTORY = "textRequestHistory",
   /** History of state changes for the current content. */
   STATE_CHANGE_HISTORY = "stateChangeHistory",
+  /** History of the time taken to parse the Manifest. */
+  MANIFEST_PARSING_TIME_HISTORY = "manifestParsingTimeHistory",
 }
 
 /**
@@ -120,6 +122,10 @@ export interface InspectorState {
   [STATE_PROPS.TEXT_REQUEST_HISTORY]? : RequestInformation[];
   [STATE_PROPS.STATE_CHANGE_HISTORY]? : Array<{
     state : string;
+    timestamp : number;
+  }>;
+  [STATE_PROPS.MANIFEST_PARSING_TIME_HISTORY]? : Array<{
+    timeMs : number;
     timestamp : number;
   }>;
 }

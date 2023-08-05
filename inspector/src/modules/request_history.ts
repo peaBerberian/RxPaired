@@ -25,8 +25,24 @@ export default function generateRequestHistoryModule(
         : mediaType === "video"
         ? STATE_PROPS.VIDEO_REQUEST_HISTORY
         : STATE_PROPS.TEXT_REQUEST_HISTORY;
+
+    let pendingRequestInfo: {
+      element: HTMLElement;
+      timestamp: number;
+    } | null = null;
+
+    const unsubscribeLogHistory = state.subscribe(
+      STATE_PROPS.LOGS_HISTORY,
+      updatePendingTimeElt
+    );
+    const unsubscribeSelected = state.subscribe(
+      STATE_PROPS.SELECTED_LOG_INDEX,
+      updatePendingTimeElt
+    );
+
     const unsubscribeHistory = state.subscribe(stateProp, () => {
       requestDataElt.innerHTML = "";
+      pendingRequestInfo = null;
 
       // TODO more optimized: rely on push
       const requestInfo = state.getCurrentState(stateProp);
@@ -64,6 +80,11 @@ export default function generateRequestHistoryModule(
       for (let i = requestInfo?.length - 1; i >= 0; i--) {
         const req = requestInfo[i];
         if (canStillReceivePending && req.eventType === "start") {
+          pendingRequestInfo = {
+            element: createElement("td", { textContent: " - " }),
+            timestamp: req.timestamp,
+          };
+          updatePendingTimeElt();
           tableElt.appendChild(
             createCompositeElement("tr", [
               createElement("td", {
@@ -72,9 +93,7 @@ export default function generateRequestHistoryModule(
               createElement("td", {
                 textContent: "pending",
               }),
-              createElement("td", {
-                textContent: " - ",
-              }),
+              pendingRequestInfo.element,
               createElement("td", {
                 textContent: req.periodId,
               }),
@@ -174,6 +193,8 @@ export default function generateRequestHistoryModule(
     return {
       body: moduleBodyElt,
       destroy() {
+        unsubscribeLogHistory();
+        unsubscribeSelected();
         unsubscribeHistory();
       },
     };
@@ -181,6 +202,25 @@ export default function generateRequestHistoryModule(
     function displayNoRequestInformation() {
       requestDataElt.textContent = "No request information";
       moduleBodyElt.classList.add("empty");
+    }
+
+    function updatePendingTimeElt() {
+      if (pendingRequestInfo === null) {
+        return;
+      }
+      let lastKnownTimestamp: number | undefined;
+      const logs = state.getCurrentState(STATE_PROPS.LOGS_HISTORY) ?? [];
+      const selected = state.getCurrentState(STATE_PROPS.SELECTED_LOG_INDEX) ??
+        logs.length - 1;
+      if (selected !== -1 && logs.length > selected) {
+        lastKnownTimestamp = parseFloat(logs[selected]);
+        if (isNaN(lastKnownTimestamp)) {
+          lastKnownTimestamp = undefined;
+        }
+      }
+      pendingRequestInfo.element.textContent = lastKnownTimestamp === undefined ?
+        " - " :
+        `+${(lastKnownTimestamp - pendingRequestInfo.timestamp).toFixed(2)}ms`;
     }
   };
 }
