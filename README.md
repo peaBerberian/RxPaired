@@ -11,16 +11,19 @@ applications relying on the RxPlayer.
 
 Its key features are:
 
- - Remote inspector with a minimal influence on the device's CPU and memory resources,
-   when compared with Chrome's inspector and tools like weinre.
+ - Minimal influence on the device's CPU and memory resources, when compared with
+   Chrome's inspector and tools like weinre.
 
- - Ability to see in real time logs and useful playback indicators: the current size
-   of the buffer built, which audio and video qualities are buffered etc.
+ - Ability to see in real time logs and useful playback indicators: which audio and
+   video qualities are buffered at which point, information on network requests for
+   media segments, evolution of the buffer's health etc.
 
  - Possibility to send JavaScript instructions to the device.
 
  - "Time travel": Possibility to see the known playback conditions and its related
    indicators at the time a log was sent, by clicking on its log on the inspector.
+
+ - Possibility to store/export logs and inspect them later.
 
 
 ## Table Of Contents
