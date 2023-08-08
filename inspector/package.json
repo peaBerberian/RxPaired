@@ -21,5 +21,8 @@
     "typescript": "5.1.6"
   },
   "author": "peaberberian",
-  "license": "MIT"
+  "license": "MIT",
+  "dependencies": {
+    "str-html": "^0.2.0"
+  }
 }

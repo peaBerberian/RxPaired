@@ -1,8 +1,4 @@
-import {
-  createButton,
-  createCompositeElement,
-  createElement,
-} from "../dom-utils";
+import strHtml from "str-html";
 import { reGeneratePageUrl } from "../utils";
 
 /**
@@ -10,27 +6,18 @@ import { reGeneratePageUrl } from "../utils";
  * @returns {Function} - Perform clean-up if the page is exited.
  */
 export default function generatePasswordPage(): () => void {
-  const pageTitle = createElement("h1", {
-    textContent: "RxPaired-inspector",
-    className: "header-item page-title",
-  });
-  const pageInstr = createCompositeElement(
-    "div",
-    [
-      "Enter the password of the linked RxPaired-server " +
-        "(leave empty if it has no password):",
-    ],
-    {
-      className: "input-title",
-    }
-  );
-  const pageBody = createCompositeElement("div", [
-    pageTitle,
-    createCompositeElement("div", [
-      pageInstr,
-      createPasswordInputElement(),
-    ], { className: "page-input-block" }),
-  ]);
+  const pageBody = strHtml`<div>
+    <h1 class="header-item page-title">
+      RxPaired-inspector
+    </h1>
+    <div class="page-input-block">
+      <div class="input-title">
+        ${"Enter the password of the linked RxPaired-server " +
+          "(leave empty if it has no password):"}
+      </div>
+      ${createPasswordInputElement()}
+    </div>
+  </div>`;
   document.body.appendChild(pageBody);
   return () => {
     document.body.removeChild(pageBody);
@@ -41,20 +28,17 @@ export default function generatePasswordPage(): () => void {
  * @returns {HTMLElement}
  */
 function createPasswordInputElement(): HTMLElement {
-  const passwordInputElt = createElement("input");
-  passwordInputElt.placeholder = "Enter server password";
+  const passwordInputElt =
+    strHtml`<input placeholder="Enter server password">` as HTMLInputElement;
   passwordInputElt.onkeyup = function (evt) {
     if (evt.key === "Enter" || evt.keyCode === 13) {
       sendPassword();
     }
   };
-  const passwordSendElt = createButton({
-    textContent: "Validate password",
-    onClick: sendPassword,
-    className: "button-input-right",
-  });
-  return createCompositeElement("div", [passwordInputElt, passwordSendElt]);
-
+  const passwordSendElt =
+    strHtml`<button class="button-input-right">${"Validate password"}</button>`;
+  passwordSendElt.onclick = sendPassword;
+  return strHtml`<div>${[passwordInputElt, passwordSendElt]}</div>`;
   function sendPassword() {
     const val = passwordInputElt.value;
     location.href = reGeneratePageUrl(val, undefined);

@@ -1,10 +1,5 @@
+import strHtml from "str-html";
 import { CLIENT_SCRIPT_URL, SERVER_URL } from "../constants";
-import {
-  createButton,
-  createCompositeElement,
-  createElement,
-  createLinkElement,
-} from "../dom-utils";
 import { displayError, isTokenValid, reGeneratePageUrl } from "../utils";
 
 /**
@@ -14,98 +9,51 @@ import { displayError, isTokenValid, reGeneratePageUrl } from "../utils";
  * @returns {Function} - Perform clean-up if the page is exited.
  */
 export default function generateTokenPage(password: string | null): () => void {
-  const pageTitle = createCompositeElement(
-    "div",
-    [
-      createLinkElement({
-        textContent: "Home",
-        href: reGeneratePageUrl(undefined, undefined),
-      }),
-      " > Token",
-    ],
-    { className: "header-item page-title" }
-  );
-
-  const generateInstrElt = createElement("div", {
-    textContent: "Generate a token:",
-    className: "input-title",
-  });
-
-  const inputInstrElt = createCompositeElement(
-    "div",
-    [
-      createElement("span", { className: "emphasized", textContent: "OR" }),
-      createElement("span", {
-        textContent: " enter the wanted token:",
-      }),
-    ],
-    {
-      className: "input-title",
-    }
-  );
-
-  const postDebuggingElt = createCompositeElement(
-    "div",
-    [
-      createElement("span", { className: "emphasized", textContent: "OR" }),
-      createElement("span", {
-        textContent: " import an already-generated log file (Post-Debugger page):",
-      }),
-    ],
-    {
-      className: "input-title",
-    }
-  );
-
-  const currentListTitleElt = createElement("div", {
-    textContent: "List of currently active tokens:",
-    className: "active-tokens-title",
-  });
-  const activeTokensListElt = createElement("pre", {
-    className: "active-tokens-list",
-    textContent: "Loading...",
-  });
-  const currentListElt = createCompositeElement("div", [
-    currentListTitleElt,
-    activeTokensListElt,
-  ]);
-
-  const errorContainerElt = createElement("div");
-  const pageBody = createCompositeElement("div", [
-    errorContainerElt,
-    createCompositeElement("div", [pageTitle], {
-      className: "header",
-    }),
-    createCompositeElement(
-      "div",
-      [
-        createCompositeElement("div", [
-          generateInstrElt,
-          createGenerateTokenButton(password, errorContainerElt),
-        ]),
-        createElement("br"),
-        createCompositeElement("div", [
-          inputInstrElt,
-          createTokenInputElement(password, errorContainerElt),
-        ]),
-        createElement("br"),
-        createCompositeElement("div", [
-          postDebuggingElt,
-          createButton({
-            textContent: "Go to Post-Debugger page",
-            onClick() {
-              window.location.href = reGeneratePageUrl(password, undefined, true);
-            },
-          }),
-        ]),
-        createElement("br"),
-        currentListElt,
-      ],
-      { className: "page-input-block" }
-    ),
-  ]);
-
-  document.body.appendChild(pageBody);
+  console.time("token1");
+  const activeTokensListElt = strHtml`<pre class="active-tokens-list">Loading...</pre>`;
+  const errorContainerElt = strHtml`<div></div>`;
+  const pageBodyElt = strHtml`<div>
+    ${errorContainerElt}
+    <div class="header">
+      <div class="header-item page-title">
+        <a href=${reGeneratePageUrl(undefined, undefined)}>${"Home"}</a>
+        ${"> Token"}
+      </div>
+    </div>
+    <div class="page-input-block">
+      <div>
+        <div class="input-title">
+          Generate a token:
+        </div>
+        ${createGenerateTokenButton(password, errorContainerElt)}
+      </div>
+      <br>
+      <div>
+        <div class="input-title">
+          <span class="emphasized">OR</span>
+          <span> enter the wanted token:</span>
+        </div>
+        ${createTokenInputElement(password, errorContainerElt)}
+      </div>
+      <br>
+      <div>
+        <div class="input-title">
+          <span class="emphasized">OR</span>
+          <span> import an already-generated log file (Post-Debugger page):</span>
+        </div>
+        ${createPostDebuggingButtonElt(password)}
+      </div>
+      <br>
+      <div>
+        <div class="active-tokens-title">
+          List of currently active tokens:
+        </div>
+        ${activeTokensListElt}
+      </div>
+    </div>
+  </div>`;
+  console.timeEnd("token1");
+  document.body.appendChild(pageBodyElt);
 
   let hasAddedNoTokenTutorial = false;
 
@@ -128,7 +76,7 @@ export default function generateTokenPage(password: string | null): () => void {
     onActiveTokenListUpdate(data.tokenList, activeTokensListElt, password);
 
     if (!hasAddedNoTokenTutorial) {
-      pageBody.appendChild(createNoTokenTutorialElement(password));
+      pageBodyElt.appendChild(createNoTokenTutorialElement(password));
       hasAddedNoTokenTutorial = true;
     }
   };
@@ -139,7 +87,7 @@ export default function generateTokenPage(password: string | null): () => void {
   return () => {
     socket.onclose = null;
     socket.close();
-    document.body.removeChild(pageBody);
+    document.body.removeChild(pageBodyElt);
   };
 }
 
@@ -154,15 +102,30 @@ export default function generateTokenPage(password: string | null): () => void {
 function createGenerateTokenButton(
   password: string | null,
   errorContainerElt: HTMLElement
-): HTMLButtonElement {
-  return createButton({
-    className: "btn-generate-token",
-    textContent: "Generate Token",
-    onClick() {
-      const tokenId = generateToken();
-      setToken(tokenId, password, errorContainerElt);
-    },
-  });
+): HTMLElement {
+  const generateTokenButtonElt = strHtml`<button class="btn-generate-token">
+    Generate Token
+  </button>`;
+  generateTokenButtonElt.onclick = () => {
+    const tokenId = generateToken();
+    setToken(tokenId, password, errorContainerElt);
+  };
+  return generateTokenButtonElt;
+}
+
+/**
+ * @param {string|null} password - The password currently used for server
+ * interaction. `null` for no password.
+ * @returns {HTMLElement}
+ */
+function createPostDebuggingButtonElt(password: string | null): HTMLElement {
+  const postDebuggingButtonElt = strHtml`<button>
+    Go to Post-Debugger page
+  </button>`;
+  postDebuggingButtonElt.onclick = () => {
+    window.location.href = reGeneratePageUrl(password, undefined, true);
+  };
+  return postDebuggingButtonElt;
 }
 
 /**
@@ -176,19 +139,21 @@ function createTokenInputElement(
   password: string | null,
   errorContainerElt: HTMLElement
 ): HTMLElement {
-  const tokenInputElt = createElement("input");
-  tokenInputElt.placeholder = "Enter the wanted token";
+
+  const tokenInputElt =
+    strHtml`<input placeholder="Enter the wanted token">` as HTMLInputElement;
   tokenInputElt.onkeyup = function (evt) {
     if (evt.key === "Enter" || evt.keyCode === 13) {
       setToken(tokenInputElt.value, password, errorContainerElt);
     }
   };
-  const tokenSendElt = createButton({
-    textContent: "Set token",
-    onClick: () => setToken(tokenInputElt.value, password, errorContainerElt),
-  });
+
+  const tokenSendElt = strHtml`<button>Set token</button>`;
+  tokenSendElt.onclick = () =>
+    setToken(tokenInputElt.value, password, errorContainerElt);
   tokenSendElt.style.marginLeft = "5px";
-  return createCompositeElement("span", [tokenInputElt, tokenSendElt]);
+
+  return strHtml`<span>${[tokenInputElt, tokenSendElt]}</span>`;
 }
 
 /**
@@ -222,54 +187,32 @@ function generateToken(): string {
 }
 
 function createNoTokenTutorialElement(password: string | null): HTMLElement {
+  console.time("token2");
   const fakeTokenStr = `!notoken${password === null ? "" : "/" + password}`;
-  const liElt1 = createCompositeElement("li", [
-    'Load in your HTML page the following script before all other running scripts: "',
-    createElement("span", {
-      textContent: `${CLIENT_SCRIPT_URL}#${fakeTokenStr}`,
-      className: "emphasized",
-    }),
-    '"',
-    createElement("br"),
-    "For example, you can just add before the first script tag: ",
-    createElement("span", {
-      textContent: `<script src="${CLIENT_SCRIPT_URL.replace(
-        /"/g,
-        '\\"'
-      )}#${fakeTokenStr}"></script>`,
-      className: "emphasized",
-    }),
-  ]);
 
-  const link = createElement("a", { textContent: CLIENT_SCRIPT_URL });
-  link.href = CLIENT_SCRIPT_URL;
-  const liElt2 = createCompositeElement("li", [
-    "Add manually the content of this script to the beginning of the " +
-      "first script tag of your page: ",
-    link,
-    " and manually set the `",
-    createElement("span", {
-      className: "emphasized",
-      textContent: "__TOKEN__",
-    }),
-    "` variable on top of that script to ",
-    createElement("span", {
-      className: "emphasized",
-      textContent: `"${fakeTokenStr}"`,
-    }),
-    ".",
-  ]);
+  /* eslint-disable max-len */
+  const liElt1 = strHtml`<li>
+    Load in your HTML page the following script before all other running scripts:
+    "<span class="emphasized">${CLIENT_SCRIPT_URL}#${fakeTokenStr}</span>"
+    <br>
+    For example, you can just add before the first script tag:
+    <span class="emphasized">
+      ${`<script src="${CLIENT_SCRIPT_URL.replace(/"/g, '\\"')}#${fakeTokenStr}"></script>`}
+    </span>
+  </li>`;
+  /* eslint-enable max-len */
 
-  const liElt3 = createCompositeElement("li", [
-    "Import dynamically the script in your code by writing something like:",
-    createCompositeElement(
-      "details",
-      [
-        createElement("summary", {
-          textContent: "code",
-        }),
-        createElement("pre", {
-          textContent: `import("${CLIENT_SCRIPT_URL}")
+  const liElt2 = strHtml`<li>
+    Add manually the content of this script to the beginning of the
+    first script tag of your page:
+    <a href=${CLIENT_SCRIPT_URL}>${CLIENT_SCRIPT_URL}</a>
+    and manually set the
+    \`<span class="emphasized">__TOKEN__</span>\`
+    variable on top of that script to
+    <span class="emphasized">"${fakeTokenStr}"</span>.
+  </li>`;
+
+  const dynamicImportCode1 = `import("${CLIENT_SCRIPT_URL}")
   .then(() => {
     window.__RX_INSPECTOR_RUN__({
       url: "${CLIENT_SCRIPT_URL}#${fakeTokenStr}",
@@ -279,21 +222,8 @@ function createNoTokenTutorialElement(password: string | null): HTMLElement {
   })
   .catch((error) =>
     console.error("Failed to dynamically import inspector:", error)
-  );`,
-        }),
-        "Where ",
-        createElement("span", {
-          className: "emphasized",
-          textContent: "<RX_PLAYER_CLASS>",
-        }),
-        " is a reference to the RxPlayer's class in your code.",
-        createElement("br"),
-        createElement("br"),
-        " Alternatively, if that does not work because dynamic import is not ",
-        "supported by your building process or by the device, you may be able ",
-        "to rely on dynamic function creation instead:",
-        createElement("pre", {
-          textContent: `fetch("${CLIENT_SCRIPT_URL}")
+  );`;
+  const dynamicImportCode2 = `fetch("${CLIENT_SCRIPT_URL}")
   .then((res) => res.text())
   .then((code) => {
     Function(code)();
@@ -305,52 +235,47 @@ function createNoTokenTutorialElement(password: string | null): HTMLElement {
   })
   .catch((error) =>
     console.error("Failed to dynamically import inspector:", error)
-  );`,
-        }),
-        "Likewise don't forget to replace ",
-        createElement("span", {
-          className: "emphasized",
-          textContent: "<RX_PLAYER_CLASS>",
-        }),
-        " by a reference to the RxPlayer's class in your code.",
-      ],
-      { className: "code-details" }
-    ),
-  ]);
-  return createCompositeElement(
-    "div",
-    [
-      createElement("span", {
-        className: "emphasized",
-        textContent:
-          "If you want to start logging without running the inspector:",
-      }),
-      createElement("br"),
-      createElement("span", {
-        textContent:
-          " You can now also start debugging on the device without " +
-          "having to create a token first, by replacing on the client script " +
-          "the token by ",
-      }),
-      createElement("span", {
-        className: "emphasized",
-        textContent:
-          password === null ? "!notoken" : "!notoken/<SERVER_PASSWORD>",
-      }),
-      createElement("span", {
-        textContent: ".",
-      }),
-      createElement("br"),
-      createElement("br"),
-      createElement("span", {
-        textContent: "This can be done in any of the following way:",
-      }),
-      createCompositeElement("ul", [liElt1, liElt2, liElt3]),
-    ],
-    {
-      className: "no-token-tutorial",
-    }
-  );
+  );`;
+  const liElt3 = strHtml`<li>
+    Import dynamically the script in your code by writing something like:
+    <details class="code-details">
+      <summary>code</summary>
+      <pre>${dynamicImportCode1}</pre>
+      Where <span class="emphasized">${"<RX_PLAYER_CLASS>"}</span>
+      is a reference to the RxPlayer's class in your code.
+      <br>
+      <br>
+      Alternatively, if that does not work because dynamic import is not
+      supported by your building process or by the device, you may be able
+      to rely on dynamic function creation instead:
+      <pre>${dynamicImportCode2}</pre>
+      Likewise don't forget to replace
+      <span class="emphasized">${"<RX_PLAYER_CLASS>"}</span>
+      by a reference to the RxPlayer's class in your code.
+    </details>
+  </li>`;
+
+  const noTokenStr = password === null ? "!notoken" : "!notoken/<SERVER_PASSWORD>";
+  const res = strHtml`<div class="no-token-tutorial">
+    <span class="emphasized">
+      If you want to start logging without running the inspector:
+    </span>
+    <br>
+    <span>
+      You can now also start debugging on the device without
+      having to create a token first, by replacing on the client script
+      the token by
+    </span>
+    <span class="emphasized">${noTokenStr}</span><span>.</span>;
+    <br>
+    <br>
+    <span>
+      This can be done in any of the following way:
+    </span>
+    <ul>${[liElt1, liElt2, liElt3]}</ul>
+  </div>`;
+  console.timeEnd("token2");
+  return res;
 }
 
 /**
@@ -374,31 +299,16 @@ function onActiveTokenListUpdate(
     const activeTokenDataElt: HTMLElement = activeTokensList.reduce(
       (acc, d) => {
         const date = new Date(d.date);
-
-        const link = createLinkElement({
-          href: reGeneratePageUrl(password, d.tokenId),
-        });
-        link.appendChild(
-          createElement("span", {
-            textContent:
-              date.toLocaleDateString() + " @ " + date.toLocaleTimeString(),
-          })
-        );
-        link.appendChild(document.createTextNode(" - "));
-        link.appendChild(
-          createElement("span", {
-            textContent: d.tokenId,
-          })
-        );
-        const listElt = createCompositeElement("li", [link], {
-          className: "button-input-right",
-        });
+        const dateStr = date.toLocaleDateString() + " @ " + date.toLocaleTimeString();
+        const linkElt = strHtml`<a href=${reGeneratePageUrl(password, d.tokenId)}>`;
+        linkElt.appendChild(strHtml`<span>${dateStr}</span>`);
+        linkElt.appendChild(document.createTextNode(" - "));
+        linkElt.appendChild(strHtml`<span>${d.tokenId}</span>`);
+        const listElt = strHtml`<li class="button-input-right">${linkElt}</li>`;
         acc.appendChild(listElt);
         return acc;
       },
-      createElement("ul", {
-        className: "active-token-list",
-      })
+      strHtml`<ul class="active-token-list" />`
     );
     activeTokensListElt.innerHTML = "";
     activeTokensListElt.appendChild(activeTokenDataElt);

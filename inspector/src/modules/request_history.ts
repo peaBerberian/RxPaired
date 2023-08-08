@@ -1,5 +1,5 @@
+import strHtml from "str-html";
 import { InspectorState, RequestInformation, STATE_PROPS } from "../constants";
-import { createCompositeElement, createElement } from "../dom-utils";
 import ObservableState from "../observable_state";
 import { ModuleFunction } from ".";
 
@@ -13,12 +13,10 @@ export default function generateRequestHistoryModule(
   }: {
     state: ObservableState<InspectorState>;
   }) {
-    const requestDataElt = createElement("div", {
-      textContent: "No request information",
-    });
-    const moduleBodyElt = createCompositeElement("div", [requestDataElt], {
-      className: "request-history-body module-body",
-    });
+    const requestDataElt = strHtml`<div>No request information</div>`;
+    const moduleBodyElt = strHtml`<div class="request-history-body module-body">
+      ${requestDataElt}
+    </>`;
     const stateProp =
       mediaType === "audio"
         ? STATE_PROPS.AUDIO_REQUEST_HISTORY
@@ -52,68 +50,40 @@ export default function generateRequestHistoryModule(
         return;
       }
       let canStillReceivePending = true;
-      const tableElt = createElement("table");
-      const firstTableRowElt = createCompositeElement("tr", [
-        createElement("th", {
-          textContent: "TS",
-        }),
-        createElement("th", {
-          textContent: "status",
-        }),
-        createElement("th", {
-          textContent: "Duration (ms)",
-        }),
-        createElement("th", {
-          textContent: "Period",
-        }),
-        createElement("th", {
-          textContent: "Representation",
-        }),
-        createElement("th", {
-          textContent: "Start Time (s)",
-        }),
-        createElement("th", {
-          textContent: "Duration (s)",
-        }),
-      ]);
-      tableElt.appendChild(firstTableRowElt);
+      const tableElt = strHtml`<table>
+        <ts>
+          <th>TS</th>
+          <th>status</th>
+          <th>Duration (ms)</th>
+          <th>Period</th>
+          <th>Representation</th>
+          <th>StartTime (s)</th>
+          <th>Duration (s)</th>
+        </ts>
+      </table>`;
       for (let i = requestInfo?.length - 1; i >= 0; i--) {
         const req = requestInfo[i];
         if (canStillReceivePending && req.eventType === "start") {
           pendingRequestInfo = {
-            element: createElement("td", { textContent: " - " }),
+            element: strHtml`<td> - </td>`,
             timestamp: req.timestamp,
           };
           updatePendingTimeElt();
-          tableElt.appendChild(
-            createCompositeElement("tr", [
-              createElement("td", {
-                textContent: String(req.timestamp),
-              }),
-              createElement("td", {
-                textContent: "pending",
-              }),
-              pendingRequestInfo.element,
-              createElement("td", {
-                textContent: req.periodId,
-              }),
-              createElement("td", {
-                textContent: req.representationId,
-              }),
-              createElement("td", {
-                textContent:
-                  req.segmentStart === -1
-                    ? "init"
-                    : String(req.segmentStart),
-              }),
-              createElement("td", {
-                textContent:
-                  req.segmentDuration === -1
-                    ? "-"
-                    : String(req.segmentDuration),
-              }),
-            ])
-          );
+
+          const newElt = strHtml`<tr>
+            <td>${req.timestamp}</td>
+            <td>pending</td>
+            ${pendingRequestInfo.element}
+            <td>${req.periodId}</td>
+            <td>${req.representationId}</td>
+            <td>
+              ${ req.segmentStart === -1 ? "init" : req.segmentStart }
+            </td>
+            <td>
+              ${req.segmentDuration === -1 ? "-" : req.segmentDuration }
+            </td>
+          </tr>`;
+          tableElt.appendChild(newElt);
           canStillReceivePending = false;
         } else if (req.eventType !== "start") {
           canStillReceivePending = false;
@@ -141,37 +111,21 @@ export default function generateRequestHistoryModule(
             const reqBase = requestInfo[j];
             if (isRequestingSameSegment(reqBase, req) && reqBase.eventType === "start") {
               tableElt.appendChild(
-                createCompositeElement("tr", [
-                  createElement("td", {
-                    textContent: String(reqBase.timestamp),
-                  }),
-                  createElement("td", {
-                    textContent: req.eventType,
-                  }),
-                  createElement("td", {
-                    textContent: String(
-                      (req.timestamp - reqBase.timestamp).toFixed(2)
-                    ),
-                  }),
-                  createElement("td", {
-                    textContent: req.periodId,
-                  }),
-                  createElement("td", {
-                    textContent: req.representationId,
-                  }),
-                  createElement("td", {
-                    textContent:
-                      req.segmentStart === -1
-                        ? "init"
-                        : String(req.segmentStart),
-                  }),
-                  createElement("td", {
-                    textContent:
-                      req.segmentDuration === -1
-                        ? "-"
-                        : String(req.segmentDuration),
-                  }),
-                ])
+                strHtml`<tr>
+                  <td>${reqBase.timestamp}</td>
+                  <td>pending</td>
+                  <td>
+                    ${(req.timestamp - reqBase.timestamp).toFixed(2)}
+                  </td>
+                  <td>${req.periodId}</td>
+                  <td>${req.representationId}</td>
+                  <td>
+                    ${ req.segmentStart === -1 ? "init" : req.segmentStart }
+                  </td>
+                  <td>
+                    ${req.segmentDuration === -1 ? "-" : req.segmentDuration }
+                  </td>
+                </tr>`
               );
               if (tableElt.childNodes.length >= MAX_REQ_ELEMENTS - 1) {
                 requestDataElt.appendChild(tableElt);
