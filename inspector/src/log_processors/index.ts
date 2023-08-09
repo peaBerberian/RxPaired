@@ -26,7 +26,7 @@ const REGEX_CANCELLED_REQUEST =
   /* eslint-disable-next-line max-len */
   /^(\d+\.\d+) \[\w+\] \w+: Segment request cancelled (\w+) P: ([^ ]+) A: ([^ ]+) R: ([^ ]+) S: (?:(?:(\d+(?:.\d+)?)-(\d+(?:.\d+)?))|(?:init))/;
 const REGEX_MANIFEST_PARSING_TIME =
-/^(\d+\.\d+) \[\w+\] \w+: Manifest parsed in (\d+(?:\.)\d+)ms/;
+  /^(\d+\.\d+) \[\w+\] \w+: Manifest parsed in (\d+(?:\.)\d+)ms/;
 
 /**
  * Each of the following objects is linked to a type of log.
@@ -52,35 +52,36 @@ const REGEX_MANIFEST_PARSING_TIME =
  *   by the newest, where we might stop calling the corresponding `LogProcessor`
  *   object once all of its `updatedProps` are already known.
  */
-const LogProcessors : Array<LogProcessor<keyof InspectorState>> = [
+const LogProcessors: Array<LogProcessor<keyof InspectorState>> = [
   {
-    filter: (log: string) : boolean =>
-      log.indexOf("Updating duration ") > -1,
-    processor: (log: string) : Array<StateUpdate<STATE_PROPS.CONTENT_DURATION>> =>
+    filter: (log: string): boolean => log.indexOf("Updating duration ") > -1,
+    processor: (
+      log: string,
+    ): Array<StateUpdate<STATE_PROPS.CONTENT_DURATION>> =>
       processDurationLog(log),
-    updatedProps: [ STATE_PROPS.CONTENT_DURATION ],
+    updatedProps: [STATE_PROPS.CONTENT_DURATION],
   },
 
   {
-    filter: (log: string) : boolean =>
+    filter: (log: string): boolean =>
       log.indexOf("video inventory timeline:") > -1,
-    processor: (log: string) : Array<StateUpdate<STATE_PROPS.VIDEO_INVENTORY>> =>
+    processor: (log: string): Array<StateUpdate<STATE_PROPS.VIDEO_INVENTORY>> =>
       processInventoryTimelineLog("video", log),
-    updatedProps: [ STATE_PROPS.VIDEO_INVENTORY ],
+    updatedProps: [STATE_PROPS.VIDEO_INVENTORY],
   },
 
   {
-    filter: (log: string) : boolean =>
+    filter: (log: string): boolean =>
       log.indexOf("audio inventory timeline:") > -1,
-    processor: (log: string) : Array<StateUpdate<STATE_PROPS.AUDIO_INVENTORY>> =>
+    processor: (log: string): Array<StateUpdate<STATE_PROPS.AUDIO_INVENTORY>> =>
       processInventoryTimelineLog("audio", log),
-    updatedProps: [ STATE_PROPS.AUDIO_INVENTORY ],
+    updatedProps: [STATE_PROPS.AUDIO_INVENTORY],
   },
 
   {
-    filter: (log: string) : boolean =>
+    filter: (log: string): boolean =>
       log.indexOf("current playback timeline") > -1,
-    processor: (log: string) : Array<StateUpdate<keyof InspectorState>> =>
+    processor: (log: string): Array<StateUpdate<keyof InspectorState>> =>
       processPlaybackTimelineLog(log),
     updatedProps: [
       STATE_PROPS.POSITION,
@@ -90,9 +91,9 @@ const LogProcessors : Array<LogProcessor<keyof InspectorState>> = [
   },
 
   {
-    filter: (log: string) : boolean =>
+    filter: (log: string): boolean =>
       log.indexOf("playerStateChange event") > -1,
-    processor: (log: string) : Array<StateUpdate<keyof InspectorState>> =>
+    processor: (log: string): Array<StateUpdate<keyof InspectorState>> =>
       processPlayerStateChangeLog(log),
     updatedProps: [
       STATE_PROPS.POSITION,
@@ -111,10 +112,10 @@ const LogProcessors : Array<LogProcessor<keyof InspectorState>> = [
   },
 
   {
-    filter: (log: string) : boolean =>
+    filter: (log: string): boolean =>
       log.indexOf("SF: Beginning request") > -1 ||
       log.indexOf("SF: Segment request ") > -1,
-    processor: (log: string) : Array<StateUpdate<keyof InspectorState>> =>
+    processor: (log: string): Array<StateUpdate<keyof InspectorState>> =>
       processRequestLog(log),
     updatedProps: [
       STATE_PROPS.AUDIO_REQUEST_HISTORY,
@@ -124,9 +125,8 @@ const LogProcessors : Array<LogProcessor<keyof InspectorState>> = [
   },
 
   {
-    filter: (log: string) : boolean =>
-      log.indexOf("Manifest parsed in ") > -1,
-    processor: (log: string) : Array<StateUpdate<keyof InspectorState>> =>
+    filter: (log: string): boolean => log.indexOf("Manifest parsed in ") > -1,
+    processor: (log: string): Array<StateUpdate<keyof InspectorState>> =>
       processManifestParsingTimeLog(log),
     updatedProps: [
       STATE_PROPS.AUDIO_REQUEST_HISTORY,
@@ -179,17 +179,19 @@ export interface StateUpdate<P extends keyof InspectorState> {
  * @returns {Array.<Object>}
  */
 function processDurationLog(
-  logTxt : string
-) : Array<StateUpdate<STATE_PROPS.CONTENT_DURATION>> {
+  logTxt: string,
+): Array<StateUpdate<STATE_PROPS.CONTENT_DURATION>> {
   const match = logTxt.match(REGEX_CONTENT_DURATION);
-  let duration : number;
+  let duration: number;
   if (match !== null) {
     duration = +match[1];
-    return [{
-      property: STATE_PROPS.CONTENT_DURATION,
-      updateType: UPDATE_TYPE.REPLACE,
-      updateValue: duration,
-    }];
+    return [
+      {
+        property: STATE_PROPS.CONTENT_DURATION,
+        updateType: UPDATE_TYPE.REPLACE,
+        updateValue: duration,
+      },
+    ];
   } else {
     console.error("Has duration log format changed");
   }
@@ -200,21 +202,24 @@ function processDurationLog(
  * @param {string} logTxt
  */
 function processPlaybackTimelineLog(
-  logTxt : string
-) : Array<StateUpdate<STATE_PROPS.POSITION |
-                      STATE_PROPS.BUFFER_GAPS |
-                      STATE_PROPS.BUFFERED_RANGES>>
-{
-  const stateUpdates : Array<
-    StateUpdate<STATE_PROPS.POSITION |
-    STATE_PROPS.BUFFER_GAPS |
-    STATE_PROPS.BUFFERED_RANGES>
-  >= [];
+  logTxt: string,
+): Array<
+  StateUpdate<
+    STATE_PROPS.POSITION | STATE_PROPS.BUFFER_GAPS | STATE_PROPS.BUFFERED_RANGES
+  >
+> {
+  const stateUpdates: Array<
+    StateUpdate<
+      | STATE_PROPS.POSITION
+      | STATE_PROPS.BUFFER_GAPS
+      | STATE_PROPS.BUFFERED_RANGES
+    >
+  > = [];
   const splitted = logTxt.split("\n");
   const lastIdx = splitted.length - 1;
   const positionPart = splitted[lastIdx - 1];
   const match = positionPart.match(REGEX_PLAYBACK_TIMELINE_POSITION);
-  let position : number;
+  let position: number;
   if (match !== null) {
     position = +match[1];
     stateUpdates.push({
@@ -228,7 +233,7 @@ function processPlaybackTimelineLog(
     } else {
       bufferLine = bufferLine.trim();
       let bufferGap;
-      const ranges : Array<[number, number]> = [];
+      const ranges: Array<[number, number]> = [];
       while (true) {
         let indexOfPipe = bufferLine.indexOf("|");
         if (indexOfPipe === -1) {
@@ -251,14 +256,14 @@ function processPlaybackTimelineLog(
           rangeEnd = parseFloat(bufferLine.substring(indexOfPipe + 1).trim());
         } else {
           rangeEnd = parseFloat(
-            bufferLine.substring(indexOfPipe + 1, indexOfTilde).trim()
+            bufferLine.substring(indexOfPipe + 1, indexOfTilde).trim(),
           );
         }
         if (isNaN(rangeEnd)) {
           console.error("Has buffer range end log format changed?");
           break;
         }
-        ranges.push([ rangeStart, rangeEnd ]);
+        ranges.push([rangeStart, rangeEnd]);
         if (position >= rangeStart && position <= rangeEnd) {
           bufferGap = rangeEnd - position;
         }
@@ -299,33 +304,38 @@ function processPlaybackTimelineLog(
  * @param {string} logTxt
  */
 function processPlayerStateChangeLog(
-  logTxt : string
-) : Array<StateUpdate<STATE_PROPS.POSITION |
-                      STATE_PROPS.BUFFER_GAPS |
-                      STATE_PROPS.BUFFERED_RANGES |
-                      STATE_PROPS.CONTENT_DURATION |
-                      STATE_PROPS.VIDEO_INVENTORY |
-                      STATE_PROPS.AUDIO_INVENTORY |
-                      STATE_PROPS.AUDIO_REQUEST_HISTORY |
-                      STATE_PROPS.VIDEO_REQUEST_HISTORY |
-                      STATE_PROPS.TEXT_REQUEST_HISTORY |
-                      STATE_PROPS.STATE_CHANGE_HISTORY |
-                      STATE_PROPS.MANIFEST_PARSING_TIME_HISTORY |
-                      STATE_PROPS.PLAYER_STATE>>
-{
-  const stateUpdates : Array<
-    StateUpdate<STATE_PROPS.POSITION |
-                STATE_PROPS.BUFFER_GAPS |
-                STATE_PROPS.BUFFERED_RANGES |
-                STATE_PROPS.CONTENT_DURATION |
-                STATE_PROPS.VIDEO_INVENTORY |
-                STATE_PROPS.AUDIO_INVENTORY |
-                STATE_PROPS.AUDIO_REQUEST_HISTORY |
-                STATE_PROPS.VIDEO_REQUEST_HISTORY |
-                STATE_PROPS.TEXT_REQUEST_HISTORY |
-                STATE_PROPS.STATE_CHANGE_HISTORY |
-                STATE_PROPS.MANIFEST_PARSING_TIME_HISTORY |
-                STATE_PROPS.PLAYER_STATE>
+  logTxt: string,
+): Array<
+  StateUpdate<
+    | STATE_PROPS.POSITION
+    | STATE_PROPS.BUFFER_GAPS
+    | STATE_PROPS.BUFFERED_RANGES
+    | STATE_PROPS.CONTENT_DURATION
+    | STATE_PROPS.VIDEO_INVENTORY
+    | STATE_PROPS.AUDIO_INVENTORY
+    | STATE_PROPS.AUDIO_REQUEST_HISTORY
+    | STATE_PROPS.VIDEO_REQUEST_HISTORY
+    | STATE_PROPS.TEXT_REQUEST_HISTORY
+    | STATE_PROPS.STATE_CHANGE_HISTORY
+    | STATE_PROPS.MANIFEST_PARSING_TIME_HISTORY
+    | STATE_PROPS.PLAYER_STATE
+  >
+> {
+  const stateUpdates: Array<
+    StateUpdate<
+      | STATE_PROPS.POSITION
+      | STATE_PROPS.BUFFER_GAPS
+      | STATE_PROPS.BUFFERED_RANGES
+      | STATE_PROPS.CONTENT_DURATION
+      | STATE_PROPS.VIDEO_INVENTORY
+      | STATE_PROPS.AUDIO_INVENTORY
+      | STATE_PROPS.AUDIO_REQUEST_HISTORY
+      | STATE_PROPS.VIDEO_REQUEST_HISTORY
+      | STATE_PROPS.TEXT_REQUEST_HISTORY
+      | STATE_PROPS.STATE_CHANGE_HISTORY
+      | STATE_PROPS.MANIFEST_PARSING_TIME_HISTORY
+      | STATE_PROPS.PLAYER_STATE
+    >
   > = [];
   const match = logTxt.match(REGEX_PLAYER_STATE_CHANGE_STATE);
   if (match !== null) {
@@ -360,10 +370,12 @@ function processPlayerStateChangeLog(
       stateUpdates.push({
         property: STATE_PROPS.STATE_CHANGE_HISTORY,
         updateType: UPDATE_TYPE.PUSH,
-        updateValue: [{
-          timestamp: parseFloat(logTxt),
-          state: playerState,
-        }],
+        updateValue: [
+          {
+            timestamp: parseFloat(logTxt),
+            state: playerState,
+          },
+        ],
       });
     }
     if (
@@ -417,17 +429,19 @@ function processPlayerStateChangeLog(
  * @param {string} logTxt
  */
 function processInventoryTimelineLog(
-  mediaType : "audio",
-  logTxt : string
-) : Array<StateUpdate<STATE_PROPS.AUDIO_INVENTORY>>;
+  mediaType: "audio",
+  logTxt: string,
+): Array<StateUpdate<STATE_PROPS.AUDIO_INVENTORY>>;
 function processInventoryTimelineLog(
-  mediaType : "video",
-  logTxt : string
-) : Array<StateUpdate<STATE_PROPS.VIDEO_INVENTORY>>;
+  mediaType: "video",
+  logTxt: string,
+): Array<StateUpdate<STATE_PROPS.VIDEO_INVENTORY>>;
 function processInventoryTimelineLog(
-  mediaType : "audio" | "video",
-  logTxt : string
-) : Array<StateUpdate<STATE_PROPS.VIDEO_INVENTORY | STATE_PROPS.AUDIO_INVENTORY>> {
+  mediaType: "audio" | "video",
+  logTxt: string,
+): Array<
+  StateUpdate<STATE_PROPS.VIDEO_INVENTORY | STATE_PROPS.AUDIO_INVENTORY>
+> {
   const splitted = logTxt.split("\n");
 
   // Example of format:
@@ -441,8 +455,10 @@ function processInventoryTimelineLog(
   // Then we will parse the timeline and associate both.
 
   let currentIndex = splitted.length - 1;
-  const representationsInfo : Record<string,
-                                     InventoryTimelineRepresentationInfo> = {};
+  const representationsInfo: Record<
+    string,
+    InventoryTimelineRepresentationInfo
+  > = {};
   while (
     splitted[currentIndex] !== undefined &&
     splitted[currentIndex][0] === "["
@@ -457,16 +473,19 @@ function processInventoryTimelineLog(
     }
     const periodId = substrStartingWithPeriodId.substring(0, indexOfRep);
 
-    const representationInfoStr = substrStartingWithPeriodId
-      .substring(indexOfRep + " || R: ".length);
+    const representationInfoStr = substrStartingWithPeriodId.substring(
+      indexOfRep + " || R: ".length,
+    );
     const match = representationInfoStr.match(REGEX_PLAYBACK_INVENTORY_BITRATE);
     if (match === null) {
       console.error("Has inventory timeline log format changed?");
       return [];
     }
     const bitrate = +match[1];
-    const representationId = representationInfoStr
-      .substring(0, representationInfoStr.length - match[0].length);
+    const representationId = representationInfoStr.substring(
+      0,
+      representationInfoStr.length - match[0].length,
+    );
     representationsInfo[repLetter] = {
       bitrate,
       periodId,
@@ -478,12 +497,9 @@ function processInventoryTimelineLog(
   // We should now be at the timeline line, like:
   // 0.00|A|6.00 ~ 6.00|B|9.00 ~ 9.00|A|15.00 ~ 15.00|B|18.00
 
-  const ranges : InventoryTimelineRangeInfo[] = [];
+  const ranges: InventoryTimelineRangeInfo[] = [];
   let remainingTimeline = splitted[currentIndex];
-  while (
-    remainingTimeline !== undefined &&
-    remainingTimeline.length > 0
-  ) {
+  while (remainingTimeline !== undefined && remainingTimeline.length > 0) {
     const match = remainingTimeline.match(REGEX_PLAYBACK_INVENTORY_RANGE);
     if (match === null) {
       console.error("Has inventory timeline log format changed?");
@@ -493,7 +509,9 @@ function processInventoryTimelineLog(
     const letter = match[2];
     const end = +match[3];
     ranges.push({ start, end, letter });
-    remainingTimeline = remainingTimeline.substring(match[0].length + " ~ ".length);
+    remainingTimeline = remainingTimeline.substring(
+      match[0].length + " ~ ".length,
+    );
   }
 
   const firstLine = splitted[0];
@@ -503,17 +521,21 @@ function processInventoryTimelineLog(
   }
 
   if (mediaType === "video") {
-    return [{
-      property: STATE_PROPS.VIDEO_INVENTORY,
-      updateType: UPDATE_TYPE.REPLACE,
-      updateValue: { representations: representationsInfo, ranges },
-    }];
+    return [
+      {
+        property: STATE_PROPS.VIDEO_INVENTORY,
+        updateType: UPDATE_TYPE.REPLACE,
+        updateValue: { representations: representationsInfo, ranges },
+      },
+    ];
   } else if (mediaType === "audio") {
-    return [{
-      property: STATE_PROPS.AUDIO_INVENTORY,
-      updateType: UPDATE_TYPE.REPLACE,
-      updateValue: { representations: representationsInfo, ranges },
-    }];
+    return [
+      {
+        property: STATE_PROPS.AUDIO_INVENTORY,
+        updateType: UPDATE_TYPE.REPLACE,
+        updateValue: { representations: representationsInfo, ranges },
+      },
+    ];
   }
   return [];
 }
@@ -523,40 +545,50 @@ function processInventoryTimelineLog(
  * @returns {Array.<Object>}
  */
 function processRequestLog(
-  logTxt : string
-) : Array<StateUpdate<
-  STATE_PROPS.AUDIO_REQUEST_HISTORY |
-  STATE_PROPS.VIDEO_REQUEST_HISTORY |
-  STATE_PROPS.TEXT_REQUEST_HISTORY
->> {
+  logTxt: string,
+): Array<
+  StateUpdate<
+    | STATE_PROPS.AUDIO_REQUEST_HISTORY
+    | STATE_PROPS.VIDEO_REQUEST_HISTORY
+    | STATE_PROPS.TEXT_REQUEST_HISTORY
+  >
+> {
   // Welcome to RegExp hell
-  let parsed : [string, RequestInformation] | null = null;
+  let parsed: [string, RequestInformation] | null = null;
   if (logTxt.indexOf("SF: Beginning request") >= 0) {
     const match = logTxt.match(REGEX_BEGINNING_REQUEST);
     parsed = parseRequestInformation(match, "start");
     if (parsed === null) {
-      console.error("Unrecognized type. Has Beginning request log format changed?");
+      console.error(
+        "Unrecognized type. Has Beginning request log format changed?",
+      );
       return [];
     }
   } else if (logTxt.indexOf("SF: Segment request ended") >= 0) {
     const match = logTxt.match(REGEX_ENDED_REQUEST);
     parsed = parseRequestInformation(match, "success");
     if (parsed === null) {
-      console.error("Unrecognized type. Has ending request log format changed?");
+      console.error(
+        "Unrecognized type. Has ending request log format changed?",
+      );
       return [];
     }
   } else if (logTxt.indexOf("SF: Segment request failed") >= 0) {
     const match = logTxt.match(REGEX_FAILED_REQUEST);
     parsed = parseRequestInformation(match, "failed");
     if (parsed === null) {
-      console.error("Unrecognized type. Has ending request log format changed?");
+      console.error(
+        "Unrecognized type. Has ending request log format changed?",
+      );
       return [];
     }
   } else if (logTxt.indexOf("SF: Segment request cancelled") >= 0) {
     const match = logTxt.match(REGEX_CANCELLED_REQUEST);
     parsed = parseRequestInformation(match, "aborted");
     if (parsed === null) {
-      console.error("Unrecognized type. Has ending request log format changed?");
+      console.error(
+        "Unrecognized type. Has ending request log format changed?",
+      );
       return [];
     }
   }
@@ -566,34 +598,40 @@ function processRequestLog(
   const [mediaType, requestInfo] = parsed;
   switch (mediaType) {
     case "audio":
-      return [{
-        property: STATE_PROPS.AUDIO_REQUEST_HISTORY,
-        updateType: UPDATE_TYPE.PUSH,
-        updateValue: [requestInfo],
-      }];
+      return [
+        {
+          property: STATE_PROPS.AUDIO_REQUEST_HISTORY,
+          updateType: UPDATE_TYPE.PUSH,
+          updateValue: [requestInfo],
+        },
+      ];
     case "video":
-      return [{
-        property: STATE_PROPS.VIDEO_REQUEST_HISTORY,
-        updateType: UPDATE_TYPE.PUSH,
-        updateValue: [requestInfo],
-      }];
+      return [
+        {
+          property: STATE_PROPS.VIDEO_REQUEST_HISTORY,
+          updateType: UPDATE_TYPE.PUSH,
+          updateValue: [requestInfo],
+        },
+      ];
     case "text":
-      return [{
-        property: STATE_PROPS.TEXT_REQUEST_HISTORY,
-        updateType: UPDATE_TYPE.PUSH,
-        updateValue: [requestInfo],
-      }];
+      return [
+        {
+          property: STATE_PROPS.TEXT_REQUEST_HISTORY,
+          updateType: UPDATE_TYPE.PUSH,
+          updateValue: [requestInfo],
+        },
+      ];
     default:
       console.error(
         "Unrecognized type. Has Beginning request log format changed?",
-        mediaType
+        mediaType,
       );
   }
   return [];
 
   function parseRequestInformation(
     match: RegExpMatchArray | null,
-    eventType: RequestInformation["eventType"]
+    eventType: RequestInformation["eventType"],
   ): [string, RequestInformation] | null {
     if (match === null) {
       return null;
@@ -608,15 +646,18 @@ function processRequestLog(
     if (isNaN(timestamp) || isNaN(segmentStart) || isNaN(segmentDuration)) {
       return null;
     } else {
-      return [parsedMediaType, {
-        eventType,
-        timestamp,
-        periodId,
-        adaptationId,
-        representationId,
-        segmentStart,
-        segmentDuration,
-      }];
+      return [
+        parsedMediaType,
+        {
+          eventType,
+          timestamp,
+          periodId,
+          adaptationId,
+          representationId,
+          segmentStart,
+          segmentDuration,
+        },
+      ];
     }
   }
 }
@@ -626,25 +667,33 @@ function processRequestLog(
  * @returns {Array.<Object>}
  */
 function processManifestParsingTimeLog(
-  logTxt : string
-) : Array<StateUpdate<STATE_PROPS.MANIFEST_PARSING_TIME_HISTORY>> {
+  logTxt: string,
+): Array<StateUpdate<STATE_PROPS.MANIFEST_PARSING_TIME_HISTORY>> {
   const match = logTxt.match(REGEX_MANIFEST_PARSING_TIME);
   if (match === null) {
-    console.error("Unrecognized manifest parsing time log format. Has it changed?");
+    console.error(
+      "Unrecognized manifest parsing time log format. Has it changed?",
+    );
     return [];
   }
   const timestamp = +match[1];
   const timeMs = +match[2];
   if (isNaN(timestamp) || isNaN(timeMs)) {
-    console.error("Unrecognized manifest parsing time log format. Has it changed?");
+    console.error(
+      "Unrecognized manifest parsing time log format. Has it changed?",
+    );
     return [];
   }
-  return [{
-    property: STATE_PROPS.MANIFEST_PARSING_TIME_HISTORY,
-    updateType: UPDATE_TYPE.PUSH,
-    updateValue: [{
-      timeMs,
-      timestamp,
-    }],
-  }];
+  return [
+    {
+      property: STATE_PROPS.MANIFEST_PARSING_TIME_HISTORY,
+      updateType: UPDATE_TYPE.PUSH,
+      updateValue: [
+        {
+          timeMs,
+          timestamp,
+        },
+      ],
+    },
+  ];
 }

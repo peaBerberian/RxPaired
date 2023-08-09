@@ -26,23 +26,26 @@ const COLORS = [
 ];
 
 export default function generateAudioVideoBufferContentModule(
-  mediaType: "audio" | "video"
-) : ModuleFunction {
+  mediaType: "audio" | "video",
+): ModuleFunction {
   /**
    * Display a graph representing what has been buffered in the SourceBuffer
    * of the given `mediaType`.
    * @param {Object}
    * @returns {Object}
    */
-  return function BufferAudioVideoModule(
-    { state, configState } : ModuleFunctionArguments
-  ) : ModuleObject {
-    const listenedStateProp = mediaType === "video" ?
-      STATE_PROPS.VIDEO_INVENTORY :
-      STATE_PROPS.AUDIO_INVENTORY;
-    const canvasElt = strHtml`<canvas class="canvas-buffer-size" />` as HTMLCanvasElement;
+  return function BufferAudioVideoModule({
+    state,
+    configState,
+  }: ModuleFunctionArguments): ModuleObject {
+    const listenedStateProp =
+      mediaType === "video"
+        ? STATE_PROPS.VIDEO_INVENTORY
+        : STATE_PROPS.AUDIO_INVENTORY;
+    const canvasElt =
+      strHtml`<canvas class="canvas-buffer-size" />` as HTMLCanvasElement;
     const canvasCtx = canvasElt.getContext("2d");
-    let currentRangesScaled : ScaledRangeInfo[] = [];
+    let currentRangesScaled: ScaledRangeInfo[] = [];
 
     const canvasParent = strHtml`<div>${canvasElt}</div>`;
     canvasParent.style.textAlign = "center";
@@ -70,8 +73,7 @@ export default function generateAudioVideoBufferContentModule(
     currentRangeRepInfoElt.style.marginTop = "5px";
 
     const hoveredRangeTitle = strHtml`<span>Hovered range:</span>`;
-    const hoveredRangeData =
-      strHtml`<span class="emphasized">Hover range to show</span>`;
+    const hoveredRangeData = strHtml`<span class="emphasized">Hover range to show</span>`;
     hoveredRangeData.style.marginLeft = "5px";
     const hoveredRangeElt = strHtml`<div>${[
       hoveredRangeTitle,
@@ -80,8 +82,7 @@ export default function generateAudioVideoBufferContentModule(
     hoveredRangeElt.style.marginTop = "5px";
 
     const hoveredRangeRepInfoTitle = strHtml`<span>Hovered Representation:</span>`;
-    const hoveredRangeRepInfoData =
-      strHtml`<span class="emphasized">Hover range to show</span>`;
+    const hoveredRangeRepInfoData = strHtml`<span class="emphasized">Hover range to show</span>`;
     hoveredRangeRepInfoData.style.marginLeft = "5px";
     const hoveredRangeRepInfoElt = strHtml`<div>${[
       hoveredRangeRepInfoTitle,
@@ -119,9 +120,7 @@ export default function generateAudioVideoBufferContentModule(
     };
 
     function reRender() {
-      const inventory = state.getCurrentState(
-        listenedStateProp
-      );
+      const inventory = state.getCurrentState(listenedStateProp);
       if (canvasCtx === null || inventory === undefined) {
         setEmptyState();
         return;
@@ -133,11 +132,14 @@ export default function generateAudioVideoBufferContentModule(
       const currentTime = state.getCurrentState(STATE_PROPS.POSITION);
       const duration = state.getCurrentState(STATE_PROPS.CONTENT_DURATION);
       const minimumBuffered = inventory.ranges[0]?.start ?? 0;
-      const maximumBuffered = duration ??
-                              inventory.ranges[inventory.ranges.length - 1]?.end ?? 1000;
+      const maximumBuffered =
+        duration ?? inventory.ranges[inventory.ranges.length - 1]?.end ?? 1000;
       let minimumPosition;
       let maximumPosition;
-      if (maximumBuffered > 20000 && maximumBuffered - minimumBuffered > 11000) {
+      if (
+        maximumBuffered > 20000 &&
+        maximumBuffered - minimumBuffered > 11000
+      ) {
         if (currentTime === undefined) {
           minimumPosition = minimumBuffered;
           maximumPosition = maximumBuffered;
@@ -157,18 +159,24 @@ export default function generateAudioVideoBufferContentModule(
         return;
       }
 
-      currentRangesScaled = scaleSegments(inventory, minimumPosition, maximumPosition);
+      currentRangesScaled = scaleSegments(
+        inventory,
+        minimumPosition,
+        maximumPosition,
+      );
 
       for (let i = 0; i < currentRangesScaled.length; i++) {
         paintRange(currentRangesScaled[i]);
       }
 
       if (currentTime !== undefined) {
-        paintCurrentPosition(currentTime,
-                             minimumPosition,
-                             maximumPosition,
-                             canvasCtx,
-                             configState);
+        paintCurrentPosition(
+          currentTime,
+          minimumPosition,
+          maximumPosition,
+          canvasCtx,
+          configState,
+        );
         for (let i = 0; i < currentRangesScaled.length; i++) {
           const rangeInfo = currentRangesScaled[i];
           const { start, end, representationInfo } = rangeInfo;
@@ -179,7 +187,8 @@ export default function generateAudioVideoBufferContentModule(
             if (representationInfo === undefined) {
               currentRangeRepInfoData.textContent = "None";
             } else {
-              const { periodId, bitrate, representationId } = representationInfo;
+              const { periodId, bitrate, representationId } =
+                representationInfo;
               currentRangeRepInfoData.textContent =
                 `Period: "${periodId}" - Representation: "${representationId}" ` +
                 `- Bitrate: ${bitrate}`;
@@ -192,7 +201,9 @@ export default function generateAudioVideoBufferContentModule(
       currentRangeRepInfoData.textContent = "None";
     }
 
-    function getMousePositionInPercentage(event : MouseEvent) : number | undefined {
+    function getMousePositionInPercentage(
+      event: MouseEvent,
+    ): number | undefined {
       if (canvasElt === null) {
         return;
       }
@@ -206,16 +217,17 @@ export default function generateAudioVideoBufferContentModule(
       return clickPosPx / endPointPx;
     }
 
-    function onMouseMove(event : MouseEvent) {
+    function onMouseMove(event: MouseEvent) {
       const mousePercent = getMousePositionInPercentage(event);
       if (mousePercent === undefined) {
         return;
       }
       for (let i = 0; i < currentRangesScaled.length; i++) {
         const rangeScaled = currentRangesScaled[i];
-        if (mousePercent >= rangeScaled.scaledStart &&
-            mousePercent < rangeScaled.scaledEnd)
-        {
+        if (
+          mousePercent >= rangeScaled.scaledStart &&
+          mousePercent < rangeScaled.scaledEnd
+        ) {
           const { start, end, representationInfo } = rangeScaled;
 
           hoveredRangeData.textContent =
@@ -229,7 +241,7 @@ export default function generateAudioVideoBufferContentModule(
               `Period: "${periodId}" - Representation: "${representationId}" ` +
               `- Bitrate: ${bitrate}`;
           }
-          return ;
+          return;
         }
       }
       hoveredRangeData.textContent = "Hover range to show";
@@ -246,9 +258,7 @@ export default function generateAudioVideoBufferContentModule(
      * @param {Object} rangeScaled - Buffered segment information with added
      * "scaling" information to know where it fits in the canvas.
      */
-    function paintRange(
-      rangeScaled : ScaledRangeInfo
-    ) : void {
+    function paintRange(rangeScaled: ScaledRangeInfo): void {
       if (canvasCtx === null) {
         return;
       }
@@ -258,10 +268,12 @@ export default function generateAudioVideoBufferContentModule(
       // TODO dark mode
       // const isDark = configState.getCurrentState(STATE_PROPS.CSS_MODE) === "dark";
       canvasCtx.fillStyle = getColorFromLetter(rangeScaled.letter);
-      canvasCtx.fillRect(Math.ceil(startX),
-                         0,
-                         Math.ceil(endX - startX),
-                         CANVAS_HEIGHT);
+      canvasCtx.fillRect(
+        Math.ceil(startX),
+        0,
+        Math.ceil(endX - startX),
+        CANVAS_HEIGHT,
+      );
     }
 
     function setEmptyState() {
@@ -287,24 +299,27 @@ export default function generateAudioVideoBufferContentModule(
  * @param {Object} canvasCtx - The canvas' 2D context
  */
 function paintCurrentPosition(
-  position : number,
-  minimumPosition : number,
-  maximumPosition : number,
-  canvasCtx : CanvasRenderingContext2D,
-  configState : ObservableState<ConfigState>
+  position: number,
+  minimumPosition: number,
+  maximumPosition: number,
+  canvasCtx: CanvasRenderingContext2D,
+  configState: ObservableState<ConfigState>,
 ) {
-  if (typeof position === "number" &&
-      position >= minimumPosition &&
-      position < maximumPosition)
-  {
+  if (
+    typeof position === "number" &&
+    position >= minimumPosition &&
+    position < maximumPosition
+  ) {
     const lengthCanvas = maximumPosition - minimumPosition;
     const isDark = configState.getCurrentState(STATE_PROPS.CSS_MODE) === "dark";
     canvasCtx.fillStyle = isDark ? "#FFFFFF" : "#FF2323";
-    canvasCtx.fillRect(Math.ceil((position - minimumPosition) /
-                                    lengthCanvas * CANVAS_WIDTH) - 1,
-                       5,
-                       50,
-                       CANVAS_HEIGHT - 10);
+    canvasCtx.fillRect(
+      Math.ceil(((position - minimumPosition) / lengthCanvas) * CANVAS_WIDTH) -
+        1,
+      5,
+      50,
+      CANVAS_HEIGHT - 10,
+    );
   }
 }
 
@@ -326,10 +341,10 @@ interface ScaledRangeInfo {
  * @returns {Array.<Object>}
  */
 function scaleSegments(
-  inventoryInfo : InventoryTimelineInfo,
-  minimumPosition : number,
-  maximumPosition : number
-) : ScaledRangeInfo[] {
+  inventoryInfo: InventoryTimelineInfo,
+  minimumPosition: number,
+  maximumPosition: number,
+): ScaledRangeInfo[] {
   const scaledSegments = [];
   const wholeDuration = maximumPosition - minimumPosition;
   for (let i = 0; i < inventoryInfo.ranges.length; i++) {
@@ -340,12 +355,14 @@ function scaleSegments(
       const endPoint = Math.min(end - minimumPosition, maximumPosition);
       const scaledStart = startPoint / wholeDuration;
       const scaledEnd = endPoint / wholeDuration;
-      scaledSegments.push({ scaledStart,
-                            scaledEnd,
-                            start,
-                            end,
-                            letter,
-                            representationInfo });
+      scaledSegments.push({
+        scaledStart,
+        scaledEnd,
+        start,
+        end,
+        letter,
+        representationInfo,
+      });
     }
   }
   return scaledSegments;
@@ -355,14 +372,11 @@ function scaleSegments(
  * Clear.
  * @param {Object} canvasContext
  */
-function clearCanvas(canvasContext : CanvasRenderingContext2D) : void {
+function clearCanvas(canvasContext: CanvasRenderingContext2D): void {
   canvasContext.clearRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
 }
 
-function getColorFromLetter(
-  letter: string
-) : string {
+function getColorFromLetter(letter: string): string {
   const charCode = letter.charCodeAt(0);
-  return isNaN(charCode) ? COLORS[0] :
-                           COLORS[charCode % COLORS.length];
+  return isNaN(charCode) ? COLORS[0] : COLORS[charCode % COLORS.length];
 }

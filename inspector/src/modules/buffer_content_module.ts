@@ -13,12 +13,14 @@ const CANVAS_HEIGHT = 100;
  * describing the buffered data when hovering represented data.
  * @param {Object}
  */
-export default function BufferContentModule(
-  { state, configState } : ModuleFunctionArguments
-) {
-  const canvasElt = strHtml`<canvas class="canvas-buffer-size" />` as HTMLCanvasElement;
+export default function BufferContentModule({
+  state,
+  configState,
+}: ModuleFunctionArguments) {
+  const canvasElt =
+    strHtml`<canvas class="canvas-buffer-size" />` as HTMLCanvasElement;
   const canvasCtx = canvasElt.getContext("2d");
-  let currentRangesScaled : ScaledRangeInfo[] = [];
+  let currentRangesScaled: ScaledRangeInfo[] = [];
 
   const canvasParent = strHtml`<div>${canvasElt}</div>`;
   canvasParent.style.textAlign = "center";
@@ -74,9 +76,7 @@ export default function BufferContentModule(
   };
 
   function reRender() {
-    const buffered = state.getCurrentState(
-      STATE_PROPS.BUFFERED_RANGES
-    );
+    const buffered = state.getCurrentState(STATE_PROPS.BUFFERED_RANGES);
     if (canvasCtx === null || buffered === undefined) {
       setEmptyState();
       return;
@@ -88,8 +88,8 @@ export default function BufferContentModule(
     const currentTime = state.getCurrentState(STATE_PROPS.POSITION);
     const duration = state.getCurrentState(STATE_PROPS.CONTENT_DURATION);
     const minimumBuffered = buffered?.[0]?.[0] ?? 0;
-    const maximumBuffered = duration ??
-                            buffered?.[buffered.length - 1]?.[1] ?? 1000;
+    const maximumBuffered =
+      duration ?? buffered?.[buffered.length - 1]?.[1] ?? 1000;
     let minimumPosition;
     let maximumPosition;
     if (maximumBuffered > 20000 && maximumBuffered - minimumBuffered > 11000) {
@@ -111,18 +111,24 @@ export default function BufferContentModule(
       setEmptyState();
       return;
     }
-    currentRangesScaled = scaleSegments(buffered, minimumPosition, maximumPosition);
+    currentRangesScaled = scaleSegments(
+      buffered,
+      minimumPosition,
+      maximumPosition,
+    );
 
     for (let i = 0; i < currentRangesScaled.length; i++) {
       paintRange(currentRangesScaled[i]);
     }
 
     if (currentTime !== undefined) {
-      paintCurrentPosition(currentTime,
-                           minimumPosition,
-                           maximumPosition,
-                           canvasCtx,
-                           configState);
+      paintCurrentPosition(
+        currentTime,
+        minimumPosition,
+        maximumPosition,
+        canvasCtx,
+        configState,
+      );
       for (let i = 0; i < currentRangesScaled.length; i++) {
         const rangeInfo = currentRangesScaled[i];
         const [start, end] = rangeInfo.bufferedInfos;
@@ -137,7 +143,7 @@ export default function BufferContentModule(
     currentRangeData.textContent = "None";
   }
 
-  function getMousePositionInPercentage(event : MouseEvent) : number | undefined {
+  function getMousePositionInPercentage(event: MouseEvent): number | undefined {
     if (canvasElt === null) {
       return;
     }
@@ -151,22 +157,23 @@ export default function BufferContentModule(
     return clickPosPx / endPointPx;
   }
 
-  function onMouseMove(event : MouseEvent) {
+  function onMouseMove(event: MouseEvent) {
     const mousePercent = getMousePositionInPercentage(event);
     if (mousePercent === undefined) {
       return;
     }
     for (let i = 0; i < currentRangesScaled.length; i++) {
       const rangeScaled = currentRangesScaled[i];
-      if (mousePercent >= rangeScaled.scaledStart &&
-          mousePercent < rangeScaled.scaledEnd)
-      {
+      if (
+        mousePercent >= rangeScaled.scaledStart &&
+        mousePercent < rangeScaled.scaledEnd
+      ) {
         const [start, end] = rangeScaled.bufferedInfos;
 
         hoveredRangeData.textContent =
           `${start.toFixed(2)} - ${end.toFixed(2)} ` +
           `(${i + 1} / ${currentRangesScaled.length})`;
-        return ;
+        return;
       }
     }
     hoveredRangeData.textContent = "Hover range to show";
@@ -181,9 +188,7 @@ export default function BufferContentModule(
    * @param {Object} rangeScaled - Buffered segment information with added
    * "scaling" information to know where it fits in the canvas.
    */
-  function paintRange(
-    rangeScaled : ScaledRangeInfo
-  ) : void {
+  function paintRange(rangeScaled: ScaledRangeInfo): void {
     if (canvasCtx === null) {
       return;
     }
@@ -191,10 +196,12 @@ export default function BufferContentModule(
     const endX = rangeScaled.scaledEnd * CANVAS_WIDTH;
     const isDark = configState.getCurrentState(STATE_PROPS.CSS_MODE) === "dark";
     canvasCtx.fillStyle = isDark ? "#c864c8" : "#000000";
-    canvasCtx.fillRect(Math.ceil(startX),
-                       0,
-                       Math.ceil(endX - startX),
-                       CANVAS_HEIGHT);
+    canvasCtx.fillRect(
+      Math.ceil(startX),
+      0,
+      Math.ceil(endX - startX),
+      CANVAS_HEIGHT,
+    );
   }
 
   function setEmptyState() {
@@ -217,31 +224,34 @@ export default function BufferContentModule(
  * @param {Object} canvasCtx - The canvas' 2D context
  */
 function paintCurrentPosition(
-  position : number,
-  minimumPosition : number,
-  maximumPosition : number,
-  canvasCtx : CanvasRenderingContext2D,
-  configState : ObservableState<ConfigState>
+  position: number,
+  minimumPosition: number,
+  maximumPosition: number,
+  canvasCtx: CanvasRenderingContext2D,
+  configState: ObservableState<ConfigState>,
 ) {
-  if (typeof position === "number" &&
-      position >= minimumPosition &&
-      position < maximumPosition)
-  {
+  if (
+    typeof position === "number" &&
+    position >= minimumPosition &&
+    position < maximumPosition
+  ) {
     const lengthCanvas = maximumPosition - minimumPosition;
     const isDark = configState.getCurrentState(STATE_PROPS.CSS_MODE) === "dark";
     canvasCtx.fillStyle = isDark ? "#FFFFFF" : "#FF2323";
-    canvasCtx.fillRect(Math.ceil((position - minimumPosition) /
-                                    lengthCanvas * CANVAS_WIDTH) - 1,
-                       5,
-                       50,
-                       CANVAS_HEIGHT - 10);
+    canvasCtx.fillRect(
+      Math.ceil(((position - minimumPosition) / lengthCanvas) * CANVAS_WIDTH) -
+        1,
+      5,
+      50,
+      CANVAS_HEIGHT - 10,
+    );
   }
 }
 
 interface ScaledRangeInfo {
-  scaledStart : number;
-  scaledEnd : number;
-  bufferedInfos : [number, number];
+  scaledStart: number;
+  scaledEnd: number;
+  bufferedInfos: [number, number];
 }
 
 /**
@@ -253,10 +263,10 @@ interface ScaledRangeInfo {
  * @returns {Array.<Object>}
  */
 function scaleSegments(
-  bufferedData : Array<[number, number]>,
-  minimumPosition : number,
-  maximumPosition : number
-) : ScaledRangeInfo[] {
+  bufferedData: Array<[number, number]>,
+  minimumPosition: number,
+  maximumPosition: number,
+): ScaledRangeInfo[] {
   const scaledSegments = [];
   const wholeDuration = maximumPosition - minimumPosition;
   for (let i = 0; i < bufferedData.length; i++) {
@@ -267,9 +277,7 @@ function scaleSegments(
       const endPoint = Math.min(end - minimumPosition, maximumPosition);
       const scaledStart = startPoint / wholeDuration;
       const scaledEnd = endPoint / wholeDuration;
-      scaledSegments.push({ scaledStart,
-                            scaledEnd,
-                            bufferedInfos });
+      scaledSegments.push({ scaledStart, scaledEnd, bufferedInfos });
     }
   }
   return scaledSegments;
@@ -279,6 +287,6 @@ function scaleSegments(
  * Clear.
  * @param {Object} canvasContext
  */
-function clearCanvas(canvasContext : CanvasRenderingContext2D) : void {
+function clearCanvas(canvasContext: CanvasRenderingContext2D): void {
   canvasContext.clearRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
 }

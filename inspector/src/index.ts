@@ -32,13 +32,16 @@ function onUrlChange() {
   if (urlInfo.password === undefined) {
     currentPageCleanUp = generatePasswordPage();
   } else if (urlInfo.isPostDebugger) {
-    currentPageCleanUp = generatePostDebuggerPage(urlInfo.password, configState);
+    currentPageCleanUp = generatePostDebuggerPage(
+      urlInfo.password,
+      configState,
+    );
   } else if (urlInfo.tokenId === undefined) {
     currentPageCleanUp = generateTokenPage(urlInfo.password);
   } else {
     if (!isTokenValid(urlInfo.tokenId)) {
       const error = new Error(
-        "Error: A token must only contain alphanumeric characters"
+        "Error: A token must only contain alphanumeric characters",
       );
       const errorDiv = document.createElement("div");
       displayError(errorDiv, error, true);
@@ -52,7 +55,7 @@ function onUrlChange() {
       currentPageCleanUp = generateLiveDebuggingPage(
         urlInfo.password,
         urlInfo.tokenId,
-        configState
+        configState,
       );
     }
   }
@@ -80,27 +83,27 @@ function initializeGlobalConfig() {
   configState.updateState(
     STATE_PROPS.CSS_MODE,
     UPDATE_TYPE.REPLACE,
-    currentMode
+    currentMode,
   );
   configState.updateState(
     STATE_PROPS.CLOSED_MODULES,
     UPDATE_TYPE.REPLACE,
-    currentModuleConfig[STATE_PROPS.CLOSED_MODULES] ?? []
+    currentModuleConfig[STATE_PROPS.CLOSED_MODULES] ?? [],
   );
   configState.updateState(
     STATE_PROPS.WIDTH_RATIOS,
     UPDATE_TYPE.REPLACE,
-    currentModuleConfig[STATE_PROPS.WIDTH_RATIOS] ?? {}
+    currentModuleConfig[STATE_PROPS.WIDTH_RATIOS] ?? {},
   );
   configState.updateState(
     STATE_PROPS.MINIMIZED_MODULES,
     UPDATE_TYPE.REPLACE,
-    currentModuleConfig[STATE_PROPS.MINIMIZED_MODULES] ?? []
+    currentModuleConfig[STATE_PROPS.MINIMIZED_MODULES] ?? [],
   );
   configState.updateState(
     STATE_PROPS.MODULES_ORDER,
     UPDATE_TYPE.REPLACE,
-    currentModuleConfig[STATE_PROPS.MODULES_ORDER] ?? []
+    currentModuleConfig[STATE_PROPS.MODULES_ORDER] ?? [],
   );
   configState.commitUpdates();
   configState.subscribe(STATE_PROPS.CSS_MODE, () => {
@@ -113,7 +116,7 @@ function initializeGlobalConfig() {
     currentModuleConfig[STATE_PROPS.CLOSED_MODULES] = closedModules;
     localStorage.setItem(
       MODULE_CONFIG_LS_ITEM,
-      JSON.stringify(currentModuleConfig)
+      JSON.stringify(currentModuleConfig),
     );
   });
   configState.subscribe(STATE_PROPS.WIDTH_RATIOS, () => {
@@ -122,7 +125,7 @@ function initializeGlobalConfig() {
     currentModuleConfig[STATE_PROPS.WIDTH_RATIOS] = closedModules;
     localStorage.setItem(
       MODULE_CONFIG_LS_ITEM,
-      JSON.stringify(currentModuleConfig)
+      JSON.stringify(currentModuleConfig),
     );
   });
   configState.subscribe(STATE_PROPS.MINIMIZED_MODULES, () => {
@@ -131,7 +134,7 @@ function initializeGlobalConfig() {
     currentModuleConfig[STATE_PROPS.MINIMIZED_MODULES] = closedModules;
     localStorage.setItem(
       MODULE_CONFIG_LS_ITEM,
-      JSON.stringify(currentModuleConfig)
+      JSON.stringify(currentModuleConfig),
     );
   });
   configState.subscribe(STATE_PROPS.MODULES_ORDER, () => {
@@ -140,7 +143,7 @@ function initializeGlobalConfig() {
     currentModuleConfig[STATE_PROPS.MODULES_ORDER] = closedModules;
     localStorage.setItem(
       MODULE_CONFIG_LS_ITEM,
-      JSON.stringify(currentModuleConfig)
+      JSON.stringify(currentModuleConfig),
     );
   });
 }

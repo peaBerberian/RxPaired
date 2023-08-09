@@ -39,9 +39,8 @@ const TIME_SAMPLES_MS = 60000;
 const DEFAULT_CANVAS_WIDTH = DEFAULT_DRAWABLE_WIDTH;
 
 /** Full height of the canvas. */
-const DEFAULT_CANVAS_HEIGHT = DEFAULT_DRAWABLE_HEIGHT +
-  HEIGHT_MARGIN_TOP +
-  HEIGHT_MARGIN_BOTTOM;
+const DEFAULT_CANVAS_HEIGHT =
+  DEFAULT_DRAWABLE_HEIGHT + HEIGHT_MARGIN_TOP + HEIGHT_MARGIN_BOTTOM;
 
 const CANVAS_ASPECT_RATIO = DEFAULT_CANVAS_WIDTH / DEFAULT_CANVAS_HEIGHT;
 
@@ -58,14 +57,16 @@ const MINIMUM_MAX_BUFFER_SIZE = 20;
 /**
  * @param {Object} args
  */
-export default function BufferSizeModule(
-  { state, configState } : ModuleFunctionArguments
-) {
+export default function BufferSizeModule({
+  state,
+  configState,
+}: ModuleFunctionArguments) {
   const bufferSizeBodyElt = strHtml`<div class="buffer-size-body module-body"/>`;
-  const [
-    bufferSizeElt,
-    disposeBufferSizeChart,
-  ] = createBufferSizeChart(bufferSizeBodyElt, state, configState);
+  const [bufferSizeElt, disposeBufferSizeChart] = createBufferSizeChart(
+    bufferSizeBodyElt,
+    state,
+    configState,
+  );
   bufferSizeBodyElt.appendChild(bufferSizeElt);
   bufferSizeBodyElt.style.resize = "vertical";
   bufferSizeBodyElt.style.overflow = "auto";
@@ -86,12 +87,13 @@ export default function BufferSizeModule(
  * @returns {Array.<HTMLElement|Function>}
  */
 function createBufferSizeChart(
-  parentResizableElement : HTMLElement,
-  state : ObservableState<InspectorState>,
-  configState : ObservableState<ConfigState>
-) : [HTMLElement, () => void] {
+  parentResizableElement: HTMLElement,
+  state: ObservableState<InspectorState>,
+  configState: ObservableState<ConfigState>,
+): [HTMLElement, () => void] {
   let currentMaxSize = MINIMUM_MAX_BUFFER_SIZE;
-  const canvasElt = strHtml`<canvas class="canvas-buffer-size" />` as HTMLCanvasElement;
+  const canvasElt =
+    strHtml`<canvas class="canvas-buffer-size" />` as HTMLCanvasElement;
   canvasElt.width = DEFAULT_CANVAS_WIDTH;
   canvasElt.height = DEFAULT_CANVAS_HEIGHT;
   const canvasCtx = canvasElt.getContext("2d");
@@ -102,7 +104,7 @@ function createBufferSizeChart(
 
   const resizeObserver = new ResizeObserver(onBodyResize);
   resizeObserver.observe(parentResizableElement);
-  let lastClientHeight : number | undefined;
+  let lastClientHeight: number | undefined;
 
   const canvasParent = strHtml`<div>${canvasElt}</div>`;
   canvasParent.style.textAlign = "center";
@@ -116,12 +118,13 @@ function createBufferSizeChart(
     },
   ];
 
-  function reRender() : void {
+  function reRender(): void {
     const bufferGaps = state.getCurrentState(STATE_PROPS.BUFFER_GAPS);
     if (bufferGaps !== undefined && bufferGaps.length > 0) {
-      const lastDate = bufferGaps.length === 0 ?
-        null :
-        bufferGaps[bufferGaps.length - 1].timestamp;
+      const lastDate =
+        bufferGaps.length === 0
+          ? null
+          : bufferGaps[bufferGaps.length - 1].timestamp;
       const minimumTime = Math.max(0, (lastDate ?? 0) - TIME_SAMPLES_MS);
       let i;
       for (i = bufferGaps.length - 1; i >= 1; i--) {
@@ -136,7 +139,7 @@ function createBufferSizeChart(
     }
   }
 
-  function onBodyResize() : void {
+  function onBodyResize(): void {
     const clientHeight = parentResizableElement.clientHeight;
     const wantedHeight = clientHeight - 20;
     if (lastClientHeight === clientHeight) {
@@ -149,16 +152,17 @@ function createBufferSizeChart(
   }
 
   function onNewData(
-    data : Array<{ bufferGap : number | undefined; timestamp : number }>
-  ) : void {
+    data: Array<{ bufferGap: number | undefined; timestamp: number }>,
+  ): void {
     if (canvasCtx === null) {
       return;
     }
     clearAndResizeCanvas(canvasCtx);
     if (data.length === 0) {
       canvasCtx.font = "14px Arial";
-      const posX = (canvasElt.width / 2) - 40;
-      const isDark = configState.getCurrentState(STATE_PROPS.CSS_MODE) === "dark";
+      const posX = canvasElt.width / 2 - 40;
+      const isDark =
+        configState.getCurrentState(STATE_PROPS.CSS_MODE) === "dark";
       if (isDark) {
         canvasCtx.fillStyle = "#ffffff";
       } else {
@@ -171,7 +175,7 @@ function createBufferSizeChart(
     currentMaxSize = getNewMaxBufferSize();
     const minDate = data[0].timestamp;
 
-    let height = (canvasElt.height - HEIGHT_MARGIN_TOP - HEIGHT_MARGIN_BOTTOM);
+    let height = canvasElt.height - HEIGHT_MARGIN_TOP - HEIGHT_MARGIN_BOTTOM;
     const gridHeight = height / currentMaxSize;
     const gridWidth = canvasElt.width / TIME_SAMPLES_MS;
 
@@ -182,11 +186,11 @@ function createBufferSizeChart(
      * Get more appropriate maximum buffer size to put on top of the graph
      * according to current data.
      */
-    function getNewMaxBufferSize() : number {
-      const maxPoint = Math.max(...data.map(d => d.bufferGap ?? 0));
+    function getNewMaxBufferSize(): number {
+      const maxPoint = Math.max(...data.map((d) => d.bufferGap ?? 0));
       if (maxPoint >= currentMaxSize) {
         return maxPoint + 5;
-      } else if (maxPoint < (currentMaxSize - 5)) {
+      } else if (maxPoint < currentMaxSize - 5) {
         return Math.max(maxPoint + 5, MINIMUM_MAX_BUFFER_SIZE);
       }
       return currentMaxSize;
@@ -195,7 +199,7 @@ function createBufferSizeChart(
     /**
      * Draw grid lines on canvas and their correspinding values.
      */
-    function drawGrid() : void {
+    function drawGrid(): void {
       if (canvasCtx === null) {
         return;
       }
@@ -221,9 +225,9 @@ function createBufferSizeChart(
         const nHeight = stepHeight * i + HEIGHT_MARGIN_TOP;
         canvasCtx.moveTo(0, nHeight);
         canvasCtx.font = "14px Arial";
-        const currStepVal = (stepVal * (nbGridLines - i))
-          .toFixed(1);
-        const isDark = configState.getCurrentState(STATE_PROPS.CSS_MODE) === "dark";
+        const currStepVal = (stepVal * (nbGridLines - i)).toFixed(1);
+        const isDark =
+          configState.getCurrentState(STATE_PROPS.CSS_MODE) === "dark";
         if (isDark) {
           canvasCtx.fillStyle = "#ffffff";
         } else {
@@ -238,7 +242,7 @@ function createBufferSizeChart(
     /**
      * Draw all data contained in `data` in the canvas given.
      */
-    function drawData() : void {
+    function drawData(): void {
       if (canvasCtx === null) {
         return;
       }
@@ -247,8 +251,10 @@ function createBufferSizeChart(
       canvasCtx.lineWidth = 2;
       canvasCtx.moveTo(0, bufferValueToY(data[0].bufferGap ?? 0));
       for (let i = 1; i < data.length; i++) {
-        canvasCtx.lineTo(dateToX(data[i].timestamp),
-                         bufferValueToY(data[i].bufferGap ?? 0));
+        canvasCtx.lineTo(
+          dateToX(data[i].timestamp),
+          bufferValueToY(data[i].bufferGap ?? 0),
+        );
       }
       canvasCtx.stroke();
     }
@@ -258,9 +264,8 @@ function createBufferSizeChart(
      * @param {number} bufferVal - Value to convert
      * @returns {number} - y coordinate
      */
-    function bufferValueToY(bufferVal : number) : number {
-      return HEIGHT_MARGIN_TOP +
-        (currentMaxSize - bufferVal) * gridHeight;
+    function bufferValueToY(bufferVal: number): number {
+      return HEIGHT_MARGIN_TOP + (currentMaxSize - bufferVal) * gridHeight;
     }
 
     /**
@@ -268,7 +273,7 @@ function createBufferSizeChart(
      * @param {number} date - Date to convert, in milliseconds
      * @returns {number} - x coordinate
      */
-    function dateToX(date : number) : number {
+    function dateToX(date: number): number {
       return (date - minDate) * gridWidth;
     }
   }
@@ -278,8 +283,7 @@ function createBufferSizeChart(
  * Clear the whole canvas.
  * @param {CanvasRenderingContext2D} canvasContext
  */
-function clearAndResizeCanvas(canvasContext : CanvasRenderingContext2D) : void {
+function clearAndResizeCanvas(canvasContext: CanvasRenderingContext2D): void {
   const canvasElt = canvasContext.canvas;
   canvasContext.clearRect(0, 0, canvasElt.width, canvasElt.height);
 }
-

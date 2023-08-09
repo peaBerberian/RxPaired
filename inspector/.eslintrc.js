@@ -1,133 +1,97 @@
 module.exports = {
-  "env": {
-    "browser": true,
-    "es6": true,
+  env: {
+    browser: true,
+    es6: true,
   },
-  "extends": [
+  extends: [
+    "prettier",
     "plugin:@typescript-eslint/recommended",
-    "plugin:@typescript-eslint/recommended-requiring-type-checking"
+    "plugin:@typescript-eslint/recommended-requiring-type-checking",
   ],
-  "parser": "@typescript-eslint/parser",
-  "parserOptions": {
-    "project": "tsconfig.json",
-    "sourceType": "module"
+  parser: "@typescript-eslint/parser",
+  parserOptions: {
+    project: "tsconfig.json",
+    sourceType: "module",
   },
-  "plugins": [
+  plugins: [
     "eslint-plugin-import",
     "eslint-plugin-jsdoc",
-    "@typescript-eslint"
+    "@typescript-eslint",
   ],
-  "rules": {
+  rules: {
     "@typescript-eslint/adjacent-overload-signatures": "error",
     "@typescript-eslint/array-type": [
       "error",
       {
-        "default": "array-simple"
-      }
+        default: "array-simple",
+      },
     ],
     "@typescript-eslint/await-thenable": "error",
     "@typescript-eslint/consistent-type-assertions": [
       "error",
       {
-        "assertionStyle": "as",
-        "objectLiteralTypeAssertions": "allow",
-      }
+        assertionStyle: "as",
+        objectLiteralTypeAssertions: "allow",
+      },
     ],
     "@typescript-eslint/consistent-type-definitions": "error",
     "@typescript-eslint/dot-notation": "error",
     "@typescript-eslint/explicit-member-accessibility": [
       "off",
       {
-        "accessibility": "explicit"
-      }
+        accessibility: "explicit",
+      },
     ],
-    "@typescript-eslint/member-delimiter-style": [
-      "error",
-      {
-        "multiline": {
-          "delimiter": "semi",
-          "requireLast": true
-        },
-        "singleline": {
-          "delimiter": "semi",
-          "requireLast": false
-        }
-      }
-    ],
-    "@typescript-eslint/indent": [
-      "warn",
-      2,
-      {
-        "ArrayExpression": "first",
-        "ObjectExpression": "first",
-        "CallExpression": { arguments: "first" },
-        "FunctionDeclaration": { "parameters": "first" },
-        "FunctionExpression": { "parameters": "first" },
-        "VariableDeclarator": "first",
-        "SwitchCase": 1,
-        "ignoreComments": true,
-        "flatTernaryExpressions": true,
-        "offsetTernaryExpressions": false,
-        "ignoredNodes": [
-          /* Does not seem to have ConditionalExpression: "first" */
-          "ConditionalExpression",
-          /* Again, no "first" for all of them */
-          "TSTypeParameterInstantiation",
-          "TSTypeAliasDeclaration *",
-          "TSInterfaceDeclaration *",
-          "TSUnionType *"
-        ]
-      }],
     "@typescript-eslint/naming-convention": [
       "error",
       {
-        "selector": "property",
-        "format": ["camelCase", "UPPER_CASE", "PascalCase"],
-        "leadingUnderscore": "allow",
-        "trailingUnderscore": "allow",
-        "filter": {
-          "regex": "^(__esModule$)|(__priv_)",
-          "match": false
-        }
+        selector: "property",
+        format: ["camelCase", "UPPER_CASE", "PascalCase"],
+        leadingUnderscore: "allow",
+        trailingUnderscore: "allow",
+        filter: {
+          regex: "^(__esModule$)|(__priv_)",
+          match: false,
+        },
       },
       {
-        "selector": "method",
-        "format": ["camelCase"],
-        "leadingUnderscore": "allow",
-        "trailingUnderscore": "allow",
+        selector: "method",
+        format: ["camelCase"],
+        leadingUnderscore: "allow",
+        trailingUnderscore: "allow",
       },
       {
-        "selector": "variable",
-        "format": ["camelCase", "UPPER_CASE", "PascalCase"],
-        "leadingUnderscore": "allow",
-        "trailingUnderscore": "allow",
+        selector: "variable",
+        format: ["camelCase", "UPPER_CASE", "PascalCase"],
+        leadingUnderscore: "allow",
+        trailingUnderscore: "allow",
       },
       {
-        "selector": "parameter",
-        "format": ["camelCase"],
-        "leadingUnderscore": "allow",
-        "filter": {
+        selector: "parameter",
+        format: ["camelCase"],
+        leadingUnderscore: "allow",
+        filter: {
           // you can expand this regex to add more allowed names
-          "regex": "^__priv_",
-          "match": false
-        }
+          regex: "^__priv_",
+          match: false,
+        },
       },
 
       {
-        "selector": "memberLike",
-        "modifiers": ["private"],
-        "format": ["camelCase"],
-        "leadingUnderscore": "require"
+        selector: "memberLike",
+        modifiers: ["private"],
+        format: ["camelCase"],
+        leadingUnderscore: "require",
       },
       {
-        "selector": "enum",
-        "format": ["PascalCase", "UPPER_CASE"],
-        "leadingUnderscore": "allow"
+        selector: "enum",
+        format: ["PascalCase", "UPPER_CASE"],
+        leadingUnderscore: "allow",
       },
       {
-        "selector": "typeLike",
-        "format": ["PascalCase"],
-        "leadingUnderscore": "allow"
+        selector: "typeLike",
+        format: ["PascalCase"],
+        leadingUnderscore: "allow",
       },
     ],
     "@typescript-eslint/no-empty-function": "error",
@@ -156,65 +120,40 @@ module.exports = {
     "@typescript-eslint/no-unused-vars": [
       "error",
       {
-        "argsIgnorePattern": "^_",
-        "varsIgnorePattern": "^_"
-      }
+        argsIgnorePattern: "^_",
+        varsIgnorePattern: "^_",
+      },
     ],
     "@typescript-eslint/no-shadow": ["error"],
-    "@typescript-eslint/quotes": [
-      "error",
-      "double",
-      { "avoidEscape": true },
-    ],
+    "@typescript-eslint/quotes": ["error", "double", { avoidEscape: true }],
     "@typescript-eslint/restrict-plus-operands": "error",
-    "@typescript-eslint/semi": [
-      "error",
-      "always"
-    ],
     "@typescript-eslint/strict-boolean-expressions": "error",
     "@typescript-eslint/triple-slash-reference": [
       "error",
       {
-        "path": "always",
-        "types": "prefer-import",
-        "lib": "always"
-      }
+        path: "always",
+        types: "prefer-import",
+        lib: "always",
+      },
     ],
     "@typescript-eslint/unbound-method": "error",
     "@typescript-eslint/unified-signatures": "error",
     "arrow-body-style": "off",
-    "arrow-parens": [
-      "off",
-      "always"
-    ],
+    "arrow-parens": ["off", "always"],
     // TODO?
     // "class-methods-use-this": "error",
-    "comma-dangle": [
-      "error",
-      {
-        "objects": "always-multiline",
-        "arrays": "always-multiline",
-        "imports": "always-multiline",
-        "exports": "always-multiline",
-        "functions": "never"
-      }
-    ],
-    "complexity": [
+    complexity: [
       "off",
       {
-        "max": 20
-      }
+        max: 20,
+      },
     ],
     // TODO?
     // "consistent-return": "error",
     "constructor-super": "error",
-    "curly": "error",
+    curly: "error",
     "default-case": "off",
-    "eol-last": "error",
-    "eqeqeq": [
-      "error",
-      "smart"
-    ],
+    eqeqeq: ["error", "smart"],
     "guard-for-in": "warn",
     "id-blacklist": "off",
     "id-match": "off",
@@ -223,37 +162,29 @@ module.exports = {
     "import/no-extraneous-dependencies": [
       "error",
       {
-        "devDependencies": false
-      }
+        devDependencies: false,
+      },
     ],
     "import/no-internal-modules": "off",
-    "import/order": ["error", {
-      "alphabetize": {
-        "order": "asc",
-        "caseInsensitive": true
-      }
-    }],
+    "import/order": [
+      "error",
+      {
+        alphabetize: {
+          order: "asc",
+          caseInsensitive: true,
+        },
+      },
+    ],
     "jsdoc/check-alignment": "error",
     "jsdoc/no-types": "off",
-    "linebreak-style": [
-      "error",
-      "unix"
-    ],
-    "max-classes-per-file": [
-      "warn",
-      5
-    ],
+    "max-classes-per-file": ["warn", 5],
     "max-len": [
       "warn",
       {
-        "code": 90
-      }
+        code: 90,
+      },
     ],
-    "max-lines": [
-      "off",
-      300
-    ],
-    "new-parens": "error",
+    "max-lines": ["off", 300],
     "newline-per-chained-call": "off",
     "no-bitwise": "off",
     "no-caller": "error",
@@ -266,7 +197,6 @@ module.exports = {
     "no-fallthrough": "error",
     "no-invalid-this": "error",
     "no-magic-numbers": "off",
-    "no-multiple-empty-lines": "error",
     "no-new-wrappers": "error",
     "no-param-reassign": "error",
     "no-return-await": "error",
@@ -276,42 +206,27 @@ module.exports = {
     "no-sparse-arrays": "error",
     "no-template-curly-in-string": "error",
     "no-throw-literal": "error",
-    "no-trailing-spaces": "error",
     "no-undef-init": "error",
     "no-unsafe-finally": "error",
     "no-unused-labels": "error",
     "no-var": "error",
     "no-void": "error",
-    "object-curly-spacing": ["error", "always"],
     "object-shorthand": "error",
-    "one-var": [
-      "error",
-      "never"
-    ],
+    "one-var": ["error", "never"],
     "prefer-const": "error",
     "prefer-spread": "error",
     "prefer-object-spread": "error",
     "prefer-template": "off",
-    "quote-props": [
-      "error",
-      "as-needed"
-    ],
-    "radix": "error",
-    "space-in-parens": [
-      "error",
-      "never"
-    ],
+    radix: "error",
     "spaced-comment": [
       "error",
       "always",
       {
-        "markers": [
-          "/"
-        ]
-      }
+        markers: ["/"],
+      },
     ],
     "use-isnan": "error",
     "valid-typeof": "error",
-    "yoda": "error",
-  }
+    yoda: "error",
+  },
 };

@@ -13,19 +13,19 @@
  */
 export function createElement(
   elementName: "input",
-  opts?: CreateElementOptions | undefined
+  opts?: CreateElementOptions | undefined,
 ): HTMLInputElement;
 export function createElement(
   elementName: "button",
-  opts?: CreateElementOptions | undefined
+  opts?: CreateElementOptions | undefined,
 ): HTMLButtonElement;
 export function createElement(
   elementName: "a",
-  opts?: CreateElementOptions | undefined
+  opts?: CreateElementOptions | undefined,
 ): HTMLLinkElement;
 export function createElement(
   elementName: string,
-  opts?: CreateElementOptions | undefined
+  opts?: CreateElementOptions | undefined,
 ): HTMLElement;
 export function createElement(
   elementName: string,
@@ -34,7 +34,7 @@ export function createElement(
     className,
     onClick,
     style,
-  }: CreateElementOptions | undefined = {}
+  }: CreateElementOptions | undefined = {},
 ): HTMLElement {
   const elt = document.createElement(elementName);
   if (className !== undefined) {
@@ -80,7 +80,7 @@ export function createCompositeElement(
     className,
     onClick,
     style,
-  }: Exclude<CreateElementOptions, "textContent"> | undefined = {}
+  }: Exclude<CreateElementOptions, "textContent"> | undefined = {},
 ): HTMLElement {
   const elt = document.createElement(rootElementName);
   if (className !== undefined) {
@@ -114,7 +114,9 @@ export function createCompositeElement(
  * @returns {HTMLLinkElement}
  */
 export function createLinkElement(
-  options: (CreateElementOptions & { href?: string | undefined }) | undefined = {}
+  options:
+    | (CreateElementOptions & { href?: string | undefined })
+    | undefined = {},
 ): HTMLLinkElement {
   const element = createElement("a", options);
   if (options.href !== undefined) {
@@ -179,7 +181,7 @@ export function createButton({
  */
 function applyPartialStyleOnElement(
   element: HTMLElement,
-  style: Partial<CSSStyleDeclaration> | undefined
+  style: Partial<CSSStyleDeclaration> | undefined,
 ): void {
   if (style !== undefined) {
     for (const key in style) {

@@ -5,26 +5,26 @@ import ObservableState from "../observable_state";
 /**
  * @param {Object} args
  */
-export default function PlayerGeneralInfoModule(
-  { state } : { state : ObservableState<InspectorState> }
-) {
+export default function PlayerGeneralInfoModule({
+  state,
+}: {
+  state: ObservableState<InspectorState>;
+}) {
   const stateData = strHtml`<span class="emphasized">${
     state.getCurrentState(STATE_PROPS.PLAYER_STATE) ?? "Unknown"
   }</span>`;
-  const positionData = strHtml`<span class="emphasized">${
-    getCurrentPositionTextContent(state)
-  }</span>`;
-  const bufferGapData = strHtml`<span class="emphasized">${
-    getCurrentBufferGapTextContent(state)
-  }</span>`;
-  const durationData = strHtml`<span class="emphasized">${
-    getCurrentDurationTextContent(state)
-  }</span>`;
-  const initialLoadingTimeDataElt = strHtml`<span class="emphasized">${
-    getInitialLoadingTimeStr(
-      state.getCurrentState(STATE_PROPS.STATE_CHANGE_HISTORY) ?? []
-    )
-  }</span>`;
+  const positionData = strHtml`<span class="emphasized">${getCurrentPositionTextContent(
+    state,
+  )}</span>`;
+  const bufferGapData = strHtml`<span class="emphasized">${getCurrentBufferGapTextContent(
+    state,
+  )}</span>`;
+  const durationData = strHtml`<span class="emphasized">${getCurrentDurationTextContent(
+    state,
+  )}</span>`;
+  const initialLoadingTimeDataElt = strHtml`<span class="emphasized">${getInitialLoadingTimeStr(
+    state.getCurrentState(STATE_PROPS.STATE_CHANGE_HISTORY) ?? [],
+  )}</span>`;
   const generalInfoBodyElt = strHtml`<div class="gen-info-body module-body">${[
     strHtml`<span>Current state: </span>`,
     stateData,
@@ -42,28 +42,31 @@ export default function PlayerGeneralInfoModule(
     initialLoadingTimeDataElt,
   ]}</div>`;
 
-  const unsubscribeState = state.subscribe(STATE_PROPS.PLAYER_STATE, (
-    _ut,
-    newState: string | undefined
-  ) => {
-    stateData.textContent = newState ?? "Unknown";
-  });
+  const unsubscribeState = state.subscribe(
+    STATE_PROPS.PLAYER_STATE,
+    (_ut, newState: string | undefined) => {
+      stateData.textContent = newState ?? "Unknown";
+    },
+  );
   const unsubscribePosition = state.subscribe(STATE_PROPS.POSITION, () => {
     positionData.textContent = getCurrentPositionTextContent(state);
   });
   const unsubscribeBufferGaps = state.subscribe(STATE_PROPS.BUFFER_GAPS, () => {
     bufferGapData.textContent = getCurrentBufferGapTextContent(state);
   });
-  const unsubscribeDuration = state.subscribe(STATE_PROPS.CONTENT_DURATION, () => {
-    durationData.textContent = getCurrentDurationTextContent(state);
-  });
+  const unsubscribeDuration = state.subscribe(
+    STATE_PROPS.CONTENT_DURATION,
+    () => {
+      durationData.textContent = getCurrentDurationTextContent(state);
+    },
+  );
   const unsubscribeStateHistory = state.subscribe(
     STATE_PROPS.STATE_CHANGE_HISTORY,
     () => {
       initialLoadingTimeDataElt.textContent = getInitialLoadingTimeStr(
-        state.getCurrentState(STATE_PROPS.STATE_CHANGE_HISTORY) ?? []
+        state.getCurrentState(STATE_PROPS.STATE_CHANGE_HISTORY) ?? [],
       );
-    }
+    },
   );
 
   return {
@@ -79,7 +82,7 @@ export default function PlayerGeneralInfoModule(
 }
 
 function getInitialLoadingTimeStr(
-  history: Array<{ state: string; timestamp: number }>
+  history: Array<{ state: string; timestamp: number }>,
 ): string {
   for (let i = history.length - 1; i >= 0; i--) {
     if (history[i].state === "LOADED") {
@@ -104,8 +107,8 @@ function getInitialLoadingTimeStr(
  * @returns {string}
  */
 function getCurrentPositionTextContent(
-  state : ObservableState<InspectorState>
-) : string {
+  state: ObservableState<InspectorState>,
+): string {
   const newPos = state.getCurrentState(STATE_PROPS.POSITION);
   if (newPos === undefined) {
     return "undefined";
@@ -119,8 +122,8 @@ function getCurrentPositionTextContent(
  * @returns {string}
  */
 function getCurrentBufferGapTextContent(
-  state : ObservableState<InspectorState>
-) : string {
+  state: ObservableState<InspectorState>,
+): string {
   const buffGaps = state.getCurrentState(STATE_PROPS.BUFFER_GAPS);
   if (buffGaps === undefined) {
     return "undefined";
@@ -138,8 +141,8 @@ function getCurrentBufferGapTextContent(
  * @returns {string}
  */
 function getCurrentDurationTextContent(
-  state : ObservableState<InspectorState>
-) : string {
+  state: ObservableState<InspectorState>,
+): string {
   const duration = state.getCurrentState(STATE_PROPS.CONTENT_DURATION);
   if (duration === undefined) {
     return "Unknown";

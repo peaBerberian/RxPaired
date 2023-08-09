@@ -1,10 +1,7 @@
 import strHtml from "str-html";
 import { MAX_DISPLAYED_LOG_ELEMENTS, STATE_PROPS } from "../constants";
 import { UPDATE_TYPE } from "../observable_state";
-import {
-  ModuleObject,
-  ModuleFunctionArguments,
-} from "./index";
+import { ModuleObject, ModuleFunctionArguments } from "./index";
 
 const LOADING_LOGS_MSG = "Loading logs...";
 const NO_LOG_SELECTED_MSG = "No log selected (click to select)";
@@ -16,12 +13,12 @@ const LOG_SELECTED_MSG = "A log has been selected";
 export default function LogModule({
   state,
   configState,
-} : ModuleFunctionArguments) : ModuleObject {
+}: ModuleFunctionArguments): ModuleObject {
   /**
    * A filter function allowing to filter only wanted logs.
    * `null` if no filter is active.
    */
-  let currentFilter : ((input : string) => boolean) | null = null;
+  let currentFilter: ((input: string) => boolean) | null = null;
 
   /**
    * Log element's header which is going to show various information on what is
@@ -40,8 +37,7 @@ export default function LogModule({
    * may easily be removed and appended at will from the DOM when it is in the
    * process of being heavily updated to improve performances.
    */
-  const logContainerElt =
-    strHtml`<div class="log-container module-body"/>`;
+  const logContainerElt = strHtml`<div class="log-container module-body"/>`;
 
   // When pushing a LOT (thousands) of logs at once, the page can become
   // unresponsive multiple seconds.
@@ -53,7 +49,7 @@ export default function LogModule({
    *   1. The log message
    *   2. The log idx in the message in the LOGS_HISTORY array.
    */
-  let logsPending : Array<[string, number]> = [];
+  let logsPending: Array<[string, number]> = [];
 
   /**
    * If set, a `setTimeout` has been called to process the next group of logs
@@ -62,13 +58,13 @@ export default function LogModule({
    *
    * Should be set to `undefined` if no timeout is pending.
    */
-  let timeoutInterval : number | undefined;
+  let timeoutInterval: number | undefined;
 
   /**
    * HTML element currently selected.
    * `null` if none is currently selected.
    */
-  let selectedElt : HTMLElement | null = null;
+  let selectedElt: HTMLElement | null = null;
 
   /**
    * The log "index" (linked to its index in `LOGS_HISTORY`) of the log
@@ -87,12 +83,16 @@ export default function LogModule({
   filterFlexElt.style.display = "flex";
   filterFlexElt.style.height = "40px";
   filterFlexElt.style.margin = "5px 0px";
-  const unsubFilterFlexStyle = configState.subscribe(STATE_PROPS.CSS_MODE, () => {
-    filterFlexElt.style.backgroundColor =
-      configState.getCurrentState(STATE_PROPS.CSS_MODE) === "dark" ?
-        "#333" :
-        "#f2f2f2";
-  }, true);
+  const unsubFilterFlexStyle = configState.subscribe(
+    STATE_PROPS.CSS_MODE,
+    () => {
+      filterFlexElt.style.backgroundColor =
+        configState.getCurrentState(STATE_PROPS.CSS_MODE) === "dark"
+          ? "#333"
+          : "#f2f2f2";
+    },
+    true,
+  );
 
   const [caseSensitiveBtn, unsubCaseBtn] = createFilterButtonElement(
     "Aa",
@@ -105,7 +105,8 @@ export default function LogModule({
     () => {
       areSearchCaseSensitive = false;
       refreshFilters();
-    });
+    },
+  );
 
   const [regexFilterButton, unsubRegexBtn] = createFilterButtonElement(
     ".*",
@@ -118,7 +119,8 @@ export default function LogModule({
     () => {
       areSearchRegex = false;
       refreshFilters();
-    });
+    },
+  );
 
   /** Text input element for filtering logs. */
   const logFilterInputElt = strHtml`<input
@@ -140,11 +142,7 @@ export default function LogModule({
 
   logBodyElt.appendChild(logContainerElt);
   return {
-    body: strHtml`<div>${[
-      logHeaderElt,
-      filterFlexElt,
-      logBodyElt,
-    ]}</div>`,
+    body: strHtml`<div>${[logHeaderElt, filterFlexElt, logBodyElt]}</div>`,
     clear() {
       unsubCaseBtn();
       unsubRegexBtn();
@@ -159,7 +157,11 @@ export default function LogModule({
       state.unsubscribe(STATE_PROPS.SELECTED_LOG_INDEX, onSelectedLogChanges);
 
       if (state.getCurrentState(STATE_PROPS.SELECTED_LOG_INDEX) !== undefined) {
-        state.updateState(STATE_PROPS.SELECTED_LOG_INDEX, UPDATE_TYPE.REPLACE, undefined);
+        state.updateState(
+          STATE_PROPS.SELECTED_LOG_INDEX,
+          UPDATE_TYPE.REPLACE,
+          undefined,
+        );
         state.commitUpdates();
       }
     },
@@ -190,11 +192,13 @@ export default function LogModule({
   /** Display header for when a log is currently selected. */
   function displayLogSelectedHeader() {
     logHeaderElt.textContent = LOG_SELECTED_MSG;
-    const clickSpan = strHtml`<span class="emphasized">${
-      "Click on the log again or here to unselect"
-    }</span>`;
-    clickSpan.onclick = function() {
-      state.updateState(STATE_PROPS.SELECTED_LOG_INDEX, UPDATE_TYPE.REPLACE, undefined);
+    const clickSpan = strHtml`<span class="emphasized">${"Click on the log again or here to unselect"}</span>`;
+    clickSpan.onclick = function () {
+      state.updateState(
+        STATE_PROPS.SELECTED_LOG_INDEX,
+        UPDATE_TYPE.REPLACE,
+        undefined,
+      );
       state.commitUpdates();
       if (selectedElt !== null) {
         selectedElt.classList.remove("focused-bg");
@@ -211,7 +215,7 @@ export default function LogModule({
    * Returns a string describing the current header shown.
    * @returns {string}
    */
-  function getHeaderType() : "loading" | "no-log" | "no-selected" | "selected" {
+  function getHeaderType(): "loading" | "no-log" | "no-selected" | "selected" {
     const textContent = logHeaderElt.textContent;
     if (textContent === null) {
       return "no-log";
@@ -233,7 +237,7 @@ export default function LogModule({
    */
   function onLogsHistoryChange(
     updateType: UPDATE_TYPE | "initial",
-    values: string[] | undefined
+    values: string[] | undefined,
   ) {
     if (values === undefined) {
       nextLogIdx = 0;
@@ -247,8 +251,10 @@ export default function LogModule({
       clearLogs();
     }
 
-    const numberedValues = values
-      .map((str) : [string, number] => [str, nextLogIdx++]);
+    const numberedValues = values.map((str): [string, number] => [
+      str,
+      nextLogIdx++,
+    ]);
     let filtered;
     if (currentFilter === null) {
       filtered = numberedValues;
@@ -270,13 +276,10 @@ export default function LogModule({
    * concurrent LogModules.
    */
   function onSelectedLogChanges() {
-    const hasLogIdxSelected = state
-      .getCurrentState(STATE_PROPS.SELECTED_LOG_INDEX) !== undefined;
+    const hasLogIdxSelected =
+      state.getCurrentState(STATE_PROPS.SELECTED_LOG_INDEX) !== undefined;
     const headerType = getHeaderType();
-    if (
-      !hasLogIdxSelected &&
-      logContainerElt.childNodes.length === 0
-    ) {
+    if (!hasLogIdxSelected && logContainerElt.childNodes.length === 0) {
       if (headerType !== "no-log") {
         displayNoLogHeader();
       }
@@ -299,7 +302,7 @@ export default function LogModule({
   /**
    * Display next group of logs in the `logsPending` array.
    */
-  function displayNextPendingLogs() : void {
+  function displayNextPendingLogs(): void {
     timeoutInterval = undefined;
     if (logsPending.length > MAX_DISPLAYED_LOG_ELEMENTS) {
       logsPending = logsPending.slice(MAX_DISPLAYED_LOG_ELEMENTS);
@@ -347,17 +350,20 @@ export default function LogModule({
     }
   }
 
-  function isLogBodyScrolledToBottom() : boolean {
-    const hasVerticalScrollbar = logBodyElt.scrollHeight > logBodyElt.clientHeight;
-    return !hasVerticalScrollbar ||
-      logBodyElt.scrollHeight -
-      logBodyElt.clientHeight <= logBodyElt.scrollTop + 5;
+  function isLogBodyScrolledToBottom(): boolean {
+    const hasVerticalScrollbar =
+      logBodyElt.scrollHeight > logBodyElt.clientHeight;
+    return (
+      !hasVerticalScrollbar ||
+      logBodyElt.scrollHeight - logBodyElt.clientHeight <=
+        logBodyElt.scrollTop + 5
+    );
   }
 
   /**
    * Select/unselect the currently clicked log element.
    */
-  function toggleCurrentElementSelection(evt : MouseEvent) : void {
+  function toggleCurrentElementSelection(evt: MouseEvent): void {
     const logElt = evt.target;
     if (logElt === null || !(logElt instanceof HTMLElement)) {
       console.error("No element selected");
@@ -372,18 +378,24 @@ export default function LogModule({
       selectedElt.classList.remove("focused-bg");
       selectedElt = null;
     }
-    const selectedLogIdx = state.getCurrentState(STATE_PROPS.SELECTED_LOG_INDEX);
+    const selectedLogIdx = state.getCurrentState(
+      STATE_PROPS.SELECTED_LOG_INDEX,
+    );
     if (selectedLogIdx === currentLogIdx) {
-      state.updateState(STATE_PROPS.SELECTED_LOG_INDEX,
-                        UPDATE_TYPE.REPLACE,
-                        undefined);
+      state.updateState(
+        STATE_PROPS.SELECTED_LOG_INDEX,
+        UPDATE_TYPE.REPLACE,
+        undefined,
+      );
       state.commitUpdates();
       return;
     }
 
-    state.updateState(STATE_PROPS.SELECTED_LOG_INDEX,
-                      UPDATE_TYPE.REPLACE,
-                      currentLogIdx);
+    state.updateState(
+      STATE_PROPS.SELECTED_LOG_INDEX,
+      UPDATE_TYPE.REPLACE,
+      currentLogIdx,
+    );
     selectedElt = logElt;
 
     logElt.classList.add("focused-bg");
@@ -399,22 +411,23 @@ export default function LogModule({
       if (areSearchRegex) {
         const flags = areSearchCaseSensitive ? "i" : undefined;
         const reg = new RegExp(text, flags);
-        currentFilter = (input : string) => reg.test(input);
+        currentFilter = (input: string) => reg.test(input);
       } else if (areSearchCaseSensitive) {
-        currentFilter = (input : string) => input.includes(text);
+        currentFilter = (input: string) => input.includes(text);
       } else {
         const toLower = text.toLowerCase();
-        currentFilter = (input : string) => input.toLowerCase().includes(toLower);
+        currentFilter = (input: string) =>
+          input.toLowerCase().includes(toLower);
       }
       onLogsHistoryChange(
         "initial",
-        state.getCurrentState(STATE_PROPS.LOGS_HISTORY) ?? []
+        state.getCurrentState(STATE_PROPS.LOGS_HISTORY) ?? [],
       );
     } else {
       currentFilter = null;
       onLogsHistoryChange(
         "initial",
-        state.getCurrentState(STATE_PROPS.LOGS_HISTORY) ?? []
+        state.getCurrentState(STATE_PROPS.LOGS_HISTORY) ?? [],
       );
     }
   }
@@ -441,14 +454,13 @@ export default function LogModule({
     titleDisabled: string,
     titleEnabled: string,
     onEnabled: () => void,
-    onDisabled: () => void
-  ) : [HTMLElement, () => void] {
+    onDisabled: () => void,
+  ): [HTMLElement, () => void] {
     let isDisabled = true;
-    let isDarkMode = configState
-      .getCurrentState(STATE_PROPS.CSS_MODE) === "dark";
+    let isDarkMode =
+      configState.getCurrentState(STATE_PROPS.CSS_MODE) === "dark";
     const unsub = configState.subscribe(STATE_PROPS.CSS_MODE, () => {
-      isDarkMode = configState
-        .getCurrentState(STATE_PROPS.CSS_MODE) === "dark";
+      isDarkMode = configState.getCurrentState(STATE_PROPS.CSS_MODE) === "dark";
       if (isDisabled) {
         setDisabledStyle();
       } else {
@@ -466,9 +478,7 @@ export default function LogModule({
         isDisabled = true;
         buttonElt.title = titleDisabled;
         setDisabledStyle();
-        buttonElt.style.color = isDarkMode ?
-          "#ffffff" :
-          "#000000";
+        buttonElt.style.color = isDarkMode ? "#ffffff" : "#000000";
         onDisabled();
       }
     };
@@ -485,16 +495,11 @@ export default function LogModule({
     return [buttonElt, unsub];
 
     function setEnabledStyle() {
-      buttonElt.style.color = isDarkMode ?
-        "#d3ffcf" :
-        "#990033";
+      buttonElt.style.color = isDarkMode ? "#d3ffcf" : "#990033";
     }
 
     function setDisabledStyle() {
-      buttonElt.style.color = isDarkMode ?
-        "#ffffff" :
-        "#000000";
-
+      buttonElt.style.color = isDarkMode ? "#ffffff" : "#000000";
     }
   }
 
@@ -518,19 +523,26 @@ export default function LogModule({
  * @param {string} logTxt
  * @returns {HTMLElement}
  */
-export function createLogElement(logTxt : string) : HTMLElement {
+export function createLogElement(logTxt: string): HTMLElement {
   let namespace;
   let formattedMsg = logTxt;
   const indexOfNamespaceStart = logTxt.indexOf("[");
   if (indexOfNamespaceStart >= 0) {
     const indexOfNamespaceEnd = logTxt.indexOf("]");
     if (indexOfNamespaceEnd > 0) {
-      namespace = logTxt.substring(indexOfNamespaceStart + 1, indexOfNamespaceEnd);
-      formattedMsg = logTxt.replace(/\n/g, "\n" + " ".repeat(indexOfNamespaceEnd + 2));
+      namespace = logTxt.substring(
+        indexOfNamespaceStart + 1,
+        indexOfNamespaceEnd,
+      );
+      formattedMsg = logTxt.replace(
+        /\n/g,
+        "\n" + " ".repeat(indexOfNamespaceEnd + 2),
+      );
     }
   }
-  const className = namespace !== undefined ?
-    "log-line log-" + namespace.toLowerCase() :
-    "log-line log-unknown";
+  const className =
+    namespace !== undefined
+      ? "log-line log-" + namespace.toLowerCase()
+      : "log-line log-unknown";
   return strHtml`<pre class=${className}>${formattedMsg}</pre>`;
 }

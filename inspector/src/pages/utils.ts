@@ -9,7 +9,7 @@ import { getDefaultModuleOrder } from "../utils";
  * @returns {HTMLButtonElement}
  */
 export function createDarkLightModeButton(
-  configState: ObservableState<ConfigState>
+  configState: ObservableState<ConfigState>,
 ): HTMLButtonElement {
   const buttonElt =
     strHtml`<button class="btn-dark-light-mode" />` as HTMLButtonElement;
@@ -26,13 +26,13 @@ export function createDarkLightModeButton(
         buttonElt.textContent = "🌘 Dark mode";
       }
     },
-    true
+    true,
   );
   buttonElt.onclick = function () {
     configState.updateState(
       STATE_PROPS.CSS_MODE,
       UPDATE_TYPE.REPLACE,
-      isDark ? "light" : "dark"
+      isDark ? "light" : "dark",
     );
     configState.commitUpdates();
   };
@@ -44,7 +44,7 @@ export function createDarkLightModeButton(
  * @returns {HTMLElement}
  */
 export function createClearStoredConfigButton(
-  configState: ObservableState<ConfigState>
+  configState: ObservableState<ConfigState>,
 ): HTMLElement {
   const buttonElt = document.createElement("button");
   buttonElt.textContent = "🧹 Clear page config";
@@ -53,18 +53,18 @@ export function createClearStoredConfigButton(
     configState.updateState(
       STATE_PROPS.CLOSED_MODULES,
       UPDATE_TYPE.REPLACE,
-      []
+      [],
     );
     configState.updateState(
       STATE_PROPS.MINIMIZED_MODULES,
       UPDATE_TYPE.REPLACE,
-      []
+      [],
     );
     configState.updateState(STATE_PROPS.WIDTH_RATIOS, UPDATE_TYPE.REPLACE, {});
     configState.updateState(
       STATE_PROPS.MODULES_ORDER,
       UPDATE_TYPE.REPLACE,
-      getDefaultModuleOrder()
+      getDefaultModuleOrder(),
     );
     configState.commitUpdates();
   };
@@ -88,7 +88,7 @@ export function createClearStoredConfigButton(
       modulesOrder.length === defaultModuleOrder.length &&
       modulesOrder.every(
         (moduleId: string, index: number) =>
-          moduleId === defaultModuleOrder[index]
+          moduleId === defaultModuleOrder[index],
       );
     buttonElt.disabled =
       closedModules.length === 0 &&

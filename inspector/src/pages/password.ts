@@ -12,8 +12,10 @@ export default function generatePasswordPage(): () => void {
     </h1>
     <div class="page-input-block">
       <div class="input-title">
-        ${"Enter the password of the linked RxPaired-server " +
-          "(leave empty if it has no password):"}
+        ${
+          "Enter the password of the linked RxPaired-server " +
+          "(leave empty if it has no password):"
+        }
       </div>
       ${createPasswordInputElement()}
     </div>
@@ -35,8 +37,7 @@ function createPasswordInputElement(): HTMLElement {
       sendPassword();
     }
   };
-  const passwordSendElt =
-    strHtml`<button class="button-input-right">${"Validate password"}</button>`;
+  const passwordSendElt = strHtml`<button class="button-input-right">${"Validate password"}</button>`;
   passwordSendElt.onclick = sendPassword;
   return strHtml`<div>${[passwordInputElt, passwordSendElt]}</div>`;
   function sendPassword() {

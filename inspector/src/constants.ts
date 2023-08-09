@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/naming-convention */
 /** @see .npmrc file */
-declare const _INSPECTOR_DEBUGGER_URL_ : string;
-declare const __DEVICE_SCRIPT_URL__ : string;
+declare const _INSPECTOR_DEBUGGER_URL_: string;
+declare const __DEVICE_SCRIPT_URL__: string;
 /* eslint-enable @typescript-eslint/naming-convention */
 
 /**
@@ -105,38 +105,38 @@ export enum STATE_PROPS {
  * RxPlayer state on the page.
  */
 export interface InspectorState {
-  [STATE_PROPS.LOGS_HISTORY]? : string[];
-  [STATE_PROPS.BUFFER_GAPS]? : Array<{
-    bufferGap : number | undefined;
-    timestamp : number;
+  [STATE_PROPS.LOGS_HISTORY]?: string[];
+  [STATE_PROPS.BUFFER_GAPS]?: Array<{
+    bufferGap: number | undefined;
+    timestamp: number;
   }>;
-  [STATE_PROPS.POSITION]? : number;
-  [STATE_PROPS.PLAYER_STATE]? : string;
-  [STATE_PROPS.BUFFERED_RANGES]? : Array<[number, number]>;
-  [STATE_PROPS.CONTENT_DURATION]? : number;
-  [STATE_PROPS.VIDEO_INVENTORY]? : InventoryTimelineInfo;
-  [STATE_PROPS.AUDIO_INVENTORY]? : InventoryTimelineInfo;
-  [STATE_PROPS.SELECTED_LOG_INDEX]? : number | undefined;
-  [STATE_PROPS.AUDIO_REQUEST_HISTORY]? : RequestInformation[];
-  [STATE_PROPS.VIDEO_REQUEST_HISTORY]? : RequestInformation[];
-  [STATE_PROPS.TEXT_REQUEST_HISTORY]? : RequestInformation[];
-  [STATE_PROPS.STATE_CHANGE_HISTORY]? : Array<{
-    state : string;
-    timestamp : number;
+  [STATE_PROPS.POSITION]?: number;
+  [STATE_PROPS.PLAYER_STATE]?: string;
+  [STATE_PROPS.BUFFERED_RANGES]?: Array<[number, number]>;
+  [STATE_PROPS.CONTENT_DURATION]?: number;
+  [STATE_PROPS.VIDEO_INVENTORY]?: InventoryTimelineInfo;
+  [STATE_PROPS.AUDIO_INVENTORY]?: InventoryTimelineInfo;
+  [STATE_PROPS.SELECTED_LOG_INDEX]?: number | undefined;
+  [STATE_PROPS.AUDIO_REQUEST_HISTORY]?: RequestInformation[];
+  [STATE_PROPS.VIDEO_REQUEST_HISTORY]?: RequestInformation[];
+  [STATE_PROPS.TEXT_REQUEST_HISTORY]?: RequestInformation[];
+  [STATE_PROPS.STATE_CHANGE_HISTORY]?: Array<{
+    state: string;
+    timestamp: number;
   }>;
-  [STATE_PROPS.MANIFEST_PARSING_TIME_HISTORY]? : Array<{
-    timeMs : number;
-    timestamp : number;
+  [STATE_PROPS.MANIFEST_PARSING_TIME_HISTORY]?: Array<{
+    timeMs: number;
+    timestamp: number;
   }>;
 }
 
 /** State linked to the Inspector page layout and configuration. */
 export interface ConfigState {
-  [STATE_PROPS.CSS_MODE]? : string;
-  [STATE_PROPS.CLOSED_MODULES]? : string[];
-  [STATE_PROPS.WIDTH_RATIOS]? : Partial<Record<string, number>>;
-  [STATE_PROPS.MINIMIZED_MODULES]? : string[];
-  [STATE_PROPS.MODULES_ORDER]? : string[];
+  [STATE_PROPS.CSS_MODE]?: string;
+  [STATE_PROPS.CLOSED_MODULES]?: string[];
+  [STATE_PROPS.WIDTH_RATIOS]?: Partial<Record<string, number>>;
+  [STATE_PROPS.MINIMIZED_MODULES]?: string[];
+  [STATE_PROPS.MODULES_ORDER]?: string[];
 }
 
 /**
@@ -159,11 +159,11 @@ export interface InventoryTimelineInfo {
 /** Information indentifying a single Representation (i.e. quality). */
 export interface InventoryTimelineRepresentationInfo {
   /** Bitrate, in bits per seconds, linked to this Representation. */
-  bitrate : number;
+  bitrate: number;
   /** `id` used in the RxPlayer to refer to that Representation's Period. */
-  periodId : string;
+  periodId: string;
   /** `id` used in the RxPlayer to refer to this Representation. */
-  representationId : string;
+  representationId: string;
 }
 
 /**

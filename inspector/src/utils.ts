@@ -20,7 +20,7 @@ import modules from "./modules/index";
 export function reGeneratePageUrl(
   withPassword: string | null | undefined,
   withToken: string | undefined,
-  isPostDebugger : boolean = false
+  isPostDebugger: boolean = false,
 ): string {
   const originalUrl = new URL(document.location.href);
   originalUrl.hash = "";
@@ -62,7 +62,7 @@ export function parseUrl(): {
     password = passStr.substring("pass=".length);
     password = password.length === 0 ? null : password;
     const tokenStr = initialHashValues.filter((val) =>
-      val.startsWith("token=")
+      val.startsWith("token="),
     )[0];
     if (tokenStr !== undefined) {
       tokenId = tokenStr.substring("token=".length);
@@ -90,7 +90,7 @@ export function isTokenValid(tokenId: string): boolean {
 export function displayError(
   errorWrapperElt: HTMLElement,
   err?: unknown,
-  fadeOut?: boolean
+  fadeOut?: boolean,
 ): void {
   let message;
   if (err != null) {

@@ -35,7 +35,7 @@ interface Empty {}
  */
 export type StateListenerFunction<
   TStateObject extends Empty,
-  K extends keyof TStateObject
+  K extends keyof TStateObject,
 > = (updateType: UPDATE_TYPE, value: TStateObject[K]) => void;
 
 /**
@@ -90,14 +90,14 @@ export default class ObservableState<TStateObject extends Empty> {
     [K in keyof TStateObject]?: TStateObject[K] | undefined;
   };
   public getCurrentState<K extends keyof TStateObject>(
-    stateName: K
+    stateName: K,
   ): TStateObject[K];
   public getCurrentState<K extends keyof TStateObject>(
-    stateName?: K
-  ): TStateObject[K] |
-     { [K in keyof TStateObject]?: TStateObject[K] | undefined; } |
-     undefined
-  {
+    stateName?: K,
+  ):
+    | TStateObject[K]
+    | { [K in keyof TStateObject]?: TStateObject[K] | undefined }
+    | undefined {
     /* eslint-enable @typescript-eslint/no-shadow */
     /* eslint-enable @typescript-eslint/no-unused-vars */
     if (stateName === undefined) {
@@ -130,7 +130,7 @@ export default class ObservableState<TStateObject extends Empty> {
   public updateState<K extends keyof TStateObject>(
     stateName: K,
     updateType: UPDATE_TYPE,
-    value: TStateObject[K]
+    value: TStateObject[K],
   ): void {
     const prevUpdate = this._pendingUpdates[stateName];
     if (prevUpdate === undefined) {
@@ -253,7 +253,7 @@ export default class ObservableState<TStateObject extends Empty> {
   public subscribe<P extends keyof TStateObject>(
     stateName: P,
     cb: (updateType: UPDATE_TYPE | "initial", value: TStateObject[P]) => void,
-    includeCurrent: true
+    includeCurrent: true,
   ): () => void;
   public subscribe<P extends keyof TStateObject>(
     stateName: P,
@@ -265,9 +265,9 @@ export default class ObservableState<TStateObject extends Empty> {
       /* eslint-disable @typescript-eslint/no-explicit-any */
       updateType: any,
       /* eslint-enable @typescript-eslint/no-explicit-any */
-      value: TStateObject[P]
+      value: TStateObject[P],
     ) => void,
-    includeCurrent?: true
+    includeCurrent?: true,
   ): () => void {
     let currentCbs = this._callbacks[stateName];
     if (currentCbs === undefined) {
@@ -295,11 +295,9 @@ export default class ObservableState<TStateObject extends Empty> {
    */
   public unsubscribe<P extends keyof TStateObject>(
     stateName: P,
-    cb: (
-      (updateType: UPDATE_TYPE | "initial", value: TStateObject[P]) => void
-    ) | (
-      (updateType: UPDATE_TYPE, value: TStateObject[P]) => void
-    )
+    cb:
+      | ((updateType: UPDATE_TYPE | "initial", value: TStateObject[P]) => void)
+      | ((updateType: UPDATE_TYPE, value: TStateObject[P]) => void),
   ): void {
     const cbs = this._callbacks[stateName];
     if (cbs === undefined) {

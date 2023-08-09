@@ -41,7 +41,7 @@ const isChromiumBasedBrowser = (window as any).chrome != null;
 export default function generateLiveDebuggingPage(
   password: string | null,
   tokenId: string,
-  configState: ObservableState<ConfigState>
+  configState: ObservableState<ConfigState>,
 ): () => void {
   /** Define sendInstruction` globally, to send JS instructions to the device. */
   (window as unknown as Record<string, unknown>).sendInstruction =
@@ -61,7 +61,7 @@ export default function generateLiveDebuggingPage(
     password,
     currentSocket,
     configState,
-    inspectorState
+    inspectorState,
   );
   const modulesContainerElt = strHtml`<div/>`;
   const liveDebuggingBodyElt = strHtml`<div>
@@ -84,7 +84,7 @@ export default function generateLiveDebuggingPage(
         ) {
           inspectorState.updateState(stateProp, UPDATE_TYPE.REPLACE, undefined);
         }
-      }
+      },
     );
     if (selectedLogIdx === undefined) {
       updateStatesFromLogGroup(inspectorState, history);
@@ -163,7 +163,7 @@ export default function generateLiveDebuggingPage(
             inspectorState.updateState(
               STATE_PROPS.LOGS_HISTORY,
               UPDATE_TYPE.PUSH,
-              updates
+              updates,
             );
             if (!hasSelectedLog) {
               updateStatesFromLogGroup(inspectorState, updates);
@@ -175,7 +175,7 @@ export default function generateLiveDebuggingPage(
           if (typeof value.id === "string") {
             const emphasizedId = emphasizeForConsole(value.id as string);
             console.log(
-              `---> Result of instruction ${emphasizedId}: ${value.data}`
+              `---> Result of instruction ${emphasizedId}: ${value.data}`,
             );
           }
         } else if (signal.type === "eval-error") {
@@ -190,7 +190,7 @@ export default function generateLiveDebuggingPage(
             }
             const emphasizedId = emphasizeForConsole(value.id as string);
             console.log(
-              `---> Failure of instruction ${emphasizedId}: ${errorString}`
+              `---> Failure of instruction ${emphasizedId}: ${errorString}`,
             );
           }
         }
@@ -199,7 +199,10 @@ export default function generateLiveDebuggingPage(
         /* eslint-enable @typescript-eslint/no-unsafe-member-access */
       } catch (err) {
         console.error("Could not parse signalling message", err);
-        displayError(errorContainerElt, "Invalid signaling message format received");
+        displayError(
+          errorContainerElt,
+          "Invalid signaling message format received",
+        );
         return;
       }
     } else {
@@ -223,7 +226,7 @@ export default function generateLiveDebuggingPage(
           id,
           instruction,
         },
-      })
+      }),
     );
     const emphasizedId = emphasizeForConsole(id);
     console.log(`<--- Instruction ${emphasizedId} sent`);
@@ -244,7 +247,7 @@ function createLiveDebuggerHeaderElement(
   password: string | null,
   currentSocket: WebSocket,
   configState: ObservableState<ConfigState>,
-  inspectorState: ObservableState<InspectorState>
+  inspectorState: ObservableState<InspectorState>,
 ): HTMLElement {
   return strHtml`<div class="header">
     <div class="token-title">
@@ -275,7 +278,8 @@ function createLiveDebuggerHeaderElement(
  * @returns {HTMLElement}
  */
 function createCloseConnectionButton(currentSocket: WebSocket): HTMLElement {
-  const buttonElt = strHtml`<button>${"✋ Stop listening"}</button>` as HTMLButtonElement;
+  const buttonElt =
+    strHtml`<button>${"✋ Stop listening"}</button>` as HTMLButtonElement;
   buttonElt.onclick = function () {
     if (currentSocket !== null) {
       currentSocket.close();
@@ -290,9 +294,10 @@ function createCloseConnectionButton(currentSocket: WebSocket): HTMLElement {
  * @returns {HTMLButtonElement}
  */
 function createExportLogsButton(
-  inspectorState: ObservableState<InspectorState>
+  inspectorState: ObservableState<InspectorState>,
 ): HTMLButtonElement {
-  const buttonElt = strHtml`<button>${"💾 Export"}</button>` as HTMLButtonElement;
+  const buttonElt =
+    strHtml`<button>${"💾 Export"}</button>` as HTMLButtonElement;
   buttonElt.onclick = function () {
     exportLogs(inspectorState);
   };
@@ -304,9 +309,10 @@ function createExportLogsButton(
  * @returns {HTMLButtonElement}
  */
 function createClearAllButton(
-  inspectorState: ObservableState<InspectorState>
+  inspectorState: ObservableState<InspectorState>,
 ): HTMLButtonElement {
-  const buttonElt = strHtml`<button>${"🧹 Clear all logs"}</button>` as HTMLButtonElement;
+  const buttonElt =
+    strHtml`<button>${"🧹 Clear all logs"}</button>` as HTMLButtonElement;
   buttonElt.onclick = function () {
     const allProps = Object.keys(inspectorState.getCurrentState()) as Array<
       keyof InspectorState
@@ -348,7 +354,7 @@ function exportLogs(inspectorState: ObservableState<InspectorState>): void {
  */
 function startWebsocketConnection(
   password: string | null,
-  tokenId: string
+  tokenId: string,
 ): WebSocket {
   const wsUrl =
     password === null

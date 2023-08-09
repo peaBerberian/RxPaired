@@ -1,7 +1,5 @@
 import { InspectorState } from "./constants";
-import LogProcessors, {
-  StateUpdate,
-} from "./log_processors";
+import LogProcessors, { StateUpdate } from "./log_processors";
 import ObservableState, { UPDATE_TYPE } from "./observable_state";
 
 /**
@@ -12,14 +10,18 @@ import ObservableState, { UPDATE_TYPE } from "./observable_state";
  * @param {string} newLog
  */
 export default function updateStateFromLog(
-  state : ObservableState<InspectorState>,
-  newLog : string
-) : void {
+  state: ObservableState<InspectorState>,
+  newLog: string,
+): void {
   for (const proc of LogProcessors) {
     if (proc.filter(newLog)) {
       const updateRes = proc.processor(newLog);
       for (const update of updateRes) {
-        state.updateState(update.property, update.updateType, update.updateValue);
+        state.updateState(
+          update.property,
+          update.updateType,
+          update.updateValue,
+        );
       }
     }
   }
@@ -33,10 +35,10 @@ export default function updateStateFromLog(
  * @param {string} logs
  */
 export function updateStatesFromLogGroup(
-  state : ObservableState<InspectorState>,
-  logs : string[]
-) : void {
-  const pendingUpdates : Array<StateUpdate<keyof InspectorState>> = [];
+  state: ObservableState<InspectorState>,
+  logs: string[],
+): void {
+  const pendingUpdates: Array<StateUpdate<keyof InspectorState>> = [];
 
   /**
    * All state property that already have been set (and thus don't need to
@@ -76,7 +78,7 @@ export function updateStatesFromLogGroup(
           innerCheckIdx++
         ) {
           const innerCheck = remainingChecks[innerCheckIdx];
-          if (innerCheck.updatedProps.every(u => updatedStates.has(u))) {
+          if (innerCheck.updatedProps.every((u) => updatedStates.has(u))) {
             remainingChecks.splice(innerCheckIdx, 1);
           }
         }

@@ -4,7 +4,10 @@ import createModules from "../create_modules";
 import ObservableState, { UPDATE_TYPE } from "../observable_state";
 import { updateStatesFromLogGroup } from "../update_state_from_log";
 import { reGeneratePageUrl } from "../utils";
-import { createClearStoredConfigButton, createDarkLightModeButton } from "./utils";
+import {
+  createClearStoredConfigButton,
+  createDarkLightModeButton,
+} from "./utils";
 
 const START_LOG_LINE_REGEXP = /^[0-9]+\.[0-9]{2} \[/;
 
@@ -15,7 +18,7 @@ const START_LOG_LINE_REGEXP = /^[0-9]+\.[0-9]{2} \[/;
  */
 export default function generatePostDebuggerPage(
   password: string | null,
-  configState : ObservableState<ConfigState>
+  configState: ObservableState<ConfigState>,
 ): () => void {
   const inspectorState = new ObservableState<InspectorState>();
   const modulesContainerElt = strHtml`<div/>`;
@@ -34,19 +37,20 @@ export default function generatePostDebuggerPage(
     const selectedLogIdx = allState[STATE_PROPS.SELECTED_LOG_INDEX];
     const history = allState[STATE_PROPS.LOGS_HISTORY] ?? [];
     /* eslint-disable-next-line */
-    (Object.keys(allState) as unknown as Array<keyof InspectorState>)
-      .forEach((stateProp: keyof InspectorState) => {
+    (Object.keys(allState) as unknown as Array<keyof InspectorState>).forEach(
+      (stateProp: keyof InspectorState) => {
         if (
           stateProp !== STATE_PROPS.LOGS_HISTORY &&
           stateProp !== STATE_PROPS.SELECTED_LOG_INDEX
         ) {
           inspectorState.updateState(stateProp, UPDATE_TYPE.REPLACE, undefined);
         }
-      });
+      },
+    );
     if (selectedLogIdx === undefined) {
       updateStatesFromLogGroup(inspectorState, history);
       inspectorState.commitUpdates();
-      return ;
+      return;
     } else {
       const consideredLogs = history.slice(0, selectedLogIdx + 1);
       updateStatesFromLogGroup(inspectorState, consideredLogs);
@@ -69,9 +73,10 @@ export default function generatePostDebuggerPage(
 }
 
 function createImportFileButton(
-  inspectorState : ObservableState<InspectorState>
-) : HTMLInputElement {
-  const fileInputEl = strHtml`<input name="file" type="file">` as HTMLInputElement;
+  inspectorState: ObservableState<InspectorState>,
+): HTMLInputElement {
+  const fileInputEl =
+    strHtml`<input name="file" type="file">` as HTMLInputElement;
   fileInputEl.addEventListener("change", onFileSelection, false);
   return fileInputEl;
 
@@ -91,7 +96,7 @@ function createImportFileButton(
     const file = files[0];
     const reader = new FileReader();
 
-    reader.onload = (loadEvt : Event) => {
+    reader.onload = (loadEvt: Event) => {
       const { target: loadTarget } = loadEvt;
       if (loadTarget === null || !(loadTarget instanceof FileReader)) {
         return;
@@ -100,16 +105,22 @@ function createImportFileButton(
         return;
       }
       const dataStr = loadTarget.result;
-      const logs : string[] = [];
+      const logs: string[] = [];
       let remaininStrConsidered = dataStr;
       while (remaininStrConsidered.length > 0) {
-        let indexOfEnd : number;
+        let indexOfEnd: number;
         let offset = 0;
         let indexOfBrk = remaininStrConsidered.indexOf("\n");
         while (indexOfBrk >= 0) {
-          const strAfterBrk = remaininStrConsidered.substring(indexOfBrk + 1 + offset);
+          const strAfterBrk = remaininStrConsidered.substring(
+            indexOfBrk + 1 + offset,
+          );
           const nextCharCode = strAfterBrk.charCodeAt(0);
-          if (!isNaN(nextCharCode) && nextCharCode >= 48 && nextCharCode <= 57) {
+          if (
+            !isNaN(nextCharCode) &&
+            nextCharCode >= 48 &&
+            nextCharCode <= 57
+          ) {
             if (START_LOG_LINE_REGEXP.test(strAfterBrk)) {
               break;
             }
@@ -127,7 +138,11 @@ function createImportFileButton(
         remaininStrConsidered = remaininStrConsidered.substring(indexOfEnd + 1);
       }
 
-      inspectorState.updateState(STATE_PROPS.LOGS_HISTORY, UPDATE_TYPE.REPLACE, logs);
+      inspectorState.updateState(
+        STATE_PROPS.LOGS_HISTORY,
+        UPDATE_TYPE.REPLACE,
+        logs,
+      );
       updateStatesFromLogGroup(inspectorState, logs);
       inspectorState.commitUpdates();
     };
@@ -145,7 +160,7 @@ function createImportFileButton(
  */
 function createPostDebuggerHeaderElement(
   password: string | null,
-  configState: ObservableState<ConfigState>
+  configState: ObservableState<ConfigState>,
 ): HTMLElement {
   return strHtml`<div class="header">
     <div class="token-title">
@@ -158,7 +173,7 @@ function createPostDebuggerHeaderElement(
     </div>
     <div class="header-item">${[
       createClearStoredConfigButton(configState),
-      createDarkLightModeButton(configState)
+      createDarkLightModeButton(configState),
     ]}</div>
   </div>`;
 }

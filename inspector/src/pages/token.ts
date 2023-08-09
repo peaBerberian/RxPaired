@@ -99,7 +99,7 @@ export default function generateTokenPage(password: string | null): () => void {
  */
 function createGenerateTokenButton(
   password: string | null,
-  errorContainerElt: HTMLElement
+  errorContainerElt: HTMLElement,
 ): HTMLElement {
   const generateTokenButtonElt = strHtml`<button class="btn-generate-token">
     Generate Token
@@ -135,9 +135,8 @@ function createPostDebuggingButtonElt(password: string | null): HTMLElement {
  */
 function createTokenInputElement(
   password: string | null,
-  errorContainerElt: HTMLElement
+  errorContainerElt: HTMLElement,
 ): HTMLElement {
-
   const tokenInputElt =
     strHtml`<input placeholder="Enter the wanted token">` as HTMLInputElement;
   tokenInputElt.onkeyup = function (evt) {
@@ -164,11 +163,11 @@ function createTokenInputElement(
 function setToken(
   tokenValue: string,
   password: string | null,
-  errorContainerElt: HTMLElement
+  errorContainerElt: HTMLElement,
 ): void {
   if (!isTokenValid(tokenValue)) {
     const error = new Error(
-      "Error: A token must only contain alphanumeric characters"
+      "Error: A token must only contain alphanumeric characters",
     );
     displayError(errorContainerElt, error, true);
     return;
@@ -194,7 +193,10 @@ function createNoTokenTutorialElement(password: string | null): HTMLElement {
     <br>
     For example, you can just add before the first script tag:
     <span class="emphasized">
-      ${`<script src="${CLIENT_SCRIPT_URL.replace(/"/g, '\\"')}#${fakeTokenStr}"></script>`}
+      ${`<script src="${CLIENT_SCRIPT_URL.replace(
+        /"/g,
+        '\\"',
+      )}#${fakeTokenStr}"></script>`}
     </span>
   </li>`;
   /* eslint-enable max-len */
@@ -252,7 +254,8 @@ function createNoTokenTutorialElement(password: string | null): HTMLElement {
     </details>
   </li>`;
 
-  const noTokenStr = password === null ? "!notoken" : "!notoken/<SERVER_PASSWORD>";
+  const noTokenStr =
+    password === null ? "!notoken" : "!notoken/<SERVER_PASSWORD>";
   const res = strHtml`<div class="no-token-tutorial">
     <span class="emphasized">
       If you want to start logging without running the inspector:
@@ -286,7 +289,7 @@ function createNoTokenTutorialElement(password: string | null): HTMLElement {
 function onActiveTokenListUpdate(
   activeTokensList: Array<{ date: number; tokenId: string }>,
   activeTokensListElt: HTMLElement,
-  password: string | null
+  password: string | null,
 ): void {
   if (activeTokensList.length === 0) {
     activeTokensListElt.innerHTML = "No active token";
@@ -295,8 +298,12 @@ function onActiveTokenListUpdate(
     const activeTokenDataElt: HTMLElement = activeTokensList.reduce(
       (acc, d) => {
         const date = new Date(d.date);
-        const dateStr = date.toLocaleDateString() + " @ " + date.toLocaleTimeString();
-        const linkElt = strHtml`<a href=${reGeneratePageUrl(password, d.tokenId)}>`;
+        const dateStr =
+          date.toLocaleDateString() + " @ " + date.toLocaleTimeString();
+        const linkElt = strHtml`<a href=${reGeneratePageUrl(
+          password,
+          d.tokenId,
+        )}>`;
         linkElt.appendChild(strHtml`<span>${dateStr}</span>`);
         linkElt.appendChild(document.createTextNode(" - "));
         linkElt.appendChild(strHtml`<span>${d.tokenId}</span>`);
@@ -304,7 +311,7 @@ function onActiveTokenListUpdate(
         acc.appendChild(listElt);
         return acc;
       },
-      strHtml`<ul class="active-token-list" />`
+      strHtml`<ul class="active-token-list" />`,
     );
     activeTokensListElt.innerHTML = "";
     activeTokensListElt.appendChild(activeTokenDataElt);

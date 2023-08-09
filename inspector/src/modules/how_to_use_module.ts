@@ -1,9 +1,11 @@
 import strHtml from "str-html";
 import { CLIENT_SCRIPT_URL } from "../constants";
 
-export default function HowToUseModule(
-  { tokenId } : { tokenId? : string | undefined }
-) {
+export default function HowToUseModule({
+  tokenId,
+}: {
+  tokenId?: string | undefined;
+}) {
   if (tokenId === undefined) {
     console.error("Cannot initialize HowToUseModule: no token");
     return null;
@@ -70,7 +72,10 @@ sendInstruction(\`console.warn("USER-AGENT:", navigator.userAgent)\`)
     <br>
     For example, you can just add before the first script tag:
     <span class="emphasized">
-      ${`<script src="${CLIENT_SCRIPT_URL.replace(/"/g, '\\"')}#${tokenId}"></script>`}
+      ${`<script src="${CLIENT_SCRIPT_URL.replace(
+        /"/g,
+        '\\"',
+      )}#${tokenId}"></script>`}
     </span>
   </li>`;
 

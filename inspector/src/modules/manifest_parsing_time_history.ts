@@ -10,9 +10,7 @@ export default function ManifestParsingTimeHistoryModule({
   state: ObservableState<InspectorState>;
 }) {
   const manifestParsingHistoryElt = strHtml`<div>No manifest parsing information</div>`;
-  const moduleBodyElt = strHtml`<div class="state-history-body module-body">${
-    manifestParsingHistoryElt
-  }</div>`;
+  const moduleBodyElt = strHtml`<div class="state-history-body module-body">${manifestParsingHistoryElt}</div>`;
   const unsubscribeHistory = state.subscribe(
     STATE_PROPS.MANIFEST_PARSING_TIME_HISTORY,
     () => {
@@ -20,7 +18,7 @@ export default function ManifestParsingTimeHistoryModule({
 
       // TODO more optimized: rely on push
       const manifestParsingTimeHistory = state.getCurrentState(
-        STATE_PROPS.MANIFEST_PARSING_TIME_HISTORY
+        STATE_PROPS.MANIFEST_PARSING_TIME_HISTORY,
       );
 
       if (manifestParsingTimeHistory === undefined) {
@@ -44,12 +42,16 @@ export default function ManifestParsingTimeHistoryModule({
               ${info.timeMs.toFixed(2)}
             </td>
             <td>
-              ${i === 0 ?
-                  "-" :
-                  (info.timestamp - manifestParsingTimeHistory[i - 1].timestamp)
-                    .toFixed(2)}
+              ${
+                i === 0
+                  ? "-"
+                  : (
+                      info.timestamp -
+                      manifestParsingTimeHistory[i - 1].timestamp
+                    ).toFixed(2)
+              }
             </td>
-          </tr>`
+          </tr>`,
         );
         if (tableElt.childNodes.length >= MAX_ELEMENTS - 1) {
           manifestParsingHistoryElt.appendChild(tableElt);
@@ -64,7 +66,7 @@ export default function ManifestParsingTimeHistoryModule({
       manifestParsingHistoryElt.appendChild(tableElt);
       moduleBodyElt.classList.remove("empty");
     },
-    true
+    true,
   );
   return {
     body: moduleBodyElt,
