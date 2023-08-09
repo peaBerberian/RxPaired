@@ -244,13 +244,13 @@ function createNoTokenTutorialElement(hasPassword: boolean): HTMLElement {
       Where <span class="emphasized">${"<RX_PLAYER_CLASS>"}</span>
       is a reference to the RxPlayer's class in your code${
         !hasPassword
-          ? "."
-          : [
+          ? [
               " and ",
               strHtml`<span class="emphasized">${"<SERVER_PASSWORD>"}</span>`,
-              " has to be replaced by the server's password.",
+              " has to be replaced by the server's password",
             ]
-      }
+          : ""
+      }.
       <br>
       <br>
       Alternatively, if that does not work because dynamic import is not
@@ -260,14 +260,14 @@ function createNoTokenTutorialElement(hasPassword: boolean): HTMLElement {
       Likewise don't forget to replace
       <span class="emphasized">${"<RX_PLAYER_CLASS>"}</span>
       by a reference to the RxPlayer's class in your code${
-        !hasPassword
-          ? "."
-          : [
+        hasPassword
+          ? [
               " and ",
               strHtml`<span class="emphasized">${"<SERVER_PASSWORD>"}</span>`,
-              " by the server's password.",
+              " by the server's password",
             ]
-      }
+          : ""
+      }.
     </details>
   </li>`;
 
@@ -287,7 +287,7 @@ function createNoTokenTutorialElement(hasPassword: boolean): HTMLElement {
         ? [
             " where ",
             strHtml`<span class="emphasized">${"<SERVER_PASSWORD>"}</span>`,
-            " has to be replaced by the server's password.",
+            " has to be replaced by the server's password",
           ]
         : ""
     }.</span>
