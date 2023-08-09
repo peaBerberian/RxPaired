@@ -1,3 +1,4 @@
+import strHtml from "str-html";
 import {
   ConfigState,
   InspectorState,
@@ -5,11 +6,6 @@ import {
   STATE_PROPS,
 } from "../constants";
 import createModules from "../create_modules";
-import {
-  createCompositeElement,
-  createElement,
-  createLinkElement,
-} from "../dom-utils";
 import ObservableState, { UPDATE_TYPE } from "../observable_state";
 import updateStateFromLog, {
   updateStatesFromLogGroup,
@@ -59,7 +55,7 @@ export default function generateLiveDebuggingPage(
    */
   const currentSocket: WebSocket = startWebsocketConnection(password, tokenId);
 
-  const errorContainerElt = createElement("div");
+  const errorContainerElt = strHtml`<div/>`;
   const headerElt = createLiveDebuggerHeaderElement(
     tokenId,
     password,
@@ -67,12 +63,12 @@ export default function generateLiveDebuggingPage(
     configState,
     inspectorState
   );
-  const modulesContainerElt = createElement("div");
-  const liveDebuggingBodyElt = createCompositeElement("div", [
-    errorContainerElt,
-    headerElt,
-    modulesContainerElt,
-  ]);
+  const modulesContainerElt = strHtml`<div/>`;
+  const liveDebuggingBodyElt = strHtml`<div>
+    ${errorContainerElt}
+    ${headerElt}
+    ${modulesContainerElt}
+  </div>`;
   document.body.appendChild(liveDebuggingBodyElt);
 
   inspectorState.subscribe(STATE_PROPS.SELECTED_LOG_INDEX, () => {
@@ -250,63 +246,26 @@ function createLiveDebuggerHeaderElement(
   configState: ObservableState<ConfigState>,
   inspectorState: ObservableState<InspectorState>
 ): HTMLElement {
-  return createCompositeElement(
-    "div",
-    [
-      createCompositeElement(
-        "div",
-        [
-          createCompositeElement(
-            "span",
-            [
-              createLinkElement({
-                textContent: "Home",
-                href: reGeneratePageUrl(undefined, undefined),
-              }),
-              " > ",
-              createLinkElement({
-                textContent: "Token",
-                href: reGeneratePageUrl(password, undefined),
-              }),
-              " > Live Debugging",
-            ],
-            {
-              className: "header-item page-title",
-            }
-          ),
-
-          createCompositeElement(
-            "span",
-            [
-              createElement("span", {
-                className: "token-title-desc",
-                textContent: "Token: ",
-              }),
-              createElement("span", {
-                className: "token-title-val",
-                textContent: tokenId,
-              }),
-            ],
-            { className: "header-item token-header-value" }
-          ),
-        ],
-        { className: "token-title" }
-      ),
-
-      createCompositeElement(
-        "div",
-        [
-          createExportLogsButton(inspectorState),
-          createCloseConnectionButton(currentSocket),
-          createClearAllButton(inspectorState),
-          createClearStoredConfigButton(configState),
-          createDarkLightModeButton(configState),
-        ],
-        { className: "header-item" }
-      ),
-    ],
-    { className: "header" }
-  );
+  return strHtml`<div class="header">
+    <div class="token-title">
+      <span class="header-item page-title">${[
+        strHtml`<a href=${reGeneratePageUrl(undefined, undefined)}>Home</a>`,
+        " > ",
+        strHtml`<a href=${reGeneratePageUrl(password, undefined)}>Token</a>`,
+        " > Live Debugging",
+      ]}</span><span class="header-item token-header-value">${[
+        strHtml`<span class="token-title-desc">Token: </span>`,
+        strHtml`<span class="token-title-val">${tokenId}</span>`,
+      ]}</span>
+    </div>
+    <div class="header-item">${[
+      createExportLogsButton(inspectorState),
+      createCloseConnectionButton(currentSocket),
+      createClearAllButton(inspectorState),
+      createClearStoredConfigButton(configState),
+      createDarkLightModeButton(configState),
+    ]}</div>
+  </div>`;
 }
 
 /**
@@ -316,8 +275,7 @@ function createLiveDebuggerHeaderElement(
  * @returns {HTMLElement}
  */
 function createCloseConnectionButton(currentSocket: WebSocket): HTMLElement {
-  const buttonElt = document.createElement("button");
-  buttonElt.textContent = "✋ Stop listening";
+  const buttonElt = strHtml`<button>${"✋ Stop listening"}</button>` as HTMLButtonElement;
   buttonElt.onclick = function () {
     if (currentSocket !== null) {
       currentSocket.close();
@@ -334,8 +292,7 @@ function createCloseConnectionButton(currentSocket: WebSocket): HTMLElement {
 function createExportLogsButton(
   inspectorState: ObservableState<InspectorState>
 ): HTMLButtonElement {
-  const buttonElt = document.createElement("button");
-  buttonElt.textContent = "💾 Export";
+  const buttonElt = strHtml`<button>${"💾 Export"}</button>` as HTMLButtonElement;
   buttonElt.onclick = function () {
     exportLogs(inspectorState);
   };
@@ -349,8 +306,7 @@ function createExportLogsButton(
 function createClearAllButton(
   inspectorState: ObservableState<InspectorState>
 ): HTMLButtonElement {
-  const buttonElt = document.createElement("button");
-  buttonElt.textContent = "🧹 Clear all logs";
+  const buttonElt = strHtml`<button>${"🧹 Clear all logs"}</button>` as HTMLButtonElement;
   buttonElt.onclick = function () {
     const allProps = Object.keys(inspectorState.getCurrentState()) as Array<
       keyof InspectorState

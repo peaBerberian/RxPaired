@@ -1,10 +1,10 @@
+import strHtml from "str-html";
 import {
   ConfigState,
   InventoryTimelineInfo,
   InventoryTimelineRepresentationInfo,
   STATE_PROPS,
 } from "../constants";
-import { createCompositeElement, createElement } from "../dom-utils";
 import ObservableState from "../observable_state";
 import { ModuleFunction, ModuleFunctionArguments, ModuleObject } from ".";
 
@@ -40,15 +40,11 @@ export default function generateAudioVideoBufferContentModule(
     const listenedStateProp = mediaType === "video" ?
       STATE_PROPS.VIDEO_INVENTORY :
       STATE_PROPS.AUDIO_INVENTORY;
-    const canvasElt = createElement("canvas", {
-      className: "canvas-buffer-size",
-    }) as HTMLCanvasElement;
+    const canvasElt = strHtml`<canvas class="canvas-buffer-size" />` as HTMLCanvasElement;
     const canvasCtx = canvasElt.getContext("2d");
     let currentRangesScaled : ScaledRangeInfo[] = [];
 
-    const canvasParent = createCompositeElement("div", [
-      canvasElt,
-    ]);
+    const canvasParent = strHtml`<div>${canvasElt}</div>`;
     canvasParent.style.textAlign = "center";
     canvasParent.style.border = "1px solid black";
     canvasParent.style.height = "20px";
@@ -56,72 +52,54 @@ export default function generateAudioVideoBufferContentModule(
     canvasElt.onmousemove = onMouseMove;
     canvasElt.onmouseout = onMouseOut;
 
-    const currentRangeTitle = createElement("span", {
-      textContent: "Played range:",
-    });
-    const currentRangeData = createElement("span", {
-      className: "emphasized",
-      textContent: "None",
-    });
-    const currentRangeRepInfoTitle = createElement("span", {
-      textContent: "Played Representation:",
-    });
-    const currentRangeRepInfoData = createElement("span", {
-      className: "emphasized",
-      textContent: "None",
-    });
-    const currentRangeElt = createCompositeElement("div", [
+    const currentRangeTitle = strHtml`<span>Played range:</span>`;
+    const currentRangeData = strHtml`<span class="emphasized">None</span>`;
+    const currentRangeRepInfoTitle = strHtml`<span>Played Representation:</span>`;
+    const currentRangeRepInfoData = strHtml`<span class="emphasized">None</span>`;
+    const currentRangeElt = strHtml`<div>${[
       currentRangeTitle,
       currentRangeData,
-    ]);
+    ]}</div>`;
     currentRangeData.style.marginLeft = "5px";
 
-    const currentRangeRepInfoElt = createCompositeElement("div", [
+    const currentRangeRepInfoElt = strHtml`<div>${[
       currentRangeRepInfoTitle,
       currentRangeRepInfoData,
-    ]);
+    ]}</div>`;
     currentRangeRepInfoData.style.marginLeft = "5px";
     currentRangeRepInfoElt.style.marginTop = "5px";
 
-    const hoveredRangeTitle = createElement("span", {
-      textContent: "Hovered range:",
-    });
-    const hoveredRangeData = createElement("span", {
-      className: "emphasized",
-      textContent: "Hover range to show",
-    });
+    const hoveredRangeTitle = strHtml`<span>Hovered range:</span>`;
+    const hoveredRangeData =
+      strHtml`<span class="emphasized">Hover range to show</span>`;
     hoveredRangeData.style.marginLeft = "5px";
-    const hoveredRangeElt = createCompositeElement("div", [
+    const hoveredRangeElt = strHtml`<div>${[
       hoveredRangeTitle,
       hoveredRangeData,
-    ]);
+    ]}</div>`;
     hoveredRangeElt.style.marginTop = "5px";
 
-    const hoveredRangeRepInfoTitle = createElement("span", {
-      textContent: "Hovered Representation:",
-    });
-    const hoveredRangeRepInfoData = createElement("span", {
-      className: "emphasized",
-      textContent: "Hover range to show",
-    });
+    const hoveredRangeRepInfoTitle = strHtml`<span>Hovered Representation:</span>`;
+    const hoveredRangeRepInfoData =
+      strHtml`<span class="emphasized">Hover range to show</span>`;
     hoveredRangeRepInfoData.style.marginLeft = "5px";
-    const hoveredRangeRepInfoElt = createCompositeElement("div", [
+    const hoveredRangeRepInfoElt = strHtml`<div>${[
       hoveredRangeRepInfoTitle,
       hoveredRangeRepInfoData,
-    ]);
+    ]}</div>`;
     hoveredRangeRepInfoElt.style.marginTop = "5px";
-    const descriptionElt = createCompositeElement("div", [
+    const descriptionElt = strHtml`<div>${[
       currentRangeElt,
       currentRangeRepInfoElt,
       hoveredRangeElt,
       hoveredRangeRepInfoElt,
-    ]);
+    ]}</div>`;
     descriptionElt.style.marginTop = "7px";
 
-    const bufferChartBodyElt = createCompositeElement("div", [
+    const bufferChartBodyElt = strHtml`<div class="buffer-chart-body module-body">${[
       canvasParent,
       descriptionElt,
-    ], { className: "buffer-chart-body module-body" });
+    ]}</div>`;
     bufferChartBodyElt.style.overflow = "auto";
     bufferChartBodyElt.style.fontSize = "0.95em";
 

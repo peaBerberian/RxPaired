@@ -1,5 +1,5 @@
+import strHtml from "str-html";
 import { ConfigState, InspectorState, STATE_PROPS } from "../constants";
-import { createCompositeElement, createElement } from "../dom-utils";
 import ObservableState from "../observable_state";
 import { ModuleFunctionArguments } from ".";
 
@@ -61,10 +61,7 @@ const MINIMUM_MAX_BUFFER_SIZE = 20;
 export default function BufferSizeModule(
   { state, configState } : ModuleFunctionArguments
 ) {
-  const bufferSizeBodyElt = createElement("div", {
-    className: "buffer-size-body module-body",
-  });
-
+  const bufferSizeBodyElt = strHtml`<div class="buffer-size-body module-body"/>`;
   const [
     bufferSizeElt,
     disposeBufferSizeChart,
@@ -94,9 +91,7 @@ function createBufferSizeChart(
   configState : ObservableState<ConfigState>
 ) : [HTMLElement, () => void] {
   let currentMaxSize = MINIMUM_MAX_BUFFER_SIZE;
-  const canvasElt = createElement("canvas", {
-    className: "canvas-buffer-size",
-  }) as HTMLCanvasElement;
+  const canvasElt = strHtml`<canvas class="canvas-buffer-size" />` as HTMLCanvasElement;
   canvasElt.width = DEFAULT_CANVAS_WIDTH;
   canvasElt.height = DEFAULT_CANVAS_HEIGHT;
   const canvasCtx = canvasElt.getContext("2d");
@@ -109,9 +104,7 @@ function createBufferSizeChart(
   resizeObserver.observe(parentResizableElement);
   let lastClientHeight : number | undefined;
 
-  const canvasParent = createCompositeElement("div", [
-    canvasElt,
-  ]);
+  const canvasParent = strHtml`<div>${canvasElt}</div>`;
   canvasParent.style.textAlign = "center";
 
   return [

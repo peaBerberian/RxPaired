@@ -9,7 +9,6 @@ import { displayError, isTokenValid, reGeneratePageUrl } from "../utils";
  * @returns {Function} - Perform clean-up if the page is exited.
  */
 export default function generateTokenPage(password: string | null): () => void {
-  console.time("token1");
   const activeTokensListElt = strHtml`<pre class="active-tokens-list">Loading...</pre>`;
   const errorContainerElt = strHtml`<div></div>`;
   const pageBodyElt = strHtml`<div>
@@ -52,7 +51,6 @@ export default function generateTokenPage(password: string | null): () => void {
       </div>
     </div>
   </div>`;
-  console.timeEnd("token1");
   document.body.appendChild(pageBodyElt);
 
   let hasAddedNoTokenTutorial = false;
@@ -187,7 +185,6 @@ function generateToken(): string {
 }
 
 function createNoTokenTutorialElement(password: string | null): HTMLElement {
-  console.time("token2");
   const fakeTokenStr = `!notoken${password === null ? "" : "/" + password}`;
 
   /* eslint-disable max-len */
@@ -274,7 +271,6 @@ function createNoTokenTutorialElement(password: string | null): HTMLElement {
     </span>
     <ul>${[liElt1, liElt2, liElt3]}</ul>
   </div>`;
-  console.timeEnd("token2");
   return res;
 }
 

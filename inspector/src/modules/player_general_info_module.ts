@@ -1,5 +1,5 @@
+import strHtml from "str-html";
 import { InspectorState, STATE_PROPS } from "../constants";
-import { createCompositeElement, createElement } from "../dom-utils";
 import ObservableState from "../observable_state";
 
 /**
@@ -8,44 +8,39 @@ import ObservableState from "../observable_state";
 export default function PlayerGeneralInfoModule(
   { state } : { state : ObservableState<InspectorState> }
 ) {
-  const stateData = createElement("span", {
-    textContent: state.getCurrentState(STATE_PROPS.PLAYER_STATE) ?? "Unknown",
-    className: "emphasized",
-  });
-  const positionData = createElement("span", {
-    textContent: getCurrentPositionTextContent(state),
-    className: "emphasized",
-  });
-  const bufferGapData = createElement("span", {
-    textContent: getCurrentBufferGapTextContent(state),
-    className: "emphasized",
-  });
-  const durationData = createElement("span", {
-    textContent: getCurrentDurationTextContent(state),
-    className: "emphasized",
-  });
-  const initialLoadingTimeDataElt = createElement("span", {
-    textContent: getInitialLoadingTimeStr(
+  const stateData = strHtml`<span class="emphasized">${
+    state.getCurrentState(STATE_PROPS.PLAYER_STATE) ?? "Unknown"
+  }</span>`;
+  const positionData = strHtml`<span class="emphasized">${
+    getCurrentPositionTextContent(state)
+  }</span>`;
+  const bufferGapData = strHtml`<span class="emphasized">${
+    getCurrentBufferGapTextContent(state)
+  }</span>`;
+  const durationData = strHtml`<span class="emphasized">${
+    getCurrentDurationTextContent(state)
+  }</span>`;
+  const initialLoadingTimeDataElt = strHtml`<span class="emphasized">${
+    getInitialLoadingTimeStr(
       state.getCurrentState(STATE_PROPS.STATE_CHANGE_HISTORY) ?? []
-    ),
-    className: "emphasized",
-  });
-  const generalInfoBodyElt = createCompositeElement("div", [
-    createElement("span", { textContent: "Current state: " }),
+    )
+  }</span>`;
+  const generalInfoBodyElt = strHtml`<div class="gen-info-body module-body">${[
+    strHtml`<span>Current state: </span>`,
     stateData,
     " - ",
-    createElement("span", { textContent: "Current position: " }),
+    strHtml`<span>Current position: </span>`,
     positionData,
     " - ",
-    createElement("span", { textContent: "Buffer Gap: " }),
+    strHtml`<span>Buffer Gap: </span>`,
     bufferGapData,
     " - ",
-    createElement("span", { textContent: "Duration: " }),
+    strHtml`<span>Duration: </span>`,
     durationData,
     " - ",
-    createElement("span", { textContent: "Initial loading time: " }),
+    strHtml`<span>Initial loading time: </span>`,
     initialLoadingTimeDataElt,
-  ], { className: "gen-info-body module-body" });
+  ]}</div>`;
 
   const unsubscribeState = state.subscribe(STATE_PROPS.PLAYER_STATE, (
     _ut,

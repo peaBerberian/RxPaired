@@ -16,7 +16,7 @@ export default function generateRequestHistoryModule(
     const requestDataElt = strHtml`<div>No request information</div>`;
     const moduleBodyElt = strHtml`<div class="request-history-body module-body">
       ${requestDataElt}
-    </>`;
+    </div>`;
     const stateProp =
       mediaType === "audio"
         ? STATE_PROPS.AUDIO_REQUEST_HISTORY
@@ -51,15 +51,15 @@ export default function generateRequestHistoryModule(
       }
       let canStillReceivePending = true;
       const tableElt = strHtml`<table>
-        <ts>
+        <tr>
           <th>TS</th>
           <th>status</th>
           <th>Duration (ms)</th>
           <th>Period</th>
           <th>Representation</th>
-          <th>StartTime (s)</th>
+          <th>Start Time (s)</th>
           <th>Duration (s)</th>
-        </ts>
+        </tr>
       </table>`;
       for (let i = requestInfo?.length - 1; i >= 0; i--) {
         const req = requestInfo[i];
@@ -113,7 +113,7 @@ export default function generateRequestHistoryModule(
               tableElt.appendChild(
                 strHtml`<tr>
                   <td>${reqBase.timestamp}</td>
-                  <td>pending</td>
+                  <td>${req.eventType}</td>
                   <td>
                     ${(req.timestamp - reqBase.timestamp).toFixed(2)}
                   </td>

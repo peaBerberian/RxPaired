@@ -1,4 +1,4 @@
-import { createElement } from "./dom-utils";
+import strHtml from "str-html";
 import modules from "./modules/index";
 
 /**
@@ -104,10 +104,9 @@ export function displayError(
     message = "Encountered unknown Error";
   }
 
-  const errorDiv = createElement("div", {
-    className: "error-msg",
-    textContent: `${new Date().toISOString()}: Error: ${message}`,
-  });
+  const errorDiv = strHtml`<div class="error-msg">
+    ${`${new Date().toISOString()}: Error: ${message}`}
+  </div>`;
   if (fadeOut === true) {
     setTimeout(() => {
       errorDiv.classList.add("fade-out");

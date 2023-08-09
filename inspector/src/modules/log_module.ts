@@ -1,5 +1,5 @@
+import strHtml from "str-html";
 import { MAX_DISPLAYED_LOG_ELEMENTS, STATE_PROPS } from "../constants";
-import { createButton, createCompositeElement, createElement } from "../dom-utils";
 import { UPDATE_TYPE } from "../observable_state";
 import {
   ModuleObject,
@@ -27,12 +27,12 @@ export default function LogModule({
    * Log element's header which is going to show various information on what is
    * happening and if a log is selected.
    */
-  const logHeaderElt = createElement("div", { className: "log-header" });
+  const logHeaderElt = strHtml`<div class="log-header"/>`;
   logHeaderElt.style.borderBottom = "1px dashed #878787";
   displayNoLogHeader();
 
   /** Wrapper elements which will contain log messages. */
-  const logBodyElt = createElement("div", { className: "log-body module-body" });
+  const logBodyElt = strHtml`<div class="log-body module-body"/>`;
 
   /**
    * Parent element of the individual log messages.
@@ -41,7 +41,7 @@ export default function LogModule({
    * process of being heavily updated to improve performances.
    */
   const logContainerElt =
-    createElement("div", { className: "log-container module-body" });
+    strHtml`<div class="log-container module-body"/>`;
 
   // When pushing a LOT (thousands) of logs at once, the page can become
   // unresponsive multiple seconds.
@@ -83,9 +83,7 @@ export default function LogModule({
   let areSearchRegex = false;
 
   /** Wrapper elements allowing to filter logs. */
-  const filterFlexElt = createElement("div", {
-    className: "log-wrapper",
-  });
+  const filterFlexElt = strHtml`<div class="log-wrapper"/>`;
   filterFlexElt.style.display = "flex";
   filterFlexElt.style.height = "40px";
   filterFlexElt.style.margin = "5px 0px";
@@ -123,11 +121,11 @@ export default function LogModule({
     });
 
   /** Text input element for filtering logs. */
-  const logFilterInputElt = createElement("input", {
-    className: "log-filter",
-  });
-  logFilterInputElt.placeholder = "Filter logs based on text";
-  logFilterInputElt.type = "input";
+  const logFilterInputElt = strHtml`<input
+    type="input"
+    placeholder="Filter logs based on text"
+    class="log-filter"
+  />` as HTMLInputElement;
   logFilterInputElt.style.margin = "5px";
   logFilterInputElt.style.width = "calc(100% - 9px)";
   logFilterInputElt.oninput = refreshFilters;
@@ -142,11 +140,11 @@ export default function LogModule({
 
   logBodyElt.appendChild(logContainerElt);
   return {
-    body: createCompositeElement("div", [
+    body: strHtml`<div>${[
       logHeaderElt,
       filterFlexElt,
       logBodyElt,
-    ]),
+    ]}</div>`,
     clear() {
       unsubCaseBtn();
       unsubRegexBtn();
@@ -192,10 +190,9 @@ export default function LogModule({
   /** Display header for when a log is currently selected. */
   function displayLogSelectedHeader() {
     logHeaderElt.textContent = LOG_SELECTED_MSG;
-    const clickSpan = createElement("span", {
-      textContent: "Click on the log again or here to unselect",
-      className: "emphasized",
-    });
+    const clickSpan = strHtml`<span class="emphasized">${
+      "Click on the log again or here to unselect"
+    }</span>`;
     clickSpan.onclick = function() {
       state.updateState(STATE_PROPS.SELECTED_LOG_INDEX, UPDATE_TYPE.REPLACE, undefined);
       state.commitUpdates();
@@ -458,26 +455,23 @@ export default function LogModule({
         setEnabledStyle();
       }
     });
-    const buttonElt = createButton({
-      textContent: innerText,
-      className: "log-filter-button",
-      onClick() {
-        if (isDisabled) {
-          isDisabled = false;
-          setEnabledStyle();
-          buttonElt.title = titleEnabled;
-          onEnabled();
-        } else {
-          isDisabled = true;
-          buttonElt.title = titleDisabled;
-          setDisabledStyle();
-          buttonElt.style.color = isDarkMode ?
-            "#ffffff" :
-            "#000000";
-          onDisabled();
-        }
-      },
-    });
+    const buttonElt = strHtml`<button class="log-filter-button">${innerText}</button>`;
+    buttonElt.onclick = () => {
+      if (isDisabled) {
+        isDisabled = false;
+        setEnabledStyle();
+        buttonElt.title = titleEnabled;
+        onEnabled();
+      } else {
+        isDisabled = true;
+        buttonElt.title = titleDisabled;
+        setDisabledStyle();
+        buttonElt.style.color = isDarkMode ?
+          "#ffffff" :
+          "#000000";
+        onDisabled();
+      }
+    };
 
     buttonElt.title = titleDisabled;
     buttonElt.style.cursor = "pointer";
@@ -535,10 +529,8 @@ export function createLogElement(logTxt : string) : HTMLElement {
       formattedMsg = logTxt.replace(/\n/g, "\n" + " ".repeat(indexOfNamespaceEnd + 2));
     }
   }
-  return createElement("pre", {
-    textContent: formattedMsg,
-    className: namespace !== undefined ?
-      "log-line log-" + namespace.toLowerCase() :
-      "log-line log-unknown",
-  });
+  const className = namespace !== undefined ?
+    "log-line log-" + namespace.toLowerCase() :
+    "log-line log-unknown";
+  return strHtml`<pre class=${className}>${formattedMsg}</pre>`;
 }

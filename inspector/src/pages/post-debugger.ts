@@ -1,6 +1,6 @@
+import strHtml from "str-html";
 import { ConfigState, InspectorState, STATE_PROPS } from "../constants";
 import createModules from "../create_modules";
-import { createCompositeElement, createElement, createLinkElement } from "../dom-utils";
 import ObservableState, { UPDATE_TYPE } from "../observable_state";
 import { updateStatesFromLogGroup } from "../update_state_from_log";
 import { reGeneratePageUrl } from "../utils";
@@ -18,18 +18,15 @@ export default function generatePostDebuggerPage(
   configState : ObservableState<ConfigState>
 ): () => void {
   const inspectorState = new ObservableState<InspectorState>();
-  const headerElt = createPostDebuggerHeaderElement(password, configState);
-  const modulesContainerElt = createElement("div");
-  const bodyElement = createCompositeElement("div", [
-    headerElt,
-    createCompositeElement("div", [
-      createElement("span", {
-        textContent: "Log file to import: ",
-      }),
-      createImportFileButton(inspectorState),
-    ], { className: "page-input-block" }),
-    modulesContainerElt,
-  ]);
+  const modulesContainerElt = strHtml`<div/>`;
+  const bodyElement = strHtml`<div>
+    ${createPostDebuggerHeaderElement(password, configState)}
+    <div class="page-input-block">
+      <span>Log file to import: </span>
+      ${createImportFileButton(inspectorState)}
+    </div>
+    ${modulesContainerElt}
+  </div>`;
   document.body.appendChild(bodyElement);
 
   inspectorState.subscribe(STATE_PROPS.SELECTED_LOG_INDEX, () => {
@@ -74,9 +71,7 @@ export default function generatePostDebuggerPage(
 function createImportFileButton(
   inspectorState : ObservableState<InspectorState>
 ) : HTMLInputElement {
-  const fileInputEl = createElement("input");
-  fileInputEl.name = "file";
-  fileInputEl.type = "file";
+  const fileInputEl = strHtml`<input name="file" type="file">` as HTMLInputElement;
   fileInputEl.addEventListener("change", onFileSelection, false);
   return fileInputEl;
 
@@ -152,43 +147,18 @@ function createPostDebuggerHeaderElement(
   password: string | null,
   configState: ObservableState<ConfigState>
 ): HTMLElement {
-  return createCompositeElement(
-    "div",
-    [
-      createCompositeElement(
-        "div",
-        [
-          createCompositeElement(
-            "span",
-            [
-              createLinkElement({
-                textContent: "Home",
-                href: reGeneratePageUrl(undefined, undefined),
-              }),
-              " > ",
-              createLinkElement({
-                textContent: "Token",
-                href: reGeneratePageUrl(password, undefined),
-              }),
-              " > Post-Debugger",
-            ],
-            {
-              className: "header-item page-title",
-            }
-          ),
-        ],
-        { className: "token-title" }
-      ),
-
-      createCompositeElement(
-        "div",
-        [
-          createClearStoredConfigButton(configState),
-          createDarkLightModeButton(configState),
-        ],
-        { className: "header-item" }
-      ),
-    ],
-    { className: "header" }
-  );
+  return strHtml`<div class="header">
+    <div class="token-title">
+      <span class="header-item page-title">
+        <a href=${reGeneratePageUrl(undefined, undefined)}>Home</a>
+        ${">"}
+        <a href=${reGeneratePageUrl(password, undefined)}>Token</a>
+        ${"> Post-Debugger"}
+      </span>
+    </div>
+    <div class="header-item">${[
+      createClearStoredConfigButton(configState),
+      createDarkLightModeButton(configState)
+    ]}</div>
+  </div>`;
 }
