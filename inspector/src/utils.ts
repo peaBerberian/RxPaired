@@ -3,35 +3,53 @@ import modules from "./modules/index";
 
 /**
  * Re-generate the page URL according to the communicated arguments.
+ * Optionally update localStorage to sync with password
  *
  * Format of the hash:
- * #!pass=<SERVER_SIDE_CHECKED_PASSWORD>!token=<TOKEN>
- * The password is mandatory, the token is only set if it has been generated.
+ * #!token=<TOKEN>
+ * If you want to reset the password, add `!passreset`:
+ * #!token=<TOKEN>!passreset
+ * If you want the postdebugger:
+ * #!post
  *
- * @param {string|null|undefined} withPassword - Current password inputed.
- * `null` for no password.
- * `undefined` if no password has been inputed for now.
- * @param {string|undefined} withToken - Current token inputed.
- * `undefined` if no token has been inputed for now.
- * @param {boolean} [isPostDebugger] - If the wanted page is the Post-Debugger
- * page. `false` by default.
+ * @param {Object} options
+ * @param {string|undefined|null} options.tokenId - Token ID wanted.
+ * `null` if you want no token ID.
+ * `undefined` if you want to keep the current one as is.
+ * @param {boolean|undefined} options.isPostDebugger - If the wanted page is
+ * the Post-Debugger page.
+ * `undefined` if you want to keep the current one as is.
+ * @param {boolean|undefined} options.forcePassReset - If true, the password
+ * will be reset.
+ * `undefined` if you want to keep the current one as is.
  * @returns {string}
  */
-export function reGeneratePageUrl(
-  withPassword: string | null | undefined,
-  withToken: string | undefined,
-  isPostDebugger: boolean = false,
-): string {
+export function generatePageUrl(options: {
+  tokenId: string | undefined | null;
+  forcePassReset: boolean | undefined;
+  isPostDebugger: boolean | undefined;
+}): string {
+  const { tokenId, forcePassReset, isPostDebugger } = options;
   const originalUrl = new URL(document.location.href);
+  const currPageInfo = getPageInfo();
   originalUrl.hash = "";
   let url = originalUrl.toString() + "#";
-  if (withPassword !== undefined) {
-    url += "!pass=" + (withPassword ?? "");
-    if (isPostDebugger) {
-      url += "!post";
-    } else if (withToken !== undefined) {
-      url += "!token=" + withToken;
-    }
+  const wantPostDebugger = isPostDebugger === true ||
+    (isPostDebugger === undefined && currPageInfo.isPostDebugger);
+  const wantPassReset = forcePassReset === true ||
+    (forcePassReset === undefined && currPageInfo.forcePassReset);
+  if (wantPostDebugger) {
+    url += "!post";
+  }
+  let useToken = tokenId;
+  if (tokenId === undefined) {
+    useToken = currPageInfo.tokenId;
+  }
+  if (useToken !== null) {
+    url += "!token=" + useToken;
+  }
+  if (wantPassReset) {
+    url += "!passreset";
   }
   return url;
 }
@@ -41,34 +59,27 @@ export function reGeneratePageUrl(
  * @returns {Object} urlInfo
  * @returns {boolean} urlInfo.isPostDebugger - If `true` we should be running
  * the "Post-Debugger" page.
- * @returns {string|null|undefined} urlInfo.password - Current password inputed.
- * `null` for no password.
- * `undefined` if no password has been inputed for now.
- * @returns {string|undefined} urlInfo.tokenId - Current token inputed.
- * `undefined` if no token has been inputed for now.
+ * @param {boolean} urlInfo.forcePassReset - If true, the password should be
+ * reset.
+ * @returns {string|null} urlInfo.tokenId - Current token inputed.
+ * `null` if no token has been inputed for now.
  */
-export function parseUrl(): {
+export function getPageInfo(): {
   isPostDebugger: boolean;
-  password: string | null | undefined;
-  tokenId: string | undefined;
+  tokenId: string | null;
+  forcePassReset: boolean;
 } {
-  let password;
   let tokenId;
   const initialHashValues = window.location.hash.split("!");
-  const isPostDebugger =
-    initialHashValues.filter((val) => val.startsWith("post"))[0] !== undefined;
-  const passStr = initialHashValues.filter((val) => val.startsWith("pass="))[0];
-  if (passStr !== undefined) {
-    password = passStr.substring("pass=".length);
-    password = password.length === 0 ? null : password;
-    const tokenStr = initialHashValues.filter((val) =>
-      val.startsWith("token="),
-    )[0];
-    if (tokenStr !== undefined) {
-      tokenId = tokenStr.substring("token=".length);
-    }
+  const isPostDebugger = initialHashValues.some((val) => val === "post");
+  const forcePassReset = initialHashValues.some((val) => val === "passreset");
+  const tokenStr = initialHashValues.filter((val) =>
+    val.startsWith("token=")
+  )[0];
+  if (tokenStr !== undefined) {
+    tokenId = tokenStr.substring("token=".length);
   }
-  return { isPostDebugger, password, tokenId };
+  return { isPostDebugger, tokenId: tokenId ?? null, forcePassReset };
 }
 
 /**
@@ -90,7 +101,7 @@ export function isTokenValid(tokenId: string): boolean {
 export function displayError(
   errorWrapperElt: HTMLElement,
   err?: unknown,
-  fadeOut?: boolean,
+  fadeOut?: boolean
 ): void {
   let message;
   if (err != null) {

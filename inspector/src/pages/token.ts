@@ -1,21 +1,25 @@
 import strHtml from "str-html";
 import { CLIENT_SCRIPT_URL, SERVER_URL } from "../constants";
-import { displayError, isTokenValid, reGeneratePageUrl } from "../utils";
+import { displayError, isTokenValid, generatePageUrl } from "../utils";
 
 /**
  * Generate the HTML page asking for the wanted token.
- * @param {string|null} password - The password currently used for server
- * interaction. `null` for no password.
+ * @param {string} password - The password currently used for server
+ * interaction. Empty string for no password.
  * @returns {Function} - Perform clean-up if the page is exited.
  */
-export default function generateTokenPage(password: string | null): () => void {
+export default function generateTokenPage(password: string): () => void {
   const activeTokensListElt = strHtml`<pre class="active-tokens-list">Loading...</pre>`;
   const errorContainerElt = strHtml`<div></div>`;
   const pageBodyElt = strHtml`<div>
     ${errorContainerElt}
     <div class="header">
       <div class="header-item page-title">
-        <a href=${reGeneratePageUrl(undefined, undefined)}>${"Home"}</a>
+        <a href=${generatePageUrl({
+          tokenId: null,
+          forcePassReset: true,
+          isPostDebugger: false,
+        })}>${"Password"}</a>
         ${"> Token"}
       </div>
     </div>
@@ -24,7 +28,7 @@ export default function generateTokenPage(password: string | null): () => void {
         <div class="input-title">
           Generate a token:
         </div>
-        ${createGenerateTokenButton(password, errorContainerElt)}
+        ${createGenerateTokenButton(errorContainerElt)}
       </div>
       <br>
       <div>
@@ -32,7 +36,7 @@ export default function generateTokenPage(password: string | null): () => void {
           <span class="emphasized">OR</span>
           <span> enter the wanted token:</span>
         </div>
-        ${createTokenInputElement(password, errorContainerElt)}
+        ${createTokenInputElement(errorContainerElt)}
       </div>
       <br>
       <div>
@@ -40,7 +44,7 @@ export default function generateTokenPage(password: string | null): () => void {
           <span class="emphasized">OR</span>
           <span> import an already-generated log file (Post-Debugger page):</span>
         </div>
-        ${createPostDebuggingButtonElt(password)}
+        ${createPostDebuggingButtonElt()}
       </div>
       <br>
       <div>
@@ -57,9 +61,7 @@ export default function generateTokenPage(password: string | null): () => void {
 
   // Refresh list of tokens
   const wsUrl =
-    password === null
-      ? `${SERVER_URL}/!list`
-      : `${SERVER_URL}/${password}/!list`;
+    password === "" ? `${SERVER_URL}/!list` : `${SERVER_URL}/${password}/!list`;
   const socket = new WebSocket(wsUrl);
   socket.onmessage = function (evt) {
     let data;
@@ -71,10 +73,10 @@ export default function generateTokenPage(password: string | null): () => void {
       console.error("Unrecognized list data");
       return;
     }
-    onActiveTokenListUpdate(data.tokenList, activeTokensListElt, password);
+    onActiveTokenListUpdate(data.tokenList, activeTokensListElt);
 
     if (!hasAddedNoTokenTutorial) {
-      pageBodyElt.appendChild(createNoTokenTutorialElement(password));
+      pageBodyElt.appendChild(createNoTokenTutorialElement(password !== ""));
       hasAddedNoTokenTutorial = true;
     }
   };
@@ -91,63 +93,56 @@ export default function generateTokenPage(password: string | null): () => void {
 
 /**
  * Returns an HTML element corresponding to token generation.
- * @param {string|null} password - The password currently used for server
- * interaction. `null` for no password.
  * @param {HTMLElement} errorContainerElt - HTMLElement on which might be
  * displayed errors if the token is invalid.
  * @returns {HTMLElement}
  */
 function createGenerateTokenButton(
-  password: string | null,
-  errorContainerElt: HTMLElement,
+  errorContainerElt: HTMLElement
 ): HTMLElement {
   const generateTokenButtonElt = strHtml`<button class="btn-generate-token">
     Generate Token
   </button>`;
   generateTokenButtonElt.onclick = () => {
     const tokenId = generateToken();
-    setToken(tokenId, password, errorContainerElt);
+    setToken(tokenId, errorContainerElt);
   };
   return generateTokenButtonElt;
 }
 
 /**
- * @param {string|null} password - The password currently used for server
- * interaction. `null` for no password.
  * @returns {HTMLElement}
  */
-function createPostDebuggingButtonElt(password: string | null): HTMLElement {
+function createPostDebuggingButtonElt(): HTMLElement {
   const postDebuggingButtonElt = strHtml`<button>
     Go to Post-Debugger page
   </button>`;
   postDebuggingButtonElt.onclick = () => {
-    window.location.href = reGeneratePageUrl(password, undefined, true);
+    window.location.href = generatePageUrl({
+      tokenId: null,
+      forcePassReset: false,
+      isPostDebugger: true,
+    });
   };
   return postDebuggingButtonElt;
 }
 
 /**
- * @param {string|null} password - The password currently used for server
- * interaction. `null` for no password.
  * @param {HTMLElement} errorContainerElt - HTMLElement on which might be
  * displayed errors if the token is invalid.
  * @returns {HTMLElement}
  */
-function createTokenInputElement(
-  password: string | null,
-  errorContainerElt: HTMLElement,
-): HTMLElement {
+function createTokenInputElement(errorContainerElt: HTMLElement): HTMLElement {
   const tokenInputElt =
     strHtml`<input placeholder="Enter the wanted token">` as HTMLInputElement;
   tokenInputElt.onkeyup = function (evt) {
     if (evt.key === "Enter" || evt.keyCode === 13) {
-      setToken(tokenInputElt.value, password, errorContainerElt);
+      setToken(tokenInputElt.value, errorContainerElt);
     }
   };
 
   const tokenSendElt = strHtml`<button>Set token</button>`;
-  tokenSendElt.onclick = () =>
-    setToken(tokenInputElt.value, password, errorContainerElt);
+  tokenSendElt.onclick = () => setToken(tokenInputElt.value, errorContainerElt);
   tokenSendElt.style.marginLeft = "5px";
 
   return strHtml`<span>${[tokenInputElt, tokenSendElt]}</span>`;
@@ -155,24 +150,22 @@ function createTokenInputElement(
 
 /**
  * @param {string} tokenValue - The value of the token to set.
- * @param {string|null} password - The password currently used for server
- * interaction. `null` for no password.
  * @param {HTMLElement} errorContainerElt - HTMLElement on which might be
  * displayed errors if the token is invalid.
  */
-function setToken(
-  tokenValue: string,
-  password: string | null,
-  errorContainerElt: HTMLElement,
-): void {
+function setToken(tokenValue: string, errorContainerElt: HTMLElement): void {
   if (!isTokenValid(tokenValue)) {
     const error = new Error(
-      "Error: A token must only contain alphanumeric characters",
+      "Error: A token must only contain alphanumeric characters"
     );
     displayError(errorContainerElt, error, true);
     return;
   }
-  window.location.href = reGeneratePageUrl(password, tokenValue);
+  window.location.href = generatePageUrl({
+    tokenId: tokenValue,
+    forcePassReset: false,
+    isPostDebugger: false,
+  });
 }
 
 /**
@@ -183,8 +176,8 @@ function generateToken(): string {
   return Math.random().toString(36).substring(2, 8); // remove `0.`
 }
 
-function createNoTokenTutorialElement(password: string | null): HTMLElement {
-  const fakeTokenStr = `!notoken${password === null ? "" : "/" + password}`;
+function createNoTokenTutorialElement(hasPassword: boolean): HTMLElement {
+  const fakeTokenStr = `!notoken${!hasPassword ? "" : "/<SERVER_PASSWORD>"}`;
 
   /* eslint-disable max-len */
   const liElt1 = strHtml`<li>
@@ -195,7 +188,7 @@ function createNoTokenTutorialElement(password: string | null): HTMLElement {
     <span class="emphasized">
       ${`<script src="${CLIENT_SCRIPT_URL.replace(
         /"/g,
-        '\\"',
+        '\\"'
       )}#${fakeTokenStr}"></script>`}
     </span>
   </li>`;
@@ -208,7 +201,15 @@ function createNoTokenTutorialElement(password: string | null): HTMLElement {
     and manually set the
     \`<span class="emphasized">__TOKEN__</span>\`
     variable on top of that script to
-    <span class="emphasized">"${fakeTokenStr}"</span>.
+    <span class="emphasized">"${fakeTokenStr}"</span>${
+      hasPassword
+        ? [
+            " (and again, ",
+            strHtml`<span class="emphasized">${"<SERVER_PASSWORD>"}</span>`,
+            " to the server's password)",
+          ]
+        : ""
+    }.
   </li>`;
 
   const dynamicImportCode1 = `import("${CLIENT_SCRIPT_URL}")
@@ -241,7 +242,15 @@ function createNoTokenTutorialElement(password: string | null): HTMLElement {
       <summary>code</summary>
       <pre>${dynamicImportCode1}</pre>
       Where <span class="emphasized">${"<RX_PLAYER_CLASS>"}</span>
-      is a reference to the RxPlayer's class in your code.
+      is a reference to the RxPlayer's class in your code${
+        !hasPassword
+          ? "."
+          : [
+              " and ",
+              strHtml`<span class="emphasized">${"<SERVER_PASSWORD>"}</span>`,
+              " has to be replaced by the server's password.",
+            ]
+      }
       <br>
       <br>
       Alternatively, if that does not work because dynamic import is not
@@ -250,12 +259,19 @@ function createNoTokenTutorialElement(password: string | null): HTMLElement {
       <pre>${dynamicImportCode2}</pre>
       Likewise don't forget to replace
       <span class="emphasized">${"<RX_PLAYER_CLASS>"}</span>
-      by a reference to the RxPlayer's class in your code.
+      by a reference to the RxPlayer's class in your code${
+        !hasPassword
+          ? "."
+          : [
+              " and ",
+              strHtml`<span class="emphasized">${"<SERVER_PASSWORD>"}</span>`,
+              " by the server's password.",
+            ]
+      }
     </details>
   </li>`;
 
-  const noTokenStr =
-    password === null ? "!notoken" : "!notoken/<SERVER_PASSWORD>";
+  const noTokenStr = !hasPassword ? "!notoken" : "!notoken/<SERVER_PASSWORD>";
   const res = strHtml`<div class="no-token-tutorial">
     <span class="emphasized">
       If you want to start logging without running the inspector:
@@ -266,7 +282,15 @@ function createNoTokenTutorialElement(password: string | null): HTMLElement {
       having to create a token first, by replacing on the client script
       the token by
     </span>
-    <span class="emphasized">${noTokenStr}</span><span>.</span>;
+    <span class="emphasized">${noTokenStr}</span><span>${
+      hasPassword
+        ? [
+            " where ",
+            strHtml`<span class="emphasized">${"<SERVER_PASSWORD>"}</span>`,
+            " has to be replaced by the server's password.",
+          ]
+        : ""
+    }.</span>
     <br>
     <br>
     <span>
@@ -283,13 +307,10 @@ function createNoTokenTutorialElement(password: string | null): HTMLElement {
  * @param {Array.<Object>} activeTokensList
  * @param {HTMLElement} activeTokensListElt - The HTMLElement which will be
  * updated to the list of available tokens regularly.
- * @param {string|null} password - The current server password. `null` if the
- * server has no password.
  */
 function onActiveTokenListUpdate(
   activeTokensList: Array<{ date: number; tokenId: string }>,
-  activeTokensListElt: HTMLElement,
-  password: string | null,
+  activeTokensListElt: HTMLElement
 ): void {
   if (activeTokensList.length === 0) {
     activeTokensListElt.innerHTML = "No active token";
@@ -300,10 +321,11 @@ function onActiveTokenListUpdate(
         const date = new Date(d.date);
         const dateStr =
           date.toLocaleDateString() + " @ " + date.toLocaleTimeString();
-        const linkElt = strHtml`<a href=${reGeneratePageUrl(
-          password,
-          d.tokenId,
-        )}>`;
+        const linkElt = strHtml`<a href=${generatePageUrl({
+          tokenId: d.tokenId,
+          forcePassReset: false,
+          isPostDebugger: false,
+        })}>`;
         linkElt.appendChild(strHtml`<span>${dateStr}</span>`);
         linkElt.appendChild(document.createTextNode(" - "));
         linkElt.appendChild(strHtml`<span>${d.tokenId}</span>`);
@@ -311,7 +333,7 @@ function onActiveTokenListUpdate(
         acc.appendChild(listElt);
         return acc;
       },
-      strHtml`<ul class="active-token-list" />`,
+      strHtml`<ul class="active-token-list" />`
     );
     activeTokensListElt.innerHTML = "";
     activeTokensListElt.appendChild(activeTokenDataElt);

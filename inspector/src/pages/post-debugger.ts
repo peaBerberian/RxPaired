@@ -3,7 +3,7 @@ import { ConfigState, InspectorState, STATE_PROPS } from "../constants";
 import createModules from "../create_modules";
 import ObservableState, { UPDATE_TYPE } from "../observable_state";
 import { updateStatesFromLogGroup } from "../update_state_from_log";
-import { reGeneratePageUrl } from "../utils";
+import { generatePageUrl } from "../utils";
 import {
   createClearStoredConfigButton,
   createDarkLightModeButton,
@@ -17,13 +17,12 @@ const START_LOG_LINE_REGEXP = /^[0-9]+\.[0-9]{2} \[/;
  * by this page. Should be called when the page is disposed.
  */
 export default function generatePostDebuggerPage(
-  password: string | null,
   configState: ObservableState<ConfigState>,
 ): () => void {
   const inspectorState = new ObservableState<InspectorState>();
   const modulesContainerElt = strHtml`<div/>`;
   const bodyElement = strHtml`<div>
-    ${createPostDebuggerHeaderElement(password, configState)}
+    ${createPostDebuggerHeaderElement(configState)}
     <div class="page-input-block">
       <span>Log file to import: </span>
       ${createImportFileButton(inspectorState)}
@@ -154,20 +153,26 @@ function createImportFileButton(
 
 /**
  * Returns an HTML element corresponding to the Live Debugger's header.
- * @param {string|null} password
  * @param {Object} configState
  * @returns {HTMLElement}
  */
 function createPostDebuggerHeaderElement(
-  password: string | null,
   configState: ObservableState<ConfigState>,
 ): HTMLElement {
   return strHtml`<div class="header">
     <div class="token-title">
       <span class="header-item page-title">
-        <a href=${reGeneratePageUrl(undefined, undefined)}>Home</a>
+        <a href=${generatePageUrl({
+          tokenId: null,
+          forcePassReset: true,
+          isPostDebugger: false,
+        })}>Password</a>
         ${">"}
-        <a href=${reGeneratePageUrl(password, undefined)}>Token</a>
+        <a href=${generatePageUrl({
+          tokenId: null,
+          forcePassReset: false,
+          isPostDebugger: false,
+        })}>Token</a>
         ${"> Post-Debugger"}
       </span>
     </div>

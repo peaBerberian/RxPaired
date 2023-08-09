@@ -10,7 +10,7 @@ import ObservableState, { UPDATE_TYPE } from "../observable_state";
 import updateStateFromLog, {
   updateStatesFromLogGroup,
 } from "../update_state_from_log";
-import { displayError, reGeneratePageUrl } from "../utils";
+import { displayError, generatePageUrl } from "../utils";
 import {
   createClearStoredConfigButton,
   createDarkLightModeButton,
@@ -31,15 +31,15 @@ const isChromiumBasedBrowser = (window as any).chrome != null;
 
 /**
  * Generate the HTML page linked to live debugging.
- * @param {string|null} password - The password currently used for server
- * interaction. `null` for no password.
+ * @param {string} password - The password currently used for server
+ * interaction. Empty string for no password.
  * @param {string} tokenId - The current used token.
  * @param {Object} configState
  * @returns {Function} - Call this function to clean up all resources created
  * by this page. Should be called when the page is disposed.
  */
 export default function generateLiveDebuggingPage(
-  password: string | null,
+  password: string,
   tokenId: string,
   configState: ObservableState<ConfigState>,
 ): () => void {
@@ -58,7 +58,6 @@ export default function generateLiveDebuggingPage(
   const errorContainerElt = strHtml`<div/>`;
   const headerElt = createLiveDebuggerHeaderElement(
     tokenId,
-    password,
     currentSocket,
     configState,
     inspectorState,
@@ -236,7 +235,6 @@ export default function generateLiveDebuggingPage(
 /**
  * Returns an HTML element corresponding to the Live Debugger's header.
  * @param {string} tokenId
- * @param {string|null} password
  * @param {WebSocket.WebSocket} currentSocket
  * @param {Object} configState
  * @param {Object} inspectorState
@@ -244,7 +242,6 @@ export default function generateLiveDebuggingPage(
  */
 function createLiveDebuggerHeaderElement(
   tokenId: string,
-  password: string | null,
   currentSocket: WebSocket,
   configState: ObservableState<ConfigState>,
   inspectorState: ObservableState<InspectorState>,
@@ -252,9 +249,17 @@ function createLiveDebuggerHeaderElement(
   return strHtml`<div class="header">
     <div class="token-title">
       <span class="header-item page-title">${[
-        strHtml`<a href=${reGeneratePageUrl(undefined, undefined)}>Home</a>`,
+        strHtml`<a href=${generatePageUrl({
+          tokenId: null,
+          forcePassReset: true,
+          isPostDebugger: false,
+        })}>Password</a>`,
         " > ",
-        strHtml`<a href=${reGeneratePageUrl(password, undefined)}>Token</a>`,
+        strHtml`<a href=${generatePageUrl({
+          tokenId: null,
+          forcePassReset: false,
+          isPostDebugger: false,
+        })}>Token</a>`,
         " > Live Debugging",
       ]}</span><span class="header-item token-header-value">${[
         strHtml`<span class="token-title-desc">Token: </span>`,
@@ -348,16 +353,16 @@ function exportLogs(inspectorState: ObservableState<InspectorState>): void {
 /**
  * Starts a websocket connection with the given token.
  * @param {string} password - The password currently used for server
- * interaction.
+ * interaction. Empty string for no password.
  * @param {string} tokenId - The current used token.
  * @returns {WebSocket.WebSocket}
  */
 function startWebsocketConnection(
-  password: string | null,
+  password: string,
   tokenId: string,
 ): WebSocket {
   const wsUrl =
-    password === null
+    password === ""
       ? `${SERVER_URL}/${tokenId}`
       : `${SERVER_URL}/${password}/${tokenId}`;
   const socket = new WebSocket(wsUrl);

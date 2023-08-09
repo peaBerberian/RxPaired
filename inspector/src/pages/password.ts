@@ -1,5 +1,6 @@
 import strHtml from "str-html";
-import { reGeneratePageUrl } from "../utils";
+import route from "../route";
+import { generatePageUrl } from "../utils";
 
 /**
  * Generate the HTML page asking for the password.
@@ -34,14 +35,26 @@ function createPasswordInputElement(): HTMLElement {
     strHtml`<input placeholder="Enter server password">` as HTMLInputElement;
   passwordInputElt.onkeyup = function (evt) {
     if (evt.key === "Enter" || evt.keyCode === 13) {
-      sendPassword();
+      setPassword();
     }
   };
-  const passwordSendElt = strHtml`<button class="button-input-right">${"Validate password"}</button>`;
-  passwordSendElt.onclick = sendPassword;
+  const passwordSendElt = strHtml`<button
+    class="button-input-right">${"Validate password"}</button>`;
+  passwordSendElt.onclick = setPassword;
   return strHtml`<div>${[passwordInputElt, passwordSendElt]}</div>`;
-  function sendPassword() {
+  function setPassword() {
     const val = passwordInputElt.value;
-    location.href = reGeneratePageUrl(val, undefined);
+    localStorage.setItem("passv1", val);
+
+    const newUrl = generatePageUrl({
+      tokenId: undefined,
+      forcePassReset: false,
+      isPostDebugger: undefined,
+    });
+    if (newUrl === location.href) {
+      route();
+    } else {
+      location.href = newUrl;
+    }
   }
 }
