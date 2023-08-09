@@ -557,7 +557,7 @@ export default function createModules({
           ],
           { className: "closed-modules" },
         );
-        document.body.appendChild(closedElements);
+        containerElt.appendChild(closedElements);
       }
 
       const closedModuleNameElt = createElement("span", {
@@ -610,7 +610,7 @@ export default function createModules({
           closedModuleNameElt.parentElement.removeChild(closedModuleNameElt);
         }
         const remainingClosedModules =
-          document.body.getElementsByClassName("closed-module-elt");
+          containerElt.getElementsByClassName("closed-module-elt");
         if (
           remainingClosedModules.length === 0 &&
           closedElements.parentElement !== null
