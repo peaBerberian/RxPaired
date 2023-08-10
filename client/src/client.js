@@ -59,9 +59,13 @@ function init(currentScriptSrc, playerClass) {
         if (arg === null) {
           processed = "null";
         } else if (arg instanceof Error) {
-          processed = "NAME: " + String(arg.name) +
-            " ~ CODE: " + String(arg.code) +
-            " ~ MESSAGE: " + String(arg.message);
+          processed =
+            "NAME: " +
+            String(arg.name) +
+            " ~ CODE: " +
+            String(arg.code) +
+            " ~ MESSAGE: " +
+            String(arg.message);
         } else {
           processed = "{}";
         }
@@ -76,7 +80,7 @@ function init(currentScriptSrc, playerClass) {
     return processed;
   }
 
-  const spyRemovers = [ "log", "error", "info", "warn", "debug"].map(meth => {
+  const spyRemovers = ["log", "error", "info", "warn", "debug"].map((meth) => {
     const oldConsoleFn = console[meth];
     console[meth] = function (...args) {
       const argStr = args.map(processArg).join(" ");
@@ -85,7 +89,7 @@ function init(currentScriptSrc, playerClass) {
     };
     return function () {
       console[meth] = oldConsoleFn;
-    }
+    };
   });
 
   if (SHOULD_LOG_REQUESTS) {
@@ -97,13 +101,15 @@ function init(currentScriptSrc, playerClass) {
         return originalXhrOpen.apply(this, arguments);
       }
       this.addEventListener("load", function () {
-        formatAndSendLog("Network", `Loaded ${method} XHR from: ${url} ` +
-                                    `(status: ${this.status})`);
+        formatAndSendLog(
+          "Network",
+          `Loaded ${method} XHR from: ${url} ` + `(status: ${this.status})`
+        );
       });
       this.addEventListener("error", function () {
         formatAndSendLog("Network", `Errored ${method} XHR from: ${url}`);
       });
-      this.abort = function() {
+      this.abort = function () {
         formatAndSendLog("Network", `Aborted ${method} XHR from: ${url}`);
         return XMLHttpRequest.prototype.abort.apply(this, arguments);
       };
@@ -118,7 +124,7 @@ function init(currentScriptSrc, playerClass) {
     });
 
     const originalFetch = window.fetch;
-    window.fetch = function() {
+    window.fetch = function () {
       let url;
       let method;
       if (arguments[0] == null) {
@@ -138,7 +144,10 @@ function init(currentScriptSrc, playerClass) {
         method = "GET";
       } else if (typeof arguments[0].method === "string") {
         method = arguments[0].method;
-      } else if (arguments[1] != null && typeof arguments[1].method === "string") {
+      } else if (
+        arguments[1] != null &&
+        typeof arguments[1].method === "string"
+      ) {
         method = arguments[0].method;
       } else {
         method = "GET";
@@ -147,16 +156,22 @@ function init(currentScriptSrc, playerClass) {
       const realFetch = originalFetch.apply(this, arguments);
       return realFetch.then(
         (res) => {
-          formatAndSendLog("Network", `Loaded ${method} fetch from: ${url} ` +
-                                      `(status: ${res.status})`);
+          formatAndSendLog(
+            "Network",
+            `Loaded ${method} fetch from: ${url} ` + `(status: ${res.status})`
+          );
           return res;
         },
         (err) => {
-          formatAndSendLog("Network", `Errored/Aborted ${method} fetch from: ${url}`);
+          formatAndSendLog(
+            "Network",
+            `Errored/Aborted ${method} fetch from: ${url}`
+          );
           throw err;
-        });
+        }
+      );
     };
-    spyRemovers.push(function() {
+    spyRemovers.push(function () {
       window.fetch = originalFetch;
     });
   }
@@ -164,9 +179,11 @@ function init(currentScriptSrc, playerClass) {
   sendLog("Init v1 " + performance.now() + " " + Date.now());
 
   const TextDecoder =
-    typeof window !== "object"               ? null :
-    typeof window.TextDecoder !== "function" ? null :
-                                               window.TextDecoder;
+    typeof window !== "object"
+      ? null
+      : typeof window.TextDecoder !== "function"
+      ? null
+      : window.TextDecoder;
   const escape = window.escape;
 
   /**
@@ -180,14 +197,13 @@ function init(currentScriptSrc, playerClass) {
         // TextDecoder use UTF-8 by default
         const decoder = new TextDecoder();
         return decoder.decode(data);
-      } catch (e) {
-      }
+      } catch (e) {}
     }
 
     let uint8 = data;
 
     // If present, strip off the UTF-8 BOM.
-    if (uint8[0] === 0xEF && uint8[1] === 0xBB && uint8[2] === 0xBF) {
+    if (uint8[0] === 0xef && uint8[1] === 0xbb && uint8[2] === 0xbf) {
       uint8 = uint8.subarray(3);
     }
 
@@ -211,8 +227,10 @@ function init(currentScriptSrc, playerClass) {
           escaped += utf8Str[i];
         } else {
           const charCode = utf8Str.charCodeAt(i);
-          escaped += charCode >= 256 ? "%u" + intToHex(charCode, 4) :
-                                       "%" + intToHex(charCode, 2);
+          escaped +=
+            charCode >= 256
+              ? "%u" + intToHex(charCode, 4)
+              : "%" + intToHex(charCode, 2);
         }
       }
     }
@@ -257,8 +275,9 @@ function init(currentScriptSrc, playerClass) {
    */
   function intToHex(num, size) {
     const toStr = num.toString(16);
-    return toStr.length >= size ? toStr :
-      new Array(size - toStr.length + 1).join("0") + toStr;
+    return toStr.length >= size
+      ? toStr
+      : new Array(size - toStr.length + 1).join("0") + toStr;
   }
 
   function decycle(obj) {
@@ -275,7 +294,7 @@ function init(currentScriptSrc, playerClass) {
       ) {
         const old_path = encounteredRefs.get(value);
         if (old_path !== undefined) {
-          return {$cycle: old_path};
+          return { $cycle: old_path };
         }
         encounteredRefs.set(value, path);
         let newVal;
@@ -299,8 +318,8 @@ function init(currentScriptSrc, playerClass) {
       } else {
         return value;
       }
-    }(obj, "$"));
-  };
+    })(obj, "$");
+  }
 
   function safeJsonStringify(val) {
     try {
@@ -309,9 +328,10 @@ function init(currentScriptSrc, playerClass) {
       try {
         return JSON.stringify(decycle(val));
       } catch (err2) {
-        const message = err2 != cycle && typeof err2.message === "string" ?
-          err2.message :
-          "undefined error";
+        const message =
+          err2 != cycle && typeof err2.message === "string"
+            ? err2.message
+            : "undefined error";
         // Should not happen, but still...
         console.error("---- Could not stringify object: " + message + " ----");
         return "{}";
@@ -324,7 +344,7 @@ function init(currentScriptSrc, playerClass) {
    */
   function abort() {
     logQueue.length = 0;
-    spyRemovers.forEach(cb => cb());
+    spyRemovers.forEach((cb) => cb());
     spyRemovers.length = 0;
   }
 
@@ -341,11 +361,8 @@ function init(currentScriptSrc, playerClass) {
 
   socket.addEventListener("message", function (event) {
     if (event == null || event.data == null) {
-      socket.send(safeJsonStringify({
-        type: "websocket-warning",
-        value: "No message received from WebSocket",
-      }));
-      return ;
+      console.error("RxPaired: No message received from WebSocket");
+      return;
     }
 
     let formattedObj;
@@ -362,13 +379,13 @@ function init(currentScriptSrc, playerClass) {
         socket.send("pong");
         return;
       }
-      formattedObj = JSON.parse(messageStr)
+      formattedObj = JSON.parse(messageStr);
     } catch (formattingError) {
-      socket.send(safeJsonStringify({
-        type: "websocket-warning",
-        value: "Unrecognized message format received from WebSocket: " +
-          "not an UTF-8-encoded JSON",
-      }));
+      console.error(
+        "Unrecognized message format received from WebSocket: " +
+          "not an UTF-8-encoded JSON"
+      );
+      return;
     }
 
     if (formattedObj.type === "eval") {
@@ -378,39 +395,37 @@ function init(currentScriptSrc, playerClass) {
         typeof formattedObj.value.instruction !== "string" ||
         typeof formattedObj.value.id !== "string"
       ) {
-        socket.send(safeJsonStringify({
-          type: "websocket-warning",
-          value: "Evaluation value in the wrong format",
-        }));
-        return ;
+        console.error("RxPaired: Evaluation value in the wrong format");
+        return;
       }
       let val;
       try {
         // Contrary to popular belief eval is the best and surest function ever
         val = evaluate(formattedObj.value.instruction);
       } catch (err) {
-        const errorMessage = typeof err?.message === "string" ?
-          err.message :
-          undefined;
-        const errorName = typeof err?.name === "string" ?
-          err.name :
-          undefined;
-        socket.send(safeJsonStringify({
-          type: "eval-error",
-          value: {
-            error: { message: errorMessage, name: errorName },
-            id: formattedObj.value.id,
-          }
-        }));
+        const errorMessage =
+          typeof err?.message === "string" ? err.message : undefined;
+        const errorName = typeof err?.name === "string" ? err.name : undefined;
+        socket.send(
+          safeJsonStringify({
+            type: "eval-error",
+            value: {
+              error: { message: errorMessage, name: errorName },
+              id: formattedObj.value.id,
+            },
+          })
+        );
         return;
       }
-      socket.send(safeJsonStringify({
-        type: "eval-result",
-        value: {
-          data: processEvalReturn(val),
-          id: formattedObj.value.id,
-        },
-      }));
+      socket.send(
+        safeJsonStringify({
+          type: "eval-result",
+          value: {
+            data: processEvalReturn(val),
+            id: formattedObj.value.id,
+          },
+        })
+      );
       return;
     }
   });
@@ -457,7 +472,7 @@ function init(currentScriptSrc, playerClass) {
   }
 }
 
-function evaluate(obj){
+function evaluate(obj) {
   return Function(`"use strict"; ${obj}`)();
 }
 

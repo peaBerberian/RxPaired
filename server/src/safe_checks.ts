@@ -6,7 +6,6 @@ import logger from "./logger.js";
 export default function createCheckers({
   deviceSocket,
   htmlInspectorSocket,
-  maxTokenDuration,
   inspectorMessageLimit,
   deviceMessageLimit,
   wrongPasswordLimit,
@@ -64,12 +63,21 @@ export default function createCheckers({
     });
 
     // Also close old tokens
+    performExpirationCheck(now);
+  }, 10 * 60 * 1000);
+
+  setInterval(() => {
+    deviceMessageInCurrent24Hours = 0;
+    inspectorMessageInCurrent24Hours = 0;
+  }, 24 * 60 * 60 * 1000);
+
+  function performExpirationCheck(now: number) {
     for (let i = 0; i < activeTokensList.size(); i++) {
       const tokenInfo = activeTokensList.getFromIndex(i);
       if (tokenInfo === undefined) {
         continue;
       }
-      if (now - tokenInfo.timestamp > maxTokenDuration) {
+      if (now - tokenInfo.expirationMs <= 0) {
         logger.warn("Revokating old token", tokenInfo.tokenId);
         activeTokensList.removeIndex(i);
         i--; // We removed i, so we now need to re-check what is at its place for
@@ -87,14 +95,12 @@ export default function createCheckers({
         }
       }
     }
-  }, 10 * 60 * 1000);
-
-  setInterval(() => {
-    deviceMessageInCurrent24Hours = 0;
-    inspectorMessageInCurrent24Hours = 0;
-  }, 24 * 60 * 60 * 1000);
+  }
 
   return {
+    forceExpirationCheck() {
+      performExpirationCheck(performance.now());
+    },
     checkInspectorMessageLimit() {
       if (inspectorMessageLimit === undefined) {
         return;

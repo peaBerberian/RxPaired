@@ -5,7 +5,7 @@ import process from "process";
 import * as commander from "commander";
 import WebSocket, { WebSocketServer } from "ws";
 import activeTokensList, {
-  TokenMetadata,
+  TokenMetadata, TokenType,
 } from "./active_tokens_list.js";
 import logger from "./logger.js";
 import createCheckers from "./safe_checks.js";
@@ -229,7 +229,7 @@ deviceSocket.on("connection", (ws, req) => {
 
     const address = req.socket.remoteAddress;
     if (address !== undefined && address !== "") {
-      // Strip last part of address for fear of GDPR compliancy
+      // Strip last part of address for fear of GDPR compliancy?
       const lastDotIdx = address.lastIndexOf(".");
       if (lastDotIdx > 0) {
         logFileNameSuffix = address.substring(0, lastDotIdx);
@@ -242,7 +242,12 @@ deviceSocket.on("connection", (ws, req) => {
     }
     tokenId = generatePassword();
     logFileNameSuffix += `-${tokenId}`;
-    existingToken = activeTokensList.create(tokenId, historySize);
+    existingToken = activeTokensList.create(
+      TokenType.FromDevice,
+      tokenId,
+      historySize,
+      maxTokenDuration
+    );
     existingTokenIndex = activeTokensList.findIndex(tokenId);
   } else {
     existingTokenIndex = activeTokensList.findIndex(tokenId);
@@ -252,14 +257,13 @@ deviceSocket.on("connection", (ws, req) => {
                { tokenId: tokenId.length > 100 ? undefined : tokenId });
       ws.close();
       return;
-    } else {
-      const token = activeTokensList.getFromIndex(existingTokenIndex);
-      if (token === undefined) {
-        // should never happen
-        return;
-      }
-      existingToken = token;
     }
+    const token = activeTokensList.getFromIndex(existingTokenIndex);
+    if (token === undefined) {
+      // should never happen
+      return;
+    }
+    existingToken = token;
   }
 
   if (existingToken.device !== null) {
@@ -317,11 +321,26 @@ deviceSocket.on("connection", (ws, req) => {
         });
       }
     } else {
-      existingToken?.addLogToHistory(messageStr);
-      if (shouldCreateLogFiles) {
-        appendFile(getLogFileName(logFileNameSuffix), messageStr + "\n", function() {
-          // on finished. Do nothing for now.
-        });
+      let bypassHistoryAndLogfile = false;
+      if (messageStr[0] !== "{") {
+        try {
+          /* eslint-disable */ // In a try so anything goes :p
+          const parsed = JSON.parse(messageStr);
+          if (parsed.type === "eval-result" || parsed.type === "eval-error") {
+            /* eslint-enable */
+            bypassHistoryAndLogfile = true;
+          }
+        } catch (_) {
+          // We don't care
+        }
+      }
+      if (!bypassHistoryAndLogfile) {
+        existingToken?.addLogToHistory(messageStr);
+        if (shouldCreateLogFiles) {
+          appendFile(getLogFileName(logFileNameSuffix), messageStr + "\n", function() {
+            // on finished. Do nothing for now.
+          });
+        }
       }
     }
     if (existingToken.getDeviceInitData() === null) {
@@ -338,7 +357,10 @@ deviceSocket.on("connection", (ws, req) => {
       clearInterval(existingToken.pingInterval);
     }
     existingToken.device = null;
-    if (existingToken.inspectors.length === 0) {
+    if (
+      existingToken.tokenType !== TokenType.Persistent &&
+      existingToken.inspectors.length === 0
+    ) {
       const indexOfToken = activeTokensList.findIndex(tokenId);
       if (indexOfToken === -1) {
         writeLog("warn", "Closing device's token not found", { tokenId });
@@ -357,9 +379,10 @@ htmlInspectorSocket.on("connection", (ws, req) => {
     ws.close();
     return;
   }
+  const urlParts = parseInspectorUrl(req.url);
   if (usePassword && password !== null) {
     // format of a request: /<PASSWORD>/<TOKEN>
-    const receivedPassword = req.url.substring(1, password.length + 1);
+    const receivedPassword = urlParts.password;
     if (receivedPassword !== password) {
       writeLog("warn", "Received inspector request with invalid password: " +
                receivedPassword,
@@ -368,18 +391,22 @@ htmlInspectorSocket.on("connection", (ws, req) => {
       checkers.checkBadPasswordLimit();
       return;
     }
-    tokenId = req.url.substring(1 + password.length + 1);
+    tokenId = urlParts.tokenId;
   } else {
     // format of a request: /<TOKEN>
-    tokenId = req.url.substring(1);
+    tokenId = urlParts.tokenId;
+  }
+
+  if (tokenId === undefined) {
+    ws.close();
+    return;
   }
 
   // Special token "list" request:
   // Regularly returns the list of currently active tokens
-  if (tokenId === "!list") {
+  if (urlParts.command === "list") {
     writeLog("log",
-             "Received inspector request for list of tokens" +
-               JSON.stringify(activeTokensList.listPublicInformation()),
+             "Received inspector request for list of tokens",
              { address: req.socket.remoteAddress });
     const itv = setInterval(sendCurrentListOfTokens, 3000);
     sendCurrentListOfTokens();
@@ -387,9 +414,18 @@ htmlInspectorSocket.on("connection", (ws, req) => {
       clearInterval(itv);
     };
     function sendCurrentListOfTokens() {
+      const now = performance.now();
       ws.send(JSON.stringify({
         isNoTokenEnabled: !disableNoToken,
-        tokenList: activeTokensList.listPublicInformation(),
+        tokenList: activeTokensList.getList().map(t => {
+          return {
+            tokenId: t.tokenId,
+            date: t.date,
+            timestamp: t.timestamp,
+            isPersistent: t.tokenType === TokenType.Persistent,
+            msUntilExpiration: Math.max(now - t.expirationMs, 0),
+          };
+        }),
       }));
     }
     return;
@@ -408,14 +444,29 @@ htmlInspectorSocket.on("connection", (ws, req) => {
   }
 
   writeLog("log", "Inspector: Received authorized inspector connection.",
-           { address: req.socket.remoteAddress, tokenId });
+           { address: req.socket.remoteAddress, tokenId, command: urlParts.command });
+
+  const isPersistentTokenCreation = urlParts.command === "persist";
 
   let existingToken = activeTokensList.find(tokenId);
   if (existingToken === undefined) {
     writeLog("log", "Creating new token",
              { tokenId, remaining: activeTokensList.size() + 1 });
-    existingToken = activeTokensList.create(tokenId, historySize);
+    existingToken = activeTokensList.create(
+      isPersistentTokenCreation ?
+        TokenType.Persistent :
+        TokenType.FromInspector,
+      tokenId,
+      historySize,
+      urlParts.expirationMs ?? maxTokenDuration
+    );
   } else {
+    if (isPersistentTokenCreation) {
+      existingToken.tokenType = TokenType.Persistent;
+    }
+    if (urlParts.expirationMs !== undefined) {
+      existingToken.expirationMs = urlParts.expirationMs;
+    }
     writeLog("log", "Adding new inspector to token.", { tokenId });
   }
 
@@ -442,6 +493,7 @@ htmlInspectorSocket.on("connection", (ws, req) => {
     });
     sendMessageToInspector(message, ws, req, tokenId);
   }
+  checkers.forceExpirationCheck();
 
   ws.on("message", message => {
     checkers.checkInspectorMessageLimit();
@@ -496,7 +548,11 @@ htmlInspectorSocket.on("connection", (ws, req) => {
     }
     clearInterval(existingToken.inspectors[indexOfInspector].pingInterval);
     existingToken.inspectors.splice(indexOfInspector, 1);
-    if (existingToken.inspectors.length === 0 && existingToken.device === null) {
+    if (
+      existingToken.tokenType !== TokenType.Persistent &&
+      existingToken.inspectors.length === 0 &&
+      existingToken.device === null
+    ) {
       const indexOfToken = activeTokensList.findIndex(tokenId);
       if (indexOfToken === -1) {
         writeLog("warn", "Closing inspector's token not found.", { tokenId });
@@ -567,6 +623,7 @@ function writeLog(
   msg : string,
   infos : {
     address? : string | undefined;
+    command? : string | undefined;
     tokenId? : string | undefined;
     message? : string | undefined;
     remaining? : number;
@@ -578,6 +635,9 @@ function writeLog(
   }
   if (infos.tokenId !== undefined) {
     args.push(`token=${infos.tokenId}`);
+  }
+  if (infos.command !== undefined) {
+    args.push(`command=${infos.command}`);
   }
   if (infos.message !== undefined) {
     args.push(`message=${infos.message}`);
@@ -604,4 +664,53 @@ function isAlphaNumeric(str: string): boolean {
     }
   }
   return true;
+}
+
+function parseInspectorUrl(
+  url: string
+):
+  {
+    password: string | undefined;
+    command: string | undefined;
+    tokenId: string | undefined;
+    expirationMs: number | undefined;
+  }
+{
+  const parts = url.split("/");
+  let pass;
+  let command;
+  let tokenId;
+  let expirationMsStr;
+  if ((usePassword && password !== null)) {
+    pass = parts[0];
+    if (parts.length >= 2 && parts[1].startsWith("!")) {
+      command = parts[1].substring(1);
+      tokenId = parts[2];
+      expirationMsStr = parts[3];
+    } else {
+      command = undefined;
+      tokenId = parts[1];
+      expirationMsStr = parts[2];
+    }
+  } else {
+    if (parts.length >= 1 && parts[0].startsWith("!")) {
+      command = parts[0].substring(1);
+      tokenId = parts[1];
+      expirationMsStr = parts[2];
+    } else {
+      command = undefined;
+      tokenId = parts[0];
+      expirationMsStr = parts[1];
+    }
+  }
+  let expirationMs: number | undefined = +expirationMsStr;
+  if (isNaN(expirationMs)) {
+    expirationMs = undefined;
+  }
+  return {
+    password: pass,
+    tokenId,
+    command,
+    expirationMs,
+  };
 }

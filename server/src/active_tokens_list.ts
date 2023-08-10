@@ -12,12 +12,30 @@ export default new (class ActiveTokensList {
 
   /**
    * Create a new token with a given ID and log history size.
+   * @param {string} tokenType
    * @param {string} tokenId
    * @param {number} historySize
+   * @param {number} expirationDelay - Delay, in milliseconds, after which the
+   * token should be revokated.
+   * This revokation is not handled by the `ActiveTokensList` class which only
+   * acts as a metadata store.
+   *
+   * Setting this value to `undefined` to not store any expiration alongside the
+   * `TokenMetadata` created.
    * @returns {Object}
    */
-  public create(tokenId : string, historySize : number) : TokenMetadata {
-    const tokenMetadata = new TokenMetadata(tokenId, historySize);
+  public create(
+    tokenType: TokenType,
+    tokenId: string,
+    historySize: number,
+    expirationDelay: number
+  ) : TokenMetadata {
+    const tokenMetadata = new TokenMetadata(
+      tokenType,
+      tokenId,
+      historySize,
+      expirationDelay
+    );
     this._tokensList.push(tokenMetadata);
     return tokenMetadata;
   }
@@ -27,10 +45,8 @@ export default new (class ActiveTokensList {
    * active tokens.
    * @returns {Array.<Object>}
    */
-  public listPublicInformation() : Array<{ tokenId: string; date: number }> {
-    return this._tokensList.map((t) => {
-      return { tokenId: t.tokenId, date: t.date };
-    });
+  public getList(): TokenMetadata[] {
+    return this._tokensList;
   }
 
   /**
@@ -131,6 +147,15 @@ export class TokenMetadata {
   /** Value of `performance.now()` at the time the TokenMetadata was created. */
   public timestamp : number;
 
+  /** The type of token created (@see TokenType) */
+  public tokenType : TokenType;
+
+  /**
+   * Value of `performance.now()` when the TokenMetadata should be removed.
+   * If `undefined`, default rules apply.
+   */
+  public expirationMs : number;
+
   /** Value of `date.now()` at the time the TokenMetadata was created. */
   public date : number;
 
@@ -176,13 +201,25 @@ export class TokenMetadata {
   private _history : LogHistoryData;
 
   /**
+   * @param {string} tokenType
    * @param {string} tokenId - ID identifying the token
    * @param {number} historySize - Maximum number of logs kept in the log
    * history associated with this token.
+   * @param {number} expirationDelay - Delay, in milliseconds, after which the
+   * token should be revokated.
+   * This revokation is not handled by the `TokenMetadata` class which only acts
+   * as a metadata store.
    */
-  constructor(tokenId : string, historySize : number) {
+  constructor(
+    tokenType: TokenType,
+    tokenId: string,
+    historySize: number,
+    expirationDelay: number
+  ) {
+    this.tokenType = tokenType;
     this.tokenId = tokenId;
     this.timestamp = performance.now();
+    this.expirationMs = this.timestamp + expirationDelay;
     this.date = Date.now();
     this.inspectors = [];
     this.device = null;
@@ -235,4 +272,25 @@ export class TokenMetadata {
   public getCurrentHistory() : { history : string[]; maxHistorySize : number } {
     return this._history;
   }
+}
+
+export enum TokenType {
+  /**
+   * Such tokens only are removed once their expiration date is reached, and may
+   * be saved to disk if the right server options are set so it remains at
+   * server reboot.
+   */
+  Persistent,
+  /**
+   * Such tokens have been created by an inspector page and will be removed
+   * either when they expire **OR** when no inspector is listening to it
+   * anymore.
+   */
+  FromInspector,
+  /**
+   * Such tokens have been created by a device's script and will be removed
+   * either when they expire **OR** when no inspector is listening to it
+   * anymore.
+   */
+  FromDevice,
 }
