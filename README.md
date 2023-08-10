@@ -72,10 +72,11 @@ the following:
      ```
 
   4. Go to the inspector page which now should be at
-     [http://127.0.0.1:8695](http://127.0.0.1:8695) and validate an empty password.
+     [http://127.0.0.1:8695](http://127.0.0.1:8695) and validate an empty password
+     if the page asks for one.
 
   5. For our test, we will use the `example` token. Define it in the corresponding
-     input and click on the button to set it. You will be redirected to the
+     input and click on the button to use it now. You will be redirected to the
      inspector main page.
 
   6. In another browser tab, go to [the RxPlayer demo

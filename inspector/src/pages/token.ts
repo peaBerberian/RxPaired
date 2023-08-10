@@ -26,10 +26,22 @@ export default function generateTokenPage(password: string): () => void {
         ${"> Token"}
       </div>
     </div>
-    <div class="page-input-block">
+    <div class="page-input-block token-block">
+      <div class="token-presentation">
+        <h2>Token Management</h2>
+        <p>${
+          "You need a token to link the inspector to a client. " +
+          "Those may be created (or reused) in this page."
+        }</p>
+        <p>${
+          "A (default) temporary token can be used until either its " +
+          "expiration or until no inspector AND no device are linked " +
+          "to it anymore."
+        }<br>Persistent tokens can be used until their expiration.</p>
+      </div>
       <div>
         <div class="input-title">
-          Generate a token:
+          Generate a temporary token:
         </div>
         ${createGenerateTokenButton(errorContainerElt)}
       </div>
