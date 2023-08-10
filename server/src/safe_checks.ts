@@ -1,9 +1,9 @@
 import { performance } from "perf_hooks";
 import { WebSocketServer } from "ws";
-import activeTokensList from "./active_tokens_list.js";
+import ActiveTokensList from "./active_tokens_list.js";
 import logger from "./logger.js";
 
-export default function createCheckers({
+export default function createCheckers(activeTokensList: ActiveTokensList, {
   deviceSocket,
   htmlInspectorSocket,
   inspectorMessageLimit,
@@ -64,7 +64,7 @@ export default function createCheckers({
 
     // Also close old tokens
     performExpirationCheck(now);
-  }, 10 * 60 * 1000);
+  }, 60 * 1000);
 
   setInterval(() => {
     deviceMessageInCurrent24Hours = 0;
@@ -77,7 +77,7 @@ export default function createCheckers({
       if (tokenInfo === undefined) {
         continue;
       }
-      if (now - tokenInfo.expirationMs <= 0) {
+      if (tokenInfo.expirationMs - now <= 0) {
         logger.warn("Revokating old token", tokenInfo.tokenId);
         activeTokensList.removeIndex(i);
         i--; // We removed i, so we now need to re-check what is at its place for

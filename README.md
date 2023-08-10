@@ -186,7 +186,7 @@ To run RxPaired you have to:
      (instructions and files in `./client`)
   3. build and serve the RxPaired-inspector web page (instructions and files in
      `./inspector`).
- 
+
 You can look at how to do just that by looking at the `README.md` file of each of those
 subdirectories.
 

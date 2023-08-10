@@ -1,13 +1,13 @@
 import { performance } from "perf_hooks";
 import WebSocket from "ws";
 
-export default new (class ActiveTokensList {
+export default class ActiveTokensList {
 
   /** List of token currently used. */
   private _tokensList : TokenMetadata[];
 
-  constructor() {
-    this._tokensList = [];
+  constructor(initialList: TokenMetadata[]) {
+    this._tokensList = initialList;
   }
 
   /**
@@ -106,10 +106,10 @@ export default new (class ActiveTokensList {
   public find(tokenId : string) : TokenMetadata | undefined {
     return this._tokensList.find((t) => t.tokenId === tokenId);
   }
-})();
+}
 
 /** First metadata received when a device connects with a token. */
-interface DeviceInitData {
+export interface DeviceInitData {
   /**
    * Monotically increasing timestamp at which this Initialization data was
    * generated on the device, in milliseconds.
@@ -125,7 +125,7 @@ interface DeviceInitData {
 /**
  * Log history stored with a `TokenMetadata`.
  */
-interface LogHistoryData {
+export interface LogHistoryData {
   /** Logs from the most ancient to the newest. */
   history : string[];
   /** Maximum amount of logs that will be kept in this history. */
@@ -209,18 +209,30 @@ export class TokenMetadata {
    * token should be revokated.
    * This revokation is not handled by the `TokenMetadata` class which only acts
    * as a metadata store.
+   * @param {number|undefined} [originalDate] - If set, this is the original unix
+   * timestamp at which this token was created.
+   * Note that this may result on this token's `timestamp` property being set as
+   * a negative value.
    */
   constructor(
     tokenType: TokenType,
     tokenId: string,
     historySize: number,
-    expirationDelay: number
+    expirationDelay: number,
+    originalDate?: number | undefined
   ) {
     this.tokenType = tokenType;
     this.tokenId = tokenId;
-    this.timestamp = performance.now();
-    this.expirationMs = this.timestamp + expirationDelay;
-    this.date = Date.now();
+    if (originalDate === undefined) {
+      this.timestamp = performance.now();
+      this.expirationMs = this.timestamp + expirationDelay;
+      this.date = Date.now();
+    } else {
+      const now = performance.now();
+      this.date = originalDate;
+      this.timestamp = (originalDate - Date.now()) + now;
+      this.expirationMs = now + expirationDelay;
+    }
     this.inspectors = [];
     this.device = null;
     this.pingInterval = null;

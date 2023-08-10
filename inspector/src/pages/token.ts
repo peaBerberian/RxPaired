@@ -9,7 +9,10 @@ import { displayError, isTokenValid, generatePageUrl } from "../utils";
  * @returns {Function} - Perform clean-up if the page is exited.
  */
 export default function generateTokenPage(password: string): () => void {
-  const activeTokensListElt = strHtml`<pre class="active-tokens-list">Loading...</pre>`;
+  const persistentTokensListElt = strHtml`<pre
+    class="persistent-tokens-list">Loading...</pre>`;
+  const temporaryTokensListElt = strHtml`<pre
+    class="temporary-tokens-list">Loading...</pre>`;
   const errorContainerElt = strHtml`<div></div>`;
   const pageBodyElt = strHtml`<div>
     ${errorContainerElt}
@@ -48,10 +51,14 @@ export default function generateTokenPage(password: string): () => void {
       </div>
       <br>
       <div>
-        <div class="active-tokens-title">
-          List of currently active tokens:
+        <div class="persistent-tokens-title">
+          List of active persistent tokens:
         </div>
-        ${activeTokensListElt}
+        ${persistentTokensListElt}
+        <div class="temporary-tokens-title">
+          List of active temporary tokens:
+        </div>
+        ${temporaryTokensListElt}
       </div>
     </div>
   </div>`;
@@ -73,7 +80,12 @@ export default function generateTokenPage(password: string): () => void {
       console.error("Unrecognized list data");
       return;
     }
-    onActiveTokenListUpdate(data.tokenList, activeTokensListElt);
+    onActiveTokenListUpdate(
+      data.tokenList,
+      password,
+      temporaryTokensListElt,
+      persistentTokensListElt
+    );
 
     if (!hasAddedNoTokenTutorial) {
       pageBodyElt.appendChild(createNoTokenTutorialElement(password !== ""));
@@ -81,7 +93,8 @@ export default function generateTokenPage(password: string): () => void {
     }
   };
   socket.onclose = function onWebSocketClose() {
-    activeTokensListElt.innerHTML = "Error: WebSocket connection closed";
+    temporaryTokensListElt.innerHTML = "Error: WebSocket connection closed";
+    persistentTokensListElt.innerHTML = "Error: WebSocket connection closed";
   };
 
   return () => {
@@ -142,27 +155,37 @@ function createTokenInputElement(
     strHtml`<input placeholder="Enter the wanted token">` as HTMLInputElement;
   tokenInputElt.onkeyup = function (evt) {
     if (evt.key === "Enter" || evt.keyCode === 13) {
+      if (
+        !checkTokenValidityAndDisplayErrorIfNot(
+          tokenInputElt.value,
+          errorContainerElt
+        )
+      ) {
+        return;
+      }
       setToken(tokenInputElt.value, errorContainerElt);
     }
   };
 
-  const useNowButtonElt = strHtml`<button>Use now</button>`;
+  const useNowButtonElt =
+    strHtml`<button>Use now</button>` as HTMLButtonElement;
   useNowButtonElt.onclick = () => {
-    if (tokenInputElt.value === "") {
-      displayError(
-        errorContainerElt,
-        new Error("No token inputed"),
-        true
-      );
+    if (
+      !checkTokenValidityAndDisplayErrorIfNot(
+        tokenInputElt.value,
+        errorContainerElt
+      )
+    ) {
       return;
     }
     setToken(tokenInputElt.value, errorContainerElt);
   };
   useNowButtonElt.style.marginLeft = "5px";
 
-  const createPersistentButtonElt = strHtml`<button>Create persistent token</button>`;
+  const createPersistentButtonElt =
+    strHtml`<button>Create as persistent token</button>` as HTMLButtonElement;
   createPersistentButtonElt.style.marginLeft = "5px";
-  const returned = strHtml`<span>${[
+  const returnedInputedTokenElt = strHtml`<span>${[
     tokenInputElt,
     useNowButtonElt,
     createPersistentButtonElt,
@@ -170,10 +193,59 @@ function createTokenInputElement(
 
   const expirationInputElt = strHtml`<input
     placeholder="Duration (hours)"
-    type="number" />` as HTMLInputElement;
+    type="number" value="48" />` as HTMLInputElement;
   const expirationInputValidateElt = strHtml`<button>Create!</button>`;
   expirationInputValidateElt.style.marginLeft = "5px";
-  expirationInputValidateElt.onclick = () => {
+  expirationInputValidateElt.onclick = onPersistentTokenExpirationValidation;
+  expirationInputElt.onkeyup = function (evt) {
+    if (evt.key === "Enter" || evt.keyCode === 13) {
+      onPersistentTokenExpirationValidation();
+    }
+  };
+
+  tokenInputElt.onkeyup = function (evt) {
+    if (evt.key === "Enter" || evt.keyCode === 13) {
+      if (
+        !checkTokenValidityAndDisplayErrorIfNot(
+          tokenInputElt.value,
+          errorContainerElt
+        )
+      ) {
+        return;
+      }
+      setToken(tokenInputElt.value, errorContainerElt);
+    }
+  };
+
+  const expirationInputCancelElt = strHtml`<button>Cancel</button>`;
+  expirationInputCancelElt.style.marginLeft = "5px";
+  const persistentElt = strHtml`<div class="persistent-token-creation">${[
+    "Enter wanted expiration time (in hours):",
+    strHtml`<br>`,
+    expirationInputElt,
+    expirationInputValidateElt,
+    expirationInputCancelElt,
+  ]}</div>`;
+  expirationInputCancelElt.onclick = () => {
+    expirationInputElt.value = "48";
+    returnedInputedTokenElt.removeChild(persistentElt);
+    useNowButtonElt.disabled = false;
+    createPersistentButtonElt.disabled = false;
+  };
+
+  createPersistentButtonElt.onclick = () => {
+    if (tokenInputElt.value === "") {
+      displayError(errorContainerElt, new Error("No token inputed"), true);
+      return;
+    }
+    useNowButtonElt.disabled = true;
+    createPersistentButtonElt.disabled = true;
+    returnedInputedTokenElt.appendChild(persistentElt);
+  };
+
+  return returnedInputedTokenElt;
+
+  function onPersistentTokenExpirationValidation() {
     const expirationDelayHours = +expirationInputElt.value;
     if (isNaN(expirationDelayHours)) {
       displayError(
@@ -184,40 +256,21 @@ function createTokenInputElement(
       return;
     }
     const expirationDelayMs = expirationDelayHours * 60 * 60 * 1000;
-    createPersistentToken(password, tokenInputElt.value, expirationDelayMs);
-    returned.removeChild(persistentElt);
-    returned.appendChild(useNowButtonElt);
-    returned.appendChild(createPersistentButtonElt);
-  };
-
-  const expirationInputCancelElt = strHtml`<button>Cancel</button>`;
-  expirationInputCancelElt.style.marginLeft = "5px";
-  const persistentElt = strHtml`<span>${[
-    expirationInputElt,
-    expirationInputValidateElt,
-    expirationInputCancelElt,
-  ]}</span>`;
-  expirationInputCancelElt.onclick = () => {
-    returned.removeChild(persistentElt);
-    returned.appendChild(useNowButtonElt);
-    returned.appendChild(createPersistentButtonElt);
-  };
-
-  createPersistentButtonElt.onclick = () => {
-    if (tokenInputElt.value === "") {
-      displayError(
-        errorContainerElt,
-        new Error("No token inputed"),
-        true
-      );
+    if (
+      !checkTokenValidityAndDisplayErrorIfNot(
+        tokenInputElt.value,
+        errorContainerElt
+      )
+    ) {
       return;
     }
-    returned.removeChild(useNowButtonElt);
-    returned.removeChild(createPersistentButtonElt);
-    returned.appendChild(persistentElt);
-  };
-
-  return returned;
+    createPersistentToken(password, tokenInputElt.value, expirationDelayMs);
+    useNowButtonElt.disabled = false;
+    createPersistentButtonElt.disabled = false;
+    returnedInputedTokenElt.removeChild(persistentElt);
+    expirationInputElt.value = "48";
+    tokenInputElt.value = "";
+  }
 }
 
 /**
@@ -226,11 +279,7 @@ function createTokenInputElement(
  * displayed errors if the token is invalid.
  */
 function setToken(tokenValue: string, errorContainerElt: HTMLElement): void {
-  if (!isTokenValid(tokenValue)) {
-    const error = new Error(
-      "Error: A token must only contain alphanumeric characters"
-    );
-    displayError(errorContainerElt, error, true);
+  if (!checkTokenValidityAndDisplayErrorIfNot(tokenValue, errorContainerElt)) {
     return;
   }
   window.location.href = generatePageUrl({
@@ -377,67 +426,90 @@ function createNoTokenTutorialElement(hasPassword: boolean): HTMLElement {
  * Function to call when the WebSocket maintained to update the list of current
  * tokens receives a message.
  * @param {Array.<Object>} activeTokensList
- * @param {HTMLElement} activeTokensListElt - The HTMLElement which will be
- * updated to the list of available tokens regularly.
+ * @param {string} password - The password currently used for server
+ * interaction. Empty string for no password.
+ * @param {HTMLElement} temporaryTokensListElt - The HTMLElement which will be
+ * updated to the list of available temporary tokens regularly.
+ * @param {HTMLElement} persistentTokensListElt - The HTMLElement which will be
+ * updated to the list of available persistent tokens regularly.
  */
 function onActiveTokenListUpdate(
   activeTokensList: ParsedTokenListServerMessage["tokenList"],
-  activeTokensListElt: HTMLElement
+  password: string,
+  temporaryTokensListElt: HTMLElement,
+  persistentTokensListElt: HTMLElement
 ): void {
-  if (activeTokensList.length === 0) {
-    activeTokensListElt.innerHTML = "No active token";
-  } else {
-    activeTokensList.sort((a, b) =>  b.date - a.date);
-    const persistentTokenElements: HTMLElement[] = [];
-    const activeTokenDataElt: HTMLElement = activeTokensList.reduce(
-      (acc, d) => {
-        const date = new Date(d.date);
-        const dateStr =
-          date.toLocaleDateString() + " @ " + date.toLocaleTimeString();
-        const linkElt = strHtml`<a href=${generatePageUrl({
-          tokenId: d.tokenId,
-          forcePassReset: false,
-          isPostDebugger: false,
-        })}>`;
-        if (d.isPersistent) {
-          linkElt.appendChild(strHtml`<td>${d.tokenId}</td>`);
-          persistentTokenElements.push(strHtml`<tr>
+  activeTokensList.sort((a, b) => b.date - a.date);
+  const persistentTokenElements: HTMLElement[] = [];
+  let hasActiveTemporaryToken = false;
+  const temporaryTokenDataElt: HTMLElement = activeTokensList.reduce(
+    (acc, d) => {
+      const date = new Date(d.date);
+      const dateStr =
+        date.toLocaleDateString() + " @ " + date.toLocaleTimeString();
+      const linkElt = strHtml`<a href=${generatePageUrl({
+        tokenId: d.tokenId,
+        forcePassReset: false,
+        isPostDebugger: false,
+      })} />`;
+      if (d.isPersistent) {
+        linkElt.appendChild(strHtml`<td>${d.tokenId}</td>`);
+        const revokeButtonElt = strHtml`<button
+          class="persistent-token-revokation-button"
+        >Revoke</button>`;
+        revokeButtonElt.onclick = () => {
+          createPersistentToken(password, d.tokenId, -1);
+        };
+        persistentTokenElements.push(strHtml`<tr>
             <td>${dateStr}</td>
             <td>${linkElt}</td>
             <td>${millisecondsToTimeString(d.msUntilExpiration)}</td>
+            <td>${revokeButtonElt}</td>
           </tr>`);
-          return acc;
-        }
-        linkElt.appendChild(strHtml`<span>${dateStr}</span>`);
-        linkElt.appendChild(document.createTextNode(" - "));
-        linkElt.appendChild(strHtml`<span>${d.tokenId}</span>`);
-        linkElt.appendChild(document.createTextNode(" - "));
-        linkElt.appendChild(strHtml`<span>expires in ${
-          millisecondsToTimeString(d.msUntilExpiration)
-        }</span>`);
-        const listElt = strHtml`<li class="button-input-right">${linkElt}</li>`;
-        acc.appendChild(listElt);
         return acc;
-      },
-      strHtml`<ul class="active-token-list" />`
-    );
-    activeTokensListElt.innerHTML = "";
-    if (persistentTokenElements.length > 0) {
-      activeTokensListElt.appendChild(strHtml`<table>
+      }
+      hasActiveTemporaryToken = true;
+      linkElt.appendChild(strHtml`<span>${dateStr}</span>`);
+      linkElt.appendChild(document.createTextNode(" - "));
+      linkElt.appendChild(strHtml`<span>${d.tokenId}</span>`);
+      linkElt.appendChild(document.createTextNode(" "));
+      linkElt.appendChild(
+        strHtml`<span>(expires in ${millisecondsToTimeString(
+          d.msUntilExpiration
+        )})</span>`
+      );
+      const listElt = strHtml`<li class="button-input-right">${linkElt}</li>`;
+      acc.appendChild(listElt);
+      return acc;
+    },
+    strHtml`<ul class="temporary-token-list" />`
+  );
+  if (!hasActiveTemporaryToken) {
+    temporaryTokensListElt.innerHTML = "No active token";
+  } else {
+    temporaryTokensListElt.innerHTML = "";
+    temporaryTokensListElt.appendChild(temporaryTokenDataElt);
+  }
+  if (persistentTokenElements.length === 0) {
+    persistentTokensListElt.innerHTML = "No persistent token";
+  } else {
+    persistentTokensListElt.innerHTML = "";
+    persistentTokensListElt.appendChild(strHtml`<table class="persistent-token-table">
         <tr>
           <th>Date of creation</th>
           <th>Token</th>
           <th>Expires in</th>
+          <th>Revoke</th>
         </tr>
+        ${persistentTokenElements}
       </table>`);
-    }
-    activeTokensListElt.appendChild(activeTokenDataElt);
+    persistentTokensListElt.appendChild(strHtml`<br>`);
   }
 }
 
 function millisecondsToTimeString(timeMs: number): string {
-  if (timeMs < 5000) {
-    return `${timeMs} ms`;
+  if (timeMs < 1000) {
+    return "< 1 s";
   }
   if (timeMs < 120_000) {
     return `${Math.floor(timeMs / 1000)} s`;
@@ -466,7 +538,9 @@ function createPersistentToken(
       ? `${SERVER_URL}/!persist/${tokenId}/${expirationDelayMs}`
       : `${SERVER_URL}/${password}/!persist/${tokenId}/${expirationDelayMs}`;
   const ws = new WebSocket(wsUrl);
-  ws.close(); // We don't actually care about messages for now
+  setTimeout(() => {
+    ws.close(); // We don't actually care about messages for now
+  }, 100);
 }
 
 interface ParsedTokenListServerMessage {
@@ -478,4 +552,22 @@ interface ParsedTokenListServerMessage {
     isPersistent: boolean;
     msUntilExpiration: number;
   }>;
+}
+
+function checkTokenValidityAndDisplayErrorIfNot(
+  tokenValue: string,
+  errorContainerElt: HTMLElement
+): boolean {
+  if (tokenValue === "") {
+    displayError(errorContainerElt, new Error("No token inputed"), true);
+    return false;
+  }
+  if (!isTokenValid(tokenValue)) {
+    const error = new Error(
+      "Error: A token must only contain alphanumeric characters"
+    );
+    displayError(errorContainerElt, error, true);
+    return false;
+  }
+  return true;
 }

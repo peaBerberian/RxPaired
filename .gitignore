@@ -11,3 +11,4 @@
 /server/server-logs.txt
 /server/logs-*.txt
 /server/build
+/server/.persistent-tokens.json

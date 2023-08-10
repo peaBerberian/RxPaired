@@ -4,10 +4,11 @@ import { IncomingMessage } from "http";
 import process from "process";
 import * as commander from "commander";
 import WebSocket, { WebSocketServer } from "ws";
-import activeTokensList, {
+import ActiveTokensList, {
   TokenMetadata, TokenType,
 } from "./active_tokens_list.js";
 import logger from "./logger.js";
+import PersistentTokensStorage from "./persistent_tokens_storage.js";
 import createCheckers from "./safe_checks.js";
 
 /**
@@ -79,6 +80,10 @@ program
           "Maximum authorized number of message any web inspector can send per 24 " +
           "hours. Exceeding that limit will stop the server. " +
           ` Defaults to ${DEFAULT_INSPECTOR_MESSAGE_LIMIT}.`)
+  .option("--persistent-tokens-storage <path>",
+          "If set, the RxPaired-server will store information on persistent " +
+          "tokens on disk (at the given path) so they can be retrieved if the " +
+          "server reboots.")
   .option("--log-file <path>",
           "Path to the server's log file. " +
           ` Defaults to ${DEFAULT_LOG_FILE_PATH}.`)
@@ -101,7 +106,11 @@ const forcePassword = typeof options.forcePassword === "string" ?
   undefined;
 const shouldCreateLogFiles = Boolean(options.createLogFiles);
 
-/** Maximum duration a Token can be used for, in milliseconds. */
+const persistentTokensFile = typeof options.persistentTokensStorage === "string" ?
+  options.persistentTokensStorage :
+  undefined;
+
+/** Maximum duration a Token can be used for, in seconds. */
 const maxTokenDuration = options.maxTokenDuration === undefined ?
   DEFAULT_MAX_TOKEN_DURATION * 1000 :
   +options.maxTokenDuration * 1000;
@@ -190,10 +199,20 @@ if (usePassword) {
   console.log("Generated password:", password);
 }
 
+const persistentTokensStorage = new PersistentTokensStorage();
+
+let activeTokensList: ActiveTokensList;
+if (persistentTokensFile !== undefined) {
+  const stored = await persistentTokensStorage.initializeWithPath(persistentTokensFile);
+  activeTokensList = new ActiveTokensList(stored);
+} else {
+  activeTokensList = new ActiveTokensList([]);
+}
+
 const deviceSocket = new WebSocketServer({ port: devicePort });
 const htmlInspectorSocket = new WebSocketServer({ port: inspectorPort });
 
-const checkers = createCheckers({
+const checkers = createCheckers(activeTokensList, {
   deviceSocket,
   htmlInspectorSocket,
   maxTokenDuration,
@@ -374,31 +393,18 @@ deviceSocket.on("connection", (ws, req) => {
 });
 
 htmlInspectorSocket.on("connection", (ws, req) => {
-  let tokenId : string | undefined;
   if (req.url === undefined) {
     ws.close();
     return;
   }
   const urlParts = parseInspectorUrl(req.url);
-  if (usePassword && password !== null) {
-    // format of a request: /<PASSWORD>/<TOKEN>
-    const receivedPassword = urlParts.password;
-    if (receivedPassword !== password) {
-      writeLog("warn", "Received inspector request with invalid password: " +
-               receivedPassword,
-               { address: req.socket.remoteAddress });
-      ws.close();
-      checkers.checkBadPasswordLimit();
-      return;
-    }
-    tokenId = urlParts.tokenId;
-  } else {
-    // format of a request: /<TOKEN>
-    tokenId = urlParts.tokenId;
-  }
-
-  if (tokenId === undefined) {
+  const receivedPassword = urlParts.password ?? "";
+  if (receivedPassword !== (password ?? "")) {
+    writeLog("warn", "Received inspector request with invalid password: " +
+             receivedPassword,
+             { address: req.socket.remoteAddress });
     ws.close();
+    checkers.checkBadPasswordLimit();
     return;
   }
 
@@ -414,6 +420,7 @@ htmlInspectorSocket.on("connection", (ws, req) => {
       clearInterval(itv);
     };
     function sendCurrentListOfTokens() {
+      checkers.forceExpirationCheck();
       const now = performance.now();
       ws.send(JSON.stringify({
         isNoTokenEnabled: !disableNoToken,
@@ -423,11 +430,17 @@ htmlInspectorSocket.on("connection", (ws, req) => {
             date: t.date,
             timestamp: t.timestamp,
             isPersistent: t.tokenType === TokenType.Persistent,
-            msUntilExpiration: Math.max(now - t.expirationMs, 0),
+            msUntilExpiration: Math.max(t.expirationMs - now, 0),
           };
         }),
       }));
     }
+    return;
+  }
+
+  const tokenId = urlParts.tokenId;
+  if (tokenId === undefined) {
+    ws.close();
     return;
   }
 
@@ -468,6 +481,10 @@ htmlInspectorSocket.on("connection", (ws, req) => {
       existingToken.expirationMs = urlParts.expirationMs;
     }
     writeLog("log", "Adding new inspector to token.", { tokenId });
+  }
+
+  if (isPersistentTokenCreation) {
+    persistentTokensStorage.addToken(existingToken);
   }
 
   const pingInterval = setInterval(() => {
@@ -676,7 +693,7 @@ function parseInspectorUrl(
     expirationMs: number | undefined;
   }
 {
-  const parts = url.split("/");
+  const parts = url.substring(1).split("/");
   let pass;
   let command;
   let tokenId;
