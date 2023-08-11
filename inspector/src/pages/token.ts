@@ -565,9 +565,6 @@ function createPersistentToken(
       ws.close();
     }
   };
-  setTimeout(() => {
-    ws.close(); // We don't actually care about messages for now
-  }, 100);
 }
 
 interface ParsedTokenListServerMessage {
