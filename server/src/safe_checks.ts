@@ -77,7 +77,7 @@ export default function createCheckers(activeTokensList: ActiveTokensList, {
       if (tokenInfo === undefined) {
         continue;
       }
-      if (tokenInfo.expirationMs - now <= 0) {
+      if (tokenInfo.getExpirationDelay(now) <= 0) {
         logger.warn("Revokating old token", tokenInfo.tokenId);
         activeTokensList.removeIndex(i);
         i--; // We removed i, so we now need to re-check what is at its place for

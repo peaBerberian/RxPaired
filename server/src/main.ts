@@ -430,7 +430,7 @@ htmlInspectorSocket.on("connection", (ws, req) => {
             date: t.date,
             timestamp: t.timestamp,
             isPersistent: t.tokenType === TokenType.Persistent,
-            msUntilExpiration: Math.max(t.expirationMs - now, 0),
+            msUntilExpiration: Math.max(t.getExpirationDelay(now), 0),
           };
         }),
       }));
@@ -471,14 +471,14 @@ htmlInspectorSocket.on("connection", (ws, req) => {
         TokenType.FromInspector,
       tokenId,
       historySize,
-      urlParts.expirationMs ?? maxTokenDuration
+      urlParts.expirationDelay ?? maxTokenDuration
     );
   } else {
     if (isPersistentTokenCreation) {
       existingToken.tokenType = TokenType.Persistent;
     }
-    if (urlParts.expirationMs !== undefined) {
-      existingToken.expirationMs = urlParts.expirationMs;
+    if (urlParts.expirationDelay !== undefined) {
+      existingToken.updateExpirationDelay(urlParts.expirationDelay);
     }
     writeLog("log", "Adding new inspector to token.", { tokenId });
   }
@@ -692,7 +692,7 @@ function parseInspectorUrl(
     password: string | undefined;
     command: string | undefined;
     tokenId: string | undefined;
-    expirationMs: number | undefined;
+    expirationDelay: number | undefined;
   }
 {
   const parts = url.substring(1).split("/");
@@ -722,14 +722,14 @@ function parseInspectorUrl(
       expirationMsStr = parts[1];
     }
   }
-  let expirationMs: number | undefined = +expirationMsStr;
-  if (isNaN(expirationMs)) {
-    expirationMs = undefined;
+  let expirationDelay: number | undefined = +expirationMsStr;
+  if (isNaN(expirationDelay)) {
+    expirationDelay = undefined;
   }
   return {
     password: pass,
     tokenId,
     command,
-    expirationMs,
+    expirationDelay,
   };
 }

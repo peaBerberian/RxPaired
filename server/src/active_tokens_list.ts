@@ -154,7 +154,7 @@ export class TokenMetadata {
    * Value of `performance.now()` when the TokenMetadata should be removed.
    * If `undefined`, default rules apply.
    */
-  public expirationMs : number;
+  private _expirationMs : number;
 
   /** Value of `date.now()` at the time the TokenMetadata was created. */
   public date : number;
@@ -225,13 +225,13 @@ export class TokenMetadata {
     this.tokenId = tokenId;
     if (originalDate === undefined) {
       this.timestamp = performance.now();
-      this.expirationMs = this.timestamp + expirationDelay;
+      this._expirationMs = this.timestamp + expirationDelay;
       this.date = Date.now();
     } else {
       const now = performance.now();
       this.date = originalDate;
       this.timestamp = (originalDate - Date.now()) + now;
-      this.expirationMs = now + expirationDelay;
+      this._expirationMs = now + expirationDelay;
     }
     this.inspectors = [];
     this.device = null;
@@ -241,6 +241,21 @@ export class TokenMetadata {
       history: [],
       maxHistorySize: historySize,
     };
+  }
+
+  public updateExpirationDelay(newDelay: number) {
+    this._expirationMs = performance.now() + newDelay;
+  }
+
+  /**
+   * Get the amount of milliseconds after which the token will be expired, from
+   * the given `timeRef` if set (has to be relative to `performance.now()`) or
+   * to `performance.now()` if unset.
+   * @param {number|undefined} [timeRef]
+   * @returns {number}
+   */
+  public getExpirationDelay(timeRef?: number | undefined): number {
+    return this._expirationMs - (timeRef ?? performance.now());
   }
 
   /**

@@ -150,14 +150,14 @@ export default class PersistentTokensStorage {
     const now = performance.now();
     const date = Date.now();
     const tokens = this._tokens.filter((t) => {
-      return t.expirationMs > now && t.tokenId !== tokenMetadata.tokenId;
+      return t.getExpirationDelay(now) > 0 && t.tokenId !== tokenMetadata.tokenId;
     });
     tokens.push(tokenMetadata);
 
     const toStore: StoredTokenMetadata[] = tokens.map((t) => {
       return {
         tokenId: t.tokenId,
-        expirationDate: date + t.expirationMs - now,
+        expirationDate: date + t.getExpirationDelay(now),
         date: t.date,
         initData: t.getDeviceInitData(),
         history: t.getCurrentHistory(),
