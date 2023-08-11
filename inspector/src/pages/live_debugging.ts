@@ -141,6 +141,8 @@ export default function generateLiveDebuggingPage(
     if (event.data === "ping") {
       currentSocket.send("pong");
       return;
+    } else if (event.data === "ack") {
+      return;
     }
     if (event.data[0] === "{") {
       try {

@@ -1,4 +1,3 @@
-#!/usr/bin/env node
 import { appendFile } from "fs";
 import { IncomingMessage } from "http";
 import process from "process";
@@ -311,6 +310,7 @@ deviceSocket.on("connection", (ws, req) => {
   existingToken.pingInterval = setInterval(() => {
     ws.send("ping");
   }, 10000);
+  ws.send("ack");
   ws.on("message", message => {
     checkers.checkDeviceMessageLimit();
     /* eslint-disable-next-line @typescript-eslint/no-base-to-string */
@@ -494,6 +494,8 @@ htmlInspectorSocket.on("connection", (ws, req) => {
     webSocket: ws,
     pingInterval,
   });
+
+  sendMessageToInspector("ack", ws, req, tokenId);
 
   const deviceInitData = existingToken.getDeviceInitData();
   if (deviceInitData !== null) {

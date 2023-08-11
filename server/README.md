@@ -224,6 +224,16 @@ The inspector may also send information through this WebSocket (see below).
 
 Various messages may be sent by the server through that WebSocket connection:
 
+-   **ack**: ack messages are just an UTF-8-encoded `ack` string sent by the
+    server as soon as it receives the connection and considers it valid (for
+    example: the right password has been set). In cases where the request is
+    invalid, the server will close the WebSocket instead.
+
+    It is always the first message sent, and is sent only once.
+
+    There is no response to this message, it is just here to indicate that
+    the connection has been well received.
+
 -   **Initial Device Message**: Message sent by the server which describes the
     first log(s) sent by the device. It should be sent before any logs messages
     originating from the device.
@@ -499,6 +509,16 @@ through the inspector port and through the device ports, will be closed.
 ##### Messages sent by the server
 
 Messages may be sent by the server through that WebSocket connection:
+
+-   **ack**: ack messages are just an UTF-8-encoded `ack` string sent by the
+    server as soon as it receives the connection and considers it valid (for
+    example: the wanted token exists). In cases where the request is invalid,
+    the server will close the WebSocket instead.
+
+    It is always the first message sent, and is sent only once.
+
+    There is no response to this message, it is just here to indicate that
+    the connection has been well received.
 
 -   **ping**: Ping messages are just an UTF-8-encoded `ping` string, which the
     other side of the connection (the RxPaired-client) is supposed to respond

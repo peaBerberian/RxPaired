@@ -550,6 +550,11 @@ function createPersistentToken(
       ? `${SERVER_URL}/!persist/${tokenId}/${expirationDelayMs}`
       : `${SERVER_URL}/${password}/!persist/${tokenId}/${expirationDelayMs}`;
   const ws = new WebSocket(wsUrl);
+  ws.onmessage = function(evt) {
+    if (evt?.data === "ack") {
+      ws.close();
+    }
+  };
   setTimeout(() => {
     ws.close(); // We don't actually care about messages for now
   }, 100);

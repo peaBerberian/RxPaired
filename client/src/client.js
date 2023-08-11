@@ -378,6 +378,8 @@ function init(currentScriptSrc, playerClass) {
       if (messageStr === "ping") {
         socket.send("pong");
         return;
+      } else if (messageStr === "ack") {
+        return;
       }
       formattedObj = JSON.parse(messageStr);
     } catch (formattingError) {
