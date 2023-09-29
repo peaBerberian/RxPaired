@@ -465,12 +465,11 @@ function init(currentScriptSrc, playerClass) {
     return processed;
   }
 
+  window.__RX_PLAYER_DEBUG_MODE__ = true;
   if (playerClass) {
     // Try to force the RxPlayer to redefine its console function.
     // May break at any time.
     playerClass.LogLevel = "DEBUG";
-  } else {
-    window.__RX_PLAYER_DEBUG_MODE__ = true;
   }
 }
 
