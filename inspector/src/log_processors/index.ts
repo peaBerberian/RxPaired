@@ -26,7 +26,7 @@ const REGEX_CANCELLED_REQUEST =
   /* eslint-disable-next-line max-len */
   /^(\d+\.\d+) \[\w+\] \w+: Segment request cancelled (\w+) P: ([^ ]+) A: ([^ ]+) R: ([^ ]+) S: (?:(?:(\d+(?:.\d+)?)-(\d+(?:.\d+)?))|(?:init))/;
 const REGEX_MANIFEST_PARSING_TIME =
-  /^(\d+\.\d+) \[\w+\] \w+: Manifest parsed in (\d+(?:\.)\d+)ms/;
+  /^(\d+\.\d+) \[\w+\] \w+: Manifest parsed in (\d+(?:\.\d+)?)ms/;
 
 /**
  * Each of the following objects is linked to a type of log.
