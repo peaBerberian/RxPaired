@@ -20,7 +20,7 @@ export default class ActiveTokensList {
    * This revokation is not handled by the `ActiveTokensList` class which only
    * acts as a metadata store.
    *
-   * Setting this value to `undefined` to not store any expiration alongside the
+   * Set this value to `undefined` to not store any expiration alongside the
    * `TokenMetadata` created.
    * @returns {Object}
    */
@@ -270,7 +270,7 @@ export class TokenMetadata {
   /**
    * Get the `DeviceInitData` associated with this `TokenMetadata`.
    * Returns `null` if no `DeviceInitData` is associated.
-   * @param {Object|null}
+   * @returns {Object|null}
    */
   public getDeviceInitData() : DeviceInitData | null {
     return this._initData;
