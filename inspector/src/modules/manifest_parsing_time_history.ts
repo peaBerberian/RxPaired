@@ -9,8 +9,11 @@ export default function ManifestParsingTimeHistoryModule({
 }: {
   state: ObservableState<InspectorState>;
 }) {
-  const manifestParsingHistoryElt = strHtml`<div>No manifest parsing information</div>`;
-  const moduleBodyElt = strHtml`<div class="state-history-body module-body">${manifestParsingHistoryElt}</div>`;
+  const manifestParsingHistoryElt =
+    strHtml`<div>No manifest parsing information</div>`;
+  const moduleBodyElt = strHtml`<div class="state-history-body module-body">
+    ${manifestParsingHistoryElt}
+  </div>`;
   const unsubscribeHistory = state.subscribe(
     STATE_PROPS.MANIFEST_PARSING_TIME_HISTORY,
     () => {
@@ -30,10 +33,10 @@ export default function ManifestParsingTimeHistoryModule({
         <tr>
           <th>TS</th>
           <th>Parsing Time (ms)</th>
-          <th>Distance since prev. (ms)</th>
+          <th>Time since prev. parsing (ms)</th>
         </tr>
       </table>`;
-      for (let i = manifestParsingTimeHistory?.length - 1; i >= 0; i--) {
+      for (let i = manifestParsingTimeHistory.length - 1; i >= 0; i--) {
         const info = manifestParsingTimeHistory[i];
         tableElt.appendChild(
           strHtml`<tr>

@@ -4,8 +4,8 @@ import { UPDATE_TYPE } from "../observable_state";
 import { ModuleObject, ModuleFunctionArguments } from "./index";
 
 const LOADING_LOGS_MSG = "Loading logs...";
-const NO_LOG_SELECTED_MSG = "No log selected (click to select)";
-const LOG_SELECTED_MSG = "A log has been selected";
+const NO_LOG_SELECTED_MSG = "No log selected (click on a log to time-travel to it).";
+const LOG_SELECTED_MSG = "A log has been time-travelled to.";
 
 /**
  * @param {Object} args

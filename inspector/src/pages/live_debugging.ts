@@ -54,6 +54,11 @@ export default function generateLiveDebuggingPage(
    * @type {WebSocket.WebSocket}
    */
   const currentSocket: WebSocket = startWebsocketConnection(password, tokenId);
+  /**
+   * `true` once an `ack` message has been received.
+   * This indicates that the token request was valid.
+   */
+  let wasAckReceived = false;
 
   const errorContainerElt = strHtml`<div/>`;
   const headerElt = createLiveDebuggerHeaderElement(
@@ -119,11 +124,22 @@ export default function generateLiveDebuggingPage(
   };
 
   function onWebSocketClose() {
-    displayError(errorContainerElt, "WebSocket connection closed");
+    if (!wasAckReceived) {
+      displayError(
+        errorContainerElt,
+        "Unable to start WebSocket connection to RxPaired's server. " +
+        "This may be linked to either an issue with your network connection, " +
+        "a firewall policy, " +
+        "an issue with the RxPaired server and/or " +
+        "a wrong server password (on that last point, you may enter a " +
+        "different one by clicking on the \"Password\" link).");
+    } else {
+      displayError(errorContainerElt, "WebSocket connection closed unexpectedly.");
+    }
   }
 
   function onWebSocketError() {
-    displayError(errorContainerElt, "WebSocket connection error");
+    displayError(errorContainerElt, "WebSocket connection error.");
   }
 
   function onWebSocketMessage(event: MessageEvent) {
@@ -142,6 +158,7 @@ export default function generateLiveDebuggingPage(
       currentSocket.send("pong");
       return;
     } else if (event.data === "ack") {
+      wasAckReceived = true;
       return;
     }
     if (event.data[0] === "{") {

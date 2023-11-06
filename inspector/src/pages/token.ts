@@ -9,10 +9,10 @@ import { displayError, isTokenValid, generatePageUrl } from "../utils";
  * @returns {Function} - Perform clean-up if the page is exited.
  */
 export default function generateTokenPage(password: string): () => void {
-  const persistentTokensListElt = strHtml`<pre
-    class="persistent-tokens-list">Loading...</pre>`;
-  const temporaryTokensListElt = strHtml`<pre
-    class="temporary-tokens-list">Loading...</pre>`;
+  const persistentTokensListElt =
+    strHtml`<pre class="persistent-tokens-list">Loading... </pre>`;
+  const temporaryTokensListElt =
+    strHtml`<pre class="temporary-tokens-list">Loading...</pre>`;
   const errorContainerElt = strHtml`<div></div>`;
   const pageBodyElt = strHtml`<div>
     ${errorContainerElt}
@@ -37,7 +37,7 @@ export default function generateTokenPage(password: string): () => void {
           "A temporary token (the default type) can be used until either its " +
           "expiration or until no inspector AND no device are linked " +
           "to it anymore."
-        }<br>Persistent tokens can be used until their expiration.</p>
+        }<br>A persistent token can be used until its expiration.</p>
       </div>
       <div>
         <div class="input-title">
@@ -376,7 +376,7 @@ function createNoTokenTutorialElement(hasPassword: boolean): HTMLElement {
       <pre>${dynamicImportCode1}</pre>
       Where <span class="emphasized">${"<RX_PLAYER_CLASS>"}</span>
       is a reference to the RxPlayer's class in your code${
-        !hasPassword
+        hasPassword
           ? [
               " and ",
               strHtml`<span class="emphasized">${"<SERVER_PASSWORD>"}</span>`,

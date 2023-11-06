@@ -13,18 +13,21 @@ export default function PlayerGeneralInfoModule({
   const stateData = strHtml`<span class="emphasized">${
     state.getCurrentState(STATE_PROPS.PLAYER_STATE) ?? "Unknown"
   }</span>`;
-  const positionData = strHtml`<span class="emphasized">${getCurrentPositionTextContent(
-    state,
-  )}</span>`;
-  const bufferGapData = strHtml`<span class="emphasized">${getCurrentBufferGapTextContent(
-    state,
-  )}</span>`;
-  const durationData = strHtml`<span class="emphasized">${getCurrentDurationTextContent(
-    state,
-  )}</span>`;
-  const initialLoadingTimeDataElt = strHtml`<span class="emphasized">${getInitialLoadingTimeStr(
-    state.getCurrentState(STATE_PROPS.STATE_CHANGE_HISTORY) ?? [],
-  )}</span>`;
+  const positionData = strHtml`<span class="emphasized">${
+    getCurrentPositionTextContent(state)
+  }</span>`;
+  const bufferGapData = strHtml`<span class="emphasized">${
+    getCurrentBufferGapTextContent(state)
+  }</span>`;
+  const durationData = strHtml`<span class="emphasized">${
+    getCurrentDurationTextContent(state)
+  }</span>`;
+  const initialLoadingTimeDataElt = strHtml`<span class="emphasized">${
+    getInitialLoadingTimeStr(
+      state.getCurrentState(STATE_PROPS.STATE_CHANGE_HISTORY) ?? []
+    )
+  }</span>`;
+
   const generalInfoBodyElt = strHtml`<div class="gen-info-body module-body">${[
     strHtml`<span>Current state: </span>`,
     stateData,
@@ -42,41 +45,43 @@ export default function PlayerGeneralInfoModule({
     initialLoadingTimeDataElt,
   ]}</div>`;
 
-  const unsubscribeState = state.subscribe(
-    STATE_PROPS.PLAYER_STATE,
-    (_ut, newState: string | undefined) => {
-      stateData.textContent = newState ?? "Unknown";
-    },
-  );
-  const unsubscribePosition = state.subscribe(STATE_PROPS.POSITION, () => {
-    positionData.textContent = getCurrentPositionTextContent(state);
-  });
-  const unsubscribeBufferGaps = state.subscribe(STATE_PROPS.BUFFER_GAPS, () => {
-    bufferGapData.textContent = getCurrentBufferGapTextContent(state);
-  });
-  const unsubscribeDuration = state.subscribe(
-    STATE_PROPS.CONTENT_DURATION,
-    () => {
-      durationData.textContent = getCurrentDurationTextContent(state);
-    },
-  );
-  const unsubscribeStateHistory = state.subscribe(
-    STATE_PROPS.STATE_CHANGE_HISTORY,
-    () => {
-      initialLoadingTimeDataElt.textContent = getInitialLoadingTimeStr(
-        state.getCurrentState(STATE_PROPS.STATE_CHANGE_HISTORY) ?? [],
-      );
-    },
-  );
+  const unsubscribeFns = [
+    state.subscribe(
+      STATE_PROPS.PLAYER_STATE,
+      (_updateType, newState: string | undefined) => {
+        stateData.textContent = newState ?? "Unknown";
+      },
+    ),
+
+    state.subscribe(STATE_PROPS.POSITION, () => {
+      positionData.textContent = getCurrentPositionTextContent(state);
+    }),
+
+    state.subscribe(STATE_PROPS.BUFFER_GAPS, () => {
+      bufferGapData.textContent = getCurrentBufferGapTextContent(state);
+    }),
+
+    state.subscribe(
+      STATE_PROPS.CONTENT_DURATION,
+      () => {
+        durationData.textContent = getCurrentDurationTextContent(state);
+      },
+    ),
+
+    state.subscribe(
+      STATE_PROPS.STATE_CHANGE_HISTORY,
+      () => {
+        initialLoadingTimeDataElt.textContent = getInitialLoadingTimeStr(
+          state.getCurrentState(STATE_PROPS.STATE_CHANGE_HISTORY) ?? [],
+        );
+      },
+    ),
+  ];
 
   return {
     body: generalInfoBodyElt,
     destroy() {
-      unsubscribeState();
-      unsubscribePosition();
-      unsubscribeBufferGaps();
-      unsubscribeDuration();
-      unsubscribeStateHistory();
+      unsubscribeFns.forEach(fn => fn());
     },
   };
 }

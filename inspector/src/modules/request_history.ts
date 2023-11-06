@@ -54,13 +54,13 @@ export default function generateRequestHistoryModule(
         let canStillReceivePending = true;
         const tableElt = strHtml`<table>
         <tr>
-          <th>TS</th>
-          <th>status</th>
-          <th>Duration (ms)</th>
-          <th>Period</th>
-          <th>Representation</th>
-          <th>Start Time (s)</th>
-          <th>Duration (s)</th>
+          <th>Log TS</th>
+          <th>Req. status</th>
+          <th>Req. duration (ms)</th>
+          <th>Period id</th>
+          <th>Representation id</th>
+          <th>Seg. start (s)</th>
+          <th>Seg. duration (s)</th>
         </tr>
       </table>`;
         for (let i = requestInfo?.length - 1; i >= 0; i--) {

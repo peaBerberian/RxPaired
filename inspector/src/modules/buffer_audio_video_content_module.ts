@@ -57,14 +57,14 @@ export default function generateAudioVideoBufferContentModule(
 
     const currentRangeTitle = strHtml`<span>Played range:</span>`;
     const currentRangeData = strHtml`<span class="emphasized">None</span>`;
-    const currentRangeRepInfoTitle = strHtml`<span>Played Representation:</span>`;
-    const currentRangeRepInfoData = strHtml`<span class="emphasized">None</span>`;
     const currentRangeElt = strHtml`<div>${[
       currentRangeTitle,
       currentRangeData,
     ]}</div>`;
     currentRangeData.style.marginLeft = "5px";
 
+    const currentRangeRepInfoTitle = strHtml`<span>Played Representation:</span>`;
+    const currentRangeRepInfoData = strHtml`<span class="emphasized">None</span>`;
     const currentRangeRepInfoElt = strHtml`<div>${[
       currentRangeRepInfoTitle,
       currentRangeRepInfoData,
@@ -74,21 +74,23 @@ export default function generateAudioVideoBufferContentModule(
 
     const hoveredRangeTitle = strHtml`<span>Hovered range:</span>`;
     const hoveredRangeData = strHtml`<span class="emphasized">Hover range to show</span>`;
-    hoveredRangeData.style.marginLeft = "5px";
     const hoveredRangeElt = strHtml`<div>${[
       hoveredRangeTitle,
       hoveredRangeData,
     ]}</div>`;
+    hoveredRangeData.style.marginLeft = "5px";
     hoveredRangeElt.style.marginTop = "5px";
 
     const hoveredRangeRepInfoTitle = strHtml`<span>Hovered Representation:</span>`;
-    const hoveredRangeRepInfoData = strHtml`<span class="emphasized">Hover range to show</span>`;
-    hoveredRangeRepInfoData.style.marginLeft = "5px";
+    const hoveredRangeRepInfoData =
+      strHtml`<span class="emphasized">Hover range to show</span>`;
     const hoveredRangeRepInfoElt = strHtml`<div>${[
       hoveredRangeRepInfoTitle,
       hoveredRangeRepInfoData,
     ]}</div>`;
+    hoveredRangeRepInfoData.style.marginLeft = "5px";
     hoveredRangeRepInfoElt.style.marginTop = "5px";
+
     const descriptionElt = strHtml`<div>${[
       currentRangeElt,
       currentRangeRepInfoElt,

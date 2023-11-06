@@ -28,7 +28,7 @@ export default function StateChangeInformationModule({
         <tr>
           <th>State</th>
           <th>TS</th>
-          <th>Diff since prev. (ms)</th>
+          <th>Time in prev. state (ms)</th>
         </tr>
       </table>`;
       for (let i = stateHistory?.length - 1; i >= 0; i--) {
