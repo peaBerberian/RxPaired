@@ -54,7 +54,7 @@ locally through our scripts. For that, you can do the following:
 
   1. Clone this repository by running in a terminal:
      ```sh
-     git clone https://github.com/peaBerberian/RxPaired.git
+     git clone https://github.com/peaBerberian/RxPaired.git --depth=1
      cd RxPaired
      ```
 
