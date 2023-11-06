@@ -290,8 +290,9 @@ deviceSocket.on("connection", (ws, req) => {
     writeLog("warn",
              "A device was already connected with this token. " +
              "Closing previous token user.", { tokenId });
-    existingToken.device.close();
+    const device = existingToken.device;
     existingToken.device = null;
+    device.close();
   }
   writeLog("log", "Received authorized device connection",
            { address: req.socket.remoteAddress, tokenId });
@@ -361,6 +362,9 @@ deviceSocket.on("connection", (ws, req) => {
     }
   });
   ws.on("close", () => {
+    if (existingToken.device !== ws) {
+      return;
+    }
     writeLog("log", "Device disconnected.",
              { address: req.socket.remoteAddress, tokenId });
     if (existingToken.pingInterval !== null) {
