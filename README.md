@@ -11,19 +11,27 @@ applications relying on the RxPlayer.
 
 Its key features are:
 
- - Minimal influence on the device's CPU and memory resources, when compared with
+ - Minimal influence on the device's CPU and memory resources when compared with
    Chrome's inspector and tools like weinre.
 
- - Ability to see in real time logs and useful playback indicators: which audio and
-   video qualities are buffered at which point, information on network requests for
-   media segments, evolution of the buffer's health etc.
+   _This debugger can run for multiple hours without a noticeable performance
+   impact, whereas chrome remote debugger lasted only a few minutes on the more
+   constrained devices._
 
- - Possibility to send JavaScript instructions to the device.
+ - Ability to see in real time logs and useful playback indicators: which audio and
+   video qualities are buffered at which position, information on network requests,
+   evolution of the buffer's health etc.
+
+ - Possibility to send any JavaScript instruction to the device.
 
  - "Time travel": Possibility to see the known playback conditions and its related
-   indicators at the time a log was sent, by clicking on its log on the inspector.
+   indicators at the time a log was sent.
 
- - Possibility to store/export logs and inspect them later.
+ - Possibility to store and export logs to either import them later or open them
+   in your own editor.
+
+ - It can be started even on production on any device and can be triggered
+   during runtime.
 
 
 ## Table Of Contents
@@ -37,8 +45,12 @@ Its key features are:
 <a class="anchor" href="#quick-start"></a>
 ## Quick start
 
-To quickly check if this tool can help you, you can start testing it by doing
-the following:
+RxPaired rely on three components: a script called the "client" running on the
+debugged device, an "inspector" page allowing remote debugging on your computer
+and a "server" managing connections between those two.
+
+To quickly check if this tool can help you, you can start all three of them
+locally through our scripts. For that, you can do the following:
 
   1. Clone this repository by running in a terminal:
      ```sh
@@ -56,7 +68,7 @@ the following:
      ```
 
   3. In a second terminal build both the client and inspector and serve them by
-     running those commands at the root of the RxPaired repository:
+     running those commands also at the root of the RxPaired repository:
      ```sh
      cd client
      npm install # install the RxPaired-client's dependencies
@@ -71,13 +83,13 @@ the following:
      node utils/static_http_server.mjs --include-inspector-files --include-client-file
      ```
 
-  4. Go to the inspector page which now should be at
+  4. In a web browser, go to the inspector page which now should be at
      [http://127.0.0.1:8695](http://127.0.0.1:8695) and validate an empty password
      if the page asks for one.
 
   5. For our test, we will use the `example` token. Define it in the corresponding
-     input and click on the button to use it now. You will be redirected to the
-     inspector main page.
+     input and click on the `Use now` button to enable it. You will be redirected
+     to a debugging page for that token.
 
   6. In another browser tab, go to [the RxPlayer demo
      page](https://developers.canal-plus.com/rx-player/) (any page with the
@@ -223,7 +235,7 @@ When what we wanted to do was just to recuperate logs from the device, this beca
 annoying.
 
 After initial even-lighter tools like a simple HTTP, then
-[WebSocket-based](https://gist.github.com/peaBerberian/5471f397b6dd3682bc5980d11cfc4421) 
+[WebSocket-based](https://gist.github.com/peaBerberian/5471f397b6dd3682bc5980d11cfc4421)
 log server, we noticed that we could do even better in terms of usability and usefulness
 than a simple log server: our own remote inspector tool, whose core goal would be
 lightweightness and, why not, also have the advantage of being specialized for the
