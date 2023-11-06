@@ -284,27 +284,18 @@ deviceSocket.on("connection", (ws, req) => {
     existingToken = token;
   }
 
+  checkers.checkNewDeviceLimit();
+
   if (existingToken.device !== null) {
     writeLog("warn",
              "A device was already connected with this token. " +
-             ". Closing all token users.", { tokenId });
-    ws.close();
-    activeTokensList.removeIndex(existingTokenIndex);
+             "Closing previous token user.", { tokenId });
     existingToken.device.close();
     existingToken.device = null;
-    while (existingToken.inspectors.length > 0) {
-      const inspectorInfo = existingToken.inspectors.pop();
-      if (inspectorInfo !== undefined) {
-        inspectorInfo.webSocket.close();
-        clearInterval(inspectorInfo.pingInterval);
-      }
-    }
-    return;
   }
   writeLog("log", "Received authorized device connection",
            { address: req.socket.remoteAddress, tokenId });
 
-  checkers.checkNewDeviceLimit();
 
   existingToken.device = ws;
   existingToken.pingInterval = setInterval(() => {
