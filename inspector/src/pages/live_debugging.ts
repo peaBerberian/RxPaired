@@ -169,6 +169,10 @@ export default function generateLiveDebuggingPage(
         /* eslint-disable @typescript-eslint/restrict-template-expressions */
         const signal = JSON.parse(event.data);
         if (signal.type === "Init") {
+          // This is always the first message sent by a given device.
+          // If this is not the first message from a WebSocket, then another
+          // device just took the token.
+          clearInspectorState(inspectorState);
           const initTimestamp = signal.value?.timestamp;
           if (typeof initTimestamp === "number") {
             const initLog = `${initTimestamp.toFixed(2)} [Init] Local-Date:${
@@ -338,15 +342,24 @@ function createClearAllButton(
   const buttonElt =
     strHtml`<button>${"🧹 Clear all logs"}</button>` as HTMLButtonElement;
   buttonElt.onclick = function () {
-    const allProps = Object.keys(inspectorState.getCurrentState()) as Array<
-      keyof InspectorState
-    >;
-    allProps.forEach((prop) => {
-      inspectorState.updateState(prop, UPDATE_TYPE.REPLACE, undefined);
-    });
-    inspectorState.commitUpdates();
+    clearInspectorState(inspectorState);
   };
   return buttonElt;
+}
+
+/**
+ * @param {Object} inspectorState
+ */
+function clearInspectorState(
+  inspectorState: ObservableState<InspectorState>,
+): void {
+  const allProps = Object.keys(inspectorState.getCurrentState()) as Array<
+  keyof InspectorState
+  >;
+  allProps.forEach((prop) => {
+    inspectorState.updateState(prop, UPDATE_TYPE.REPLACE, undefined);
+  });
+  inspectorState.commitUpdates();
 }
 
 /**
