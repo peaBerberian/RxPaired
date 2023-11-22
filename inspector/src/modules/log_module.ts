@@ -4,7 +4,8 @@ import { UPDATE_TYPE } from "../observable_state";
 import { ModuleObject, ModuleFunctionArguments } from "./index";
 
 const LOADING_LOGS_MSG = "Loading logs...";
-const NO_LOG_SELECTED_MSG = "No log selected (click on a log to time-travel to it).";
+const NO_LOG_SELECTED_MSG =
+  "No log selected (click on a log to time-travel to it).";
 const LOG_SELECTED_MSG = "A log has been time-travelled to.";
 
 /**
@@ -18,7 +19,19 @@ export default function LogModule({
    * A filter function allowing to filter only wanted logs.
    * `null` if no filter is active.
    */
-  let currentFilter: ((input: string) => boolean) | null = null;
+  const filterObject: {
+    minTimeStamp: number;
+    maxTimeStamp: number;
+    textFilter: null | {
+      text: string;
+      caseSensitive: boolean;
+      regex: boolean;
+    };
+  } = {
+    minTimeStamp: 0,
+    maxTimeStamp: Infinity,
+    textFilter: null,
+  };
 
   /**
    * Log element's header which is going to show various information on what is
@@ -107,7 +120,6 @@ export default function LogModule({
   timeRangeInputElt.style.fontSize = "0.9em";
   timeRangeInputElt.style.display = "flex";
   timeRangeInputElt.style.margin = "10px 0px 0px 0px";
-  timeRangeInputElt.style.padding = "0px 5px";
   timeRangeInputElt.style.overflow = "hidden";
   timeRangeInputElt.style.justifyContent = "space-between";
 
@@ -128,7 +140,7 @@ export default function LogModule({
     () => {
       areSearchCaseSensitive = false;
       refreshFilters();
-    },
+    }
   );
 
   const [regexFilterButton, unsubRegexBtn] = createFilterButtonElement(
@@ -142,7 +154,7 @@ export default function LogModule({
     () => {
       areSearchRegex = false;
       refreshFilters();
-    },
+    }
   );
 
   /** Text input element for filtering logs. */
@@ -173,22 +185,18 @@ export default function LogModule({
           ? "#333"
           : "#f2f2f2";
     },
-    true,
+    true
   );
   allFiltersElt.appendChild(timeRangeInputElt);
   allFiltersElt.appendChild(filterFlexElt);
 
   state.subscribe(STATE_PROPS.LOGS_HISTORY, onLogsHistoryChange, true);
-  state.subscribe(STATE_PROPS.SELECTED_LOG_INDEX, refreshSelectedLog, true);
+  state.subscribe(STATE_PROPS.SELECTED_LOG_INDEX, onSelectedLogChange, true);
 
   logBodyElt.appendChild(logContainerElt);
 
   return {
-    body: strHtml`<div>${[
-      logHeaderElt,
-      allFiltersElt,
-      logBodyElt,
-    ]}</div>`,
+    body: strHtml`<div>${[logHeaderElt, allFiltersElt, logBodyElt]}</div>`,
     clear() {
       unsubCaseBtn();
       unsubRegexBtn();
@@ -200,13 +208,13 @@ export default function LogModule({
       timeoutInterval = undefined;
       clearTimeout(timeoutInterval);
       state.unsubscribe(STATE_PROPS.LOGS_HISTORY, onLogsHistoryChange);
-      state.unsubscribe(STATE_PROPS.SELECTED_LOG_INDEX, refreshSelectedLog);
+      state.unsubscribe(STATE_PROPS.SELECTED_LOG_INDEX, onSelectedLogChange);
 
       if (state.getCurrentState(STATE_PROPS.SELECTED_LOG_INDEX) !== undefined) {
         state.updateState(
           STATE_PROPS.SELECTED_LOG_INDEX,
           UPDATE_TYPE.REPLACE,
-          undefined,
+          undefined
         );
         state.commitUpdates();
       }
@@ -215,11 +223,7 @@ export default function LogModule({
 
   /** Display header for when no logs are yet received. */
   function displayNoLogHeader() {
-    if (currentFilter === null) {
-      logHeaderElt.textContent = "No log received yet.";
-    } else {
-      logHeaderElt.textContent = "No log corresponding to that filter.";
-    }
+    logHeaderElt.textContent = "No log.";
     logHeaderElt.classList.remove("important-bg");
   }
 
@@ -245,7 +249,7 @@ export default function LogModule({
       state.updateState(
         STATE_PROPS.SELECTED_LOG_INDEX,
         UPDATE_TYPE.REPLACE,
-        undefined,
+        undefined
       );
       state.commitUpdates();
       if (selectedElt !== null) {
@@ -285,7 +289,7 @@ export default function LogModule({
    */
   function onLogsHistoryChange(
     updateType: UPDATE_TYPE | "initial",
-    values: string[] | undefined,
+    values: string[] | undefined
   ) {
     if (values === undefined) {
       nextLogIdx = 0;
@@ -304,10 +308,14 @@ export default function LogModule({
       nextLogIdx++,
     ]);
     let filtered;
-    if (currentFilter === null) {
+    if (
+      filterObject.minTimeStamp === 0 &&
+      filterObject.maxTimeStamp === Infinity &&
+      filterObject.textFilter === null
+    ) {
       filtered = numberedValues;
     } else {
-      const filter = currentFilter;
+      const filter = createFilterFunction();
       filtered = numberedValues.filter(([str]) => filter(str));
     }
     logsPending = logsPending.concat(filtered);
@@ -323,7 +331,7 @@ export default function LogModule({
    * This Callback is also mainly here to better handle conflicts between multiple
    * concurrent LogModules.
    */
-  function refreshSelectedLog() {
+  function onSelectedLogChange() {
     const hasLogIdxSelected =
       state.getCurrentState(STATE_PROPS.SELECTED_LOG_INDEX) !== undefined;
     const headerType = getHeaderType();
@@ -363,8 +371,14 @@ export default function LogModule({
     }
     logsPending = logsPending.slice(500);
     displayLoadingHeader();
+    const selectedLogIdx = state.getCurrentState(
+      STATE_PROPS.SELECTED_LOG_INDEX
+    );
     for (const log of logsToDisplay) {
       const logElt = createLogElement(log[0]);
+      if (log[1] === selectedLogIdx) {
+        logElt.classList.add("focused-bg");
+      }
       logElt.dataset.logId = String(log[1]);
       logElt.onclick = toggleCurrentElementSelection;
       while (logContainerElt.children.length > MAX_DISPLAYED_LOG_ELEMENTS - 1) {
@@ -377,7 +391,7 @@ export default function LogModule({
       timeoutInterval = setTimeout(displayNextPendingLogs, 50);
     } else {
       const headerType = getHeaderType();
-      if (logContainerElt.childNodes.length === 0) {
+      if (selectedElt === null && logContainerElt.childNodes.length === 0) {
         if (headerType !== "no-log") {
           displayNoLogHeader();
         }
@@ -427,13 +441,13 @@ export default function LogModule({
       selectedElt = null;
     }
     const selectedLogIdx = state.getCurrentState(
-      STATE_PROPS.SELECTED_LOG_INDEX,
+      STATE_PROPS.SELECTED_LOG_INDEX
     );
     if (selectedLogIdx === currentLogIdx) {
       state.updateState(
         STATE_PROPS.SELECTED_LOG_INDEX,
         UPDATE_TYPE.REPLACE,
-        undefined,
+        undefined
       );
       state.commitUpdates();
       return;
@@ -442,7 +456,7 @@ export default function LogModule({
     state.updateState(
       STATE_PROPS.SELECTED_LOG_INDEX,
       UPDATE_TYPE.REPLACE,
-      currentLogIdx,
+      currentLogIdx
     );
     selectedElt = logElt;
 
@@ -458,54 +472,77 @@ export default function LogModule({
     if (isNaN(minRange) || minRange <= 0) {
       minRange = 0;
     }
-    let maxRange: number = maximumTimeInputElt.value === "" ?
-      Infinity :
-      +maximumTimeInputElt.value;
+    let maxRange: number =
+      maximumTimeInputElt.value === "" ? Infinity : +maximumTimeInputElt.value;
     if (isNaN(maxRange)) {
       maxRange = Infinity;
     }
+    const text = logFilterInputElt.value ?? "";
+    if (
+      filterObject.minTimeStamp === minRange &&
+      filterObject.maxTimeStamp === maxRange &&
+      (text.length === 0
+        ? filterObject.textFilter === null
+        : filterObject.textFilter?.text === text &&
+          filterObject.textFilter.caseSensitive === areSearchCaseSensitive &&
+          filterObject.textFilter.regex === areSearchRegex)
+    ) {
+      return; // Nothing changed
+    }
+    filterObject.minTimeStamp = minRange;
+    filterObject.maxTimeStamp = maxRange;
+    if (text === "") {
+      filterObject.textFilter = null;
+    } else {
+      filterObject.textFilter = {
+        text,
+        caseSensitive: areSearchCaseSensitive,
+        regex: areSearchRegex,
+      };
+    }
+    onLogsHistoryChange(
+      "initial",
+      state.getCurrentState(STATE_PROPS.LOGS_HISTORY) ?? []
+    );
+  }
+
+  function createFilterFunction(): (input: string) => boolean {
     let checkLogDate: (input: string) => boolean;
-    if (minRange === 0) {
-      if (maxRange === Infinity) {
+    if (filterObject.minTimeStamp === 0) {
+      if (filterObject.maxTimeStamp === Infinity) {
         checkLogDate = () => true;
       } else {
-        checkLogDate = (input: string) => maxRange >= parseFloat(input);
+        checkLogDate = (input: string) =>
+          filterObject.maxTimeStamp >= parseFloat(input);
       }
-    } else if (maxRange === Infinity) {
-      checkLogDate = (input: string) => minRange <= parseFloat(input);
+    } else if (filterObject.maxTimeStamp === Infinity) {
+      checkLogDate = (input: string) =>
+        filterObject.minTimeStamp <= parseFloat(input);
     } else {
       checkLogDate = (input: string) => {
         const timestamp = parseFloat(input);
-        return minRange <= timestamp && maxRange >= timestamp;
+        return (
+          filterObject.minTimeStamp <= timestamp &&
+          filterObject.maxTimeStamp >= timestamp
+        );
       };
     }
-    const text = logFilterInputElt.value;
-    if (text !== null && text.length > 0) {
-      if (areSearchRegex) {
-        const flags = areSearchCaseSensitive ? "i" : undefined;
+    if (filterObject.textFilter !== null) {
+      const text = filterObject.textFilter.text;
+      if (filterObject.textFilter.regex) {
+        const flags = filterObject.textFilter.caseSensitive ? "i" : undefined;
         const reg = new RegExp(text, flags);
-        currentFilter = (input: string) =>
-          checkLogDate(input) && reg.test(input);
-      } else if (areSearchCaseSensitive) {
-        currentFilter = (input: string) =>
-          checkLogDate(input) && input.includes(text);
+        return (input: string) => checkLogDate(input) && reg.test(input);
+      } else if (filterObject.textFilter.caseSensitive) {
+        return (input: string) => checkLogDate(input) && input.includes(text);
       } else {
         const toLower = text.toLowerCase();
-        currentFilter = (input: string) =>
+        return (input: string) =>
           checkLogDate(input) && input.toLowerCase().includes(toLower);
       }
-      onLogsHistoryChange(
-        "initial",
-        state.getCurrentState(STATE_PROPS.LOGS_HISTORY) ?? [],
-      );
     } else {
-      currentFilter = checkLogDate;
-      onLogsHistoryChange(
-        "initial",
-        state.getCurrentState(STATE_PROPS.LOGS_HISTORY) ?? [],
-      );
+      return checkLogDate;
     }
-    refreshSelectedLog();
   }
 
   /**
@@ -530,7 +567,7 @@ export default function LogModule({
     titleDisabled: string,
     titleEnabled: string,
     onEnabled: () => void,
-    onDisabled: () => void,
+    onDisabled: () => void
   ): [HTMLElement, () => void] {
     let isDisabled = true;
     let isDarkMode =
@@ -608,11 +645,11 @@ export function createLogElement(logTxt: string): HTMLElement {
     if (indexOfNamespaceEnd > 0) {
       namespace = logTxt.substring(
         indexOfNamespaceStart + 1,
-        indexOfNamespaceEnd,
+        indexOfNamespaceEnd
       );
       formattedMsg = logTxt.replace(
         /\n/g,
-        "\n" + " ".repeat(indexOfNamespaceEnd + 2),
+        "\n" + " ".repeat(indexOfNamespaceEnd + 2)
       );
     }
   }
