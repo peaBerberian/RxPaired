@@ -138,7 +138,7 @@ export default function LogModule({
   filterFlexElt.appendChild(logFilterInputElt);
 
   state.subscribe(STATE_PROPS.LOGS_HISTORY, onLogsHistoryChange, true);
-  state.subscribe(STATE_PROPS.SELECTED_LOG_INDEX, onSelectedLogChanges, true);
+  state.subscribe(STATE_PROPS.SELECTED_LOG_INDEX, refreshSelectedLog, true);
 
   logBodyElt.appendChild(logContainerElt);
   return {
@@ -154,7 +154,7 @@ export default function LogModule({
       timeoutInterval = undefined;
       clearTimeout(timeoutInterval);
       state.unsubscribe(STATE_PROPS.LOGS_HISTORY, onLogsHistoryChange);
-      state.unsubscribe(STATE_PROPS.SELECTED_LOG_INDEX, onSelectedLogChanges);
+      state.unsubscribe(STATE_PROPS.SELECTED_LOG_INDEX, refreshSelectedLog);
 
       if (state.getCurrentState(STATE_PROPS.SELECTED_LOG_INDEX) !== undefined) {
         state.updateState(
@@ -275,7 +275,7 @@ export default function LogModule({
    * This Callback is also mainly here to better handle conflicts between multiple
    * concurrent LogModules.
    */
-  function onSelectedLogChanges() {
+  function refreshSelectedLog() {
     const hasLogIdxSelected =
       state.getCurrentState(STATE_PROPS.SELECTED_LOG_INDEX) !== undefined;
     const headerType = getHeaderType();
@@ -430,6 +430,7 @@ export default function LogModule({
         state.getCurrentState(STATE_PROPS.LOGS_HISTORY) ?? [],
       );
     }
+    refreshSelectedLog();
   }
 
   /**
