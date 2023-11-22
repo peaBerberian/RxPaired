@@ -78,21 +78,44 @@ export default function LogModule({
   /** If `true`, inputted search string are Regular Expression. */
   let areSearchRegex = false;
 
+  const minimumTimeInputElt = strHtml`<input
+    type="input"
+    placeholder="0"
+    value="0"
+    class="log-time-range"
+    style="margin: 0px 5px"
+  />` as HTMLInputElement;
+  const maximumTimeInputElt = strHtml`<input
+    type="input"
+    class="log-time-range"
+    style="margin: 0px 5px"
+  />` as HTMLInputElement;
+  minimumTimeInputElt.oninput = refreshFilters;
+  minimumTimeInputElt.onchange = refreshFilters;
+  maximumTimeInputElt.oninput = refreshFilters;
+  maximumTimeInputElt.onchange = refreshFilters;
+
+  /** Text input element for only showing a sub-time-range of the logs. */
+  const timeRangeInputElt = strHtml`<div class="log-wrapper">
+    <span>
+      Min. timestamp: ${minimumTimeInputElt}
+    </span>
+    <span>
+      Max. timestamp (empty for no limit): ${maximumTimeInputElt}
+    </span>
+  </div>` as HTMLInputElement;
+  timeRangeInputElt.style.fontSize = "0.9em";
+  timeRangeInputElt.style.display = "flex";
+  timeRangeInputElt.style.margin = "10px 0px 0px 0px";
+  timeRangeInputElt.style.padding = "0px 5px";
+  timeRangeInputElt.style.overflow = "hidden";
+  timeRangeInputElt.style.justifyContent = "space-between";
+
   /** Wrapper elements allowing to filter logs. */
   const filterFlexElt = strHtml`<div class="log-wrapper"/>`;
   filterFlexElt.style.display = "flex";
   filterFlexElt.style.height = "40px";
   filterFlexElt.style.margin = "5px 0px";
-  const unsubFilterFlexStyle = configState.subscribe(
-    STATE_PROPS.CSS_MODE,
-    () => {
-      filterFlexElt.style.backgroundColor =
-        configState.getCurrentState(STATE_PROPS.CSS_MODE) === "dark"
-          ? "#333"
-          : "#f2f2f2";
-    },
-    true,
-  );
 
   const [caseSensitiveBtn, unsubCaseBtn] = createFilterButtonElement(
     "Aa",
@@ -137,16 +160,39 @@ export default function LogModule({
   filterFlexElt.appendChild(regexFilterButton);
   filterFlexElt.appendChild(logFilterInputElt);
 
+  const allFiltersElt = strHtml`<div>
+    <div style="border-bottom: 1px dotted;">Filters</div>
+  </div>`;
+  allFiltersElt.style.padding = "5px";
+  allFiltersElt.style.marginTop = "5px";
+  const unsubFiltersStyle = configState.subscribe(
+    STATE_PROPS.CSS_MODE,
+    () => {
+      allFiltersElt.style.backgroundColor =
+        configState.getCurrentState(STATE_PROPS.CSS_MODE) === "dark"
+          ? "#333"
+          : "#f2f2f2";
+    },
+    true,
+  );
+  allFiltersElt.appendChild(timeRangeInputElt);
+  allFiltersElt.appendChild(filterFlexElt);
+
   state.subscribe(STATE_PROPS.LOGS_HISTORY, onLogsHistoryChange, true);
   state.subscribe(STATE_PROPS.SELECTED_LOG_INDEX, refreshSelectedLog, true);
 
   logBodyElt.appendChild(logContainerElt);
+
   return {
-    body: strHtml`<div>${[logHeaderElt, filterFlexElt, logBodyElt]}</div>`,
+    body: strHtml`<div>${[
+      logHeaderElt,
+      allFiltersElt,
+      logBodyElt,
+    ]}</div>`,
     clear() {
       unsubCaseBtn();
       unsubRegexBtn();
-      unsubFilterFlexStyle();
+      unsubFiltersStyle();
       clearLogs();
     },
     destroy() {
@@ -192,7 +238,9 @@ export default function LogModule({
   /** Display header for when a log is currently selected. */
   function displayLogSelectedHeader() {
     logHeaderElt.textContent = LOG_SELECTED_MSG;
-    const clickSpan = strHtml`<span class="emphasized">${"Click on the log again or here to unselect"}</span>`;
+    const clickSpan = strHtml`<span class="emphasized">${
+      "Click on the log again or here to unselect"
+    }</span>`;
     clickSpan.onclick = function () {
       state.updateState(
         STATE_PROPS.SELECTED_LOG_INDEX,
@@ -406,25 +454,52 @@ export default function LogModule({
    * Reapply filters on what is currently in `logFilterInputElt.value`.
    */
   function refreshFilters() {
+    let minRange: number = +minimumTimeInputElt.value;
+    if (isNaN(minRange) || minRange <= 0) {
+      minRange = 0;
+    }
+    let maxRange: number = maximumTimeInputElt.value === "" ?
+      Infinity :
+      +maximumTimeInputElt.value;
+    if (isNaN(maxRange)) {
+      maxRange = Infinity;
+    }
+    let checkLogDate: (input: string) => boolean;
+    if (minRange === 0) {
+      if (maxRange === Infinity) {
+        checkLogDate = () => true;
+      } else {
+        checkLogDate = (input: string) => maxRange >= parseFloat(input);
+      }
+    } else if (maxRange === Infinity) {
+      checkLogDate = (input: string) => minRange <= parseFloat(input);
+    } else {
+      checkLogDate = (input: string) => {
+        const timestamp = parseFloat(input);
+        return minRange <= timestamp && maxRange >= timestamp;
+      };
+    }
     const text = logFilterInputElt.value;
     if (text !== null && text.length > 0) {
       if (areSearchRegex) {
         const flags = areSearchCaseSensitive ? "i" : undefined;
         const reg = new RegExp(text, flags);
-        currentFilter = (input: string) => reg.test(input);
+        currentFilter = (input: string) =>
+          checkLogDate(input) && reg.test(input);
       } else if (areSearchCaseSensitive) {
-        currentFilter = (input: string) => input.includes(text);
+        currentFilter = (input: string) =>
+          checkLogDate(input) && input.includes(text);
       } else {
         const toLower = text.toLowerCase();
         currentFilter = (input: string) =>
-          input.toLowerCase().includes(toLower);
+          checkLogDate(input) && input.toLowerCase().includes(toLower);
       }
       onLogsHistoryChange(
         "initial",
         state.getCurrentState(STATE_PROPS.LOGS_HISTORY) ?? [],
       );
     } else {
-      currentFilter = null;
+      currentFilter = checkLogDate;
       onLogsHistoryChange(
         "initial",
         state.getCurrentState(STATE_PROPS.LOGS_HISTORY) ?? [],
