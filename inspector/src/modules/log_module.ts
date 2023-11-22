@@ -377,7 +377,11 @@ export default function LogModule({
     for (const log of logsToDisplay) {
       const logElt = createLogElement(log[0]);
       if (log[1] === selectedLogIdx) {
+        if (selectedElt !== null) {
+          selectedElt.classList.remove("focused-bg");
+        }
         logElt.classList.add("focused-bg");
+        selectedElt = logElt;
       }
       logElt.dataset.logId = String(log[1]);
       logElt.onclick = toggleCurrentElementSelection;
