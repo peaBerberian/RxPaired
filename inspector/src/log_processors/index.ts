@@ -357,27 +357,21 @@ function processPlayerStateChangeLog(
         updateValue: undefined,
       });
       stateUpdates.push({
-        property: STATE_PROPS.STATE_CHANGE_HISTORY,
-        updateType: UPDATE_TYPE.REPLACE,
-        updateValue: undefined,
-      });
-      stateUpdates.push({
         property: STATE_PROPS.MANIFEST_PARSING_TIME_HISTORY,
         updateType: UPDATE_TYPE.REPLACE,
         updateValue: undefined,
       });
-    } else {
-      stateUpdates.push({
-        property: STATE_PROPS.STATE_CHANGE_HISTORY,
-        updateType: UPDATE_TYPE.PUSH,
-        updateValue: [
-          {
-            timestamp: parseFloat(logTxt),
-            state: playerState,
-          },
-        ],
-      });
     }
+    stateUpdates.push({
+      property: STATE_PROPS.STATE_CHANGE_HISTORY,
+      updateType: UPDATE_TYPE.PUSH,
+      updateValue: [
+        {
+          timestamp: parseFloat(logTxt),
+          state: playerState,
+        },
+      ],
+    });
     if (
       playerState === "STOPPED" ||
       playerState === "RELOADING" ||
