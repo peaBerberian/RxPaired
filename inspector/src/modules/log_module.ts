@@ -52,22 +52,9 @@ export default function LogModule({
    */
   const logContainerElt = strHtml`<div class="log-container module-body"/>`;
 
-  // When pushing a LOT (thousands) of logs at once, the page can become
-  // unresponsive multiple seconds.
-  // To avoid a pause with no possibility of user interaction in the mean time,
-  // logs are only processed by groups of 500, with a `setTimeout` between them.
-
   /**
-   * Logs that are not yet displayed as a tuple of:
-   *   1. The log message
-   *   2. The log idx in the message in the LOGS_HISTORY array.
-   */
-  let logsPending: Array<[string, number]> = [];
-
-  /**
-   * If set, a `setTimeout` has been called to process the next group of logs
-   * in `logsPending`. Log processing is only done by groups to avoid the page
-   * being unresponsive for too long.
+   * If set, a `setTimeout` has been called to process logs by groups to prevent
+   * the page from being noticeably unresponsive.
    *
    * Should be set to `undefined` if no timeout is pending.
    */
@@ -204,9 +191,8 @@ export default function LogModule({
       clearLogs();
     },
     destroy() {
-      logsPending = [];
-      timeoutInterval = undefined;
       clearTimeout(timeoutInterval);
+      timeoutInterval = undefined;
       state.unsubscribe(STATE_PROPS.LOGS_HISTORY, onLogsHistoryChange);
       state.unsubscribe(STATE_PROPS.SELECTED_LOG_INDEX, onSelectedLogChange);
 
@@ -242,9 +228,9 @@ export default function LogModule({
   /** Display header for when a log is currently selected. */
   function displayLogSelectedHeader() {
     logHeaderElt.textContent = LOG_SELECTED_MSG;
-    const clickSpan = strHtml`<span class="emphasized">${
-      "Click on the log again or here to unselect"
-    }</span>`;
+    const clickSpan = strHtml`<span class="emphasized">${[
+      "Click on the log again or here to unselect",
+    ]}</span>`;
     clickSpan.onclick = function () {
       state.updateState(
         STATE_PROPS.SELECTED_LOG_INDEX,
@@ -293,13 +279,24 @@ export default function LogModule({
   ) {
     if (values === undefined) {
       nextLogIdx = 0;
-      logsPending = [];
+      if (timeoutInterval !== undefined) {
+        clearTimeout(timeoutInterval);
+        timeoutInterval = undefined;
+      }
       clearLogs();
       return;
     }
+
+    /** Set to `true` when we're re-initializing all logs displayed. */
+    let isResetting = false;
+
     if (updateType === UPDATE_TYPE.REPLACE || updateType === "initial") {
+      isResetting = true;
+      if (timeoutInterval !== undefined) {
+        clearTimeout(timeoutInterval);
+        timeoutInterval = undefined;
+      }
       nextLogIdx = 0;
-      logsPending = [];
       clearLogs();
     }
 
@@ -318,12 +315,7 @@ export default function LogModule({
       const filter = createFilterFunction();
       filtered = numberedValues.filter(([str]) => filter(str));
     }
-    logsPending = logsPending.concat(filtered);
-    if (timeoutInterval !== undefined) {
-      return;
-    } else {
-      displayNextPendingLogs();
-    }
+    displayNewLogs(filtered, isResetting);
   }
 
   /**
@@ -356,25 +348,63 @@ export default function LogModule({
   }
 
   /**
-   * Display next group of logs in the `logsPending` array.
+   * Display logs given in arguments in the log container.
+   * @param {Array.<number|string>} newLogs - Logs that are not yet displayed
+   * as a tuple of:
+   *   1. The log message
+   *   2. The log idx in the message in the LOGS_HISTORY array.
+   * @param {boolean} isResetting - To set to `true` if you're currently
+   * re-initializing all displayed logs. This will browse logs starting from the
+   * last element to the first one and append each one in this reverse order at
+   * the start of the log container. It might moreover do so in multiple
+   * time-separated chunks.
+   * Doing this will hugely improve UI responsiveness (due to its potentially
+   * time-divided nature) and the rendering aspect when a lot of logs is added
+   * (as focus is usually set on the last logs which would there have been added
+   * at the beginning of the call) but can only worker when re-initializing
+   * logs. This can e.g. be set when setting a filter or when post-debugging.
    */
-  function displayNextPendingLogs(): void {
-    timeoutInterval = undefined;
-    if (logsPending.length > MAX_DISPLAYED_LOG_ELEMENTS) {
-      logsPending = logsPending.slice(MAX_DISPLAYED_LOG_ELEMENTS);
+  function displayNewLogs(
+    newLogs: Array<[string, number]>,
+    isResetting: boolean
+  ): void {
+    if (isResetting && timeoutInterval !== undefined) {
+      clearTimeout(timeoutInterval);
+      timeoutInterval = undefined;
     }
 
     const wasScrolledToBottom = isLogBodyScrolledToBottom();
-    const logsToDisplay = logsPending.slice(0, 500);
+    let logsToDisplay =
+      newLogs.length > MAX_DISPLAYED_LOG_ELEMENTS
+        ? newLogs.slice(MAX_DISPLAYED_LOG_ELEMENTS)
+        : newLogs;
+    if (isResetting && logsToDisplay.length > 500) {
+      logsToDisplay = logsToDisplay.slice(logsToDisplay.length - 500);
+      const nextIterationLogs = logsToDisplay.slice(
+        0,
+        logsToDisplay.length - 500
+      );
+      timeoutInterval = setTimeout(
+        () => displayNewLogs(nextIterationLogs, isResetting),
+        50
+      );
+    }
+
     if (logsToDisplay.length >= 10) {
+      // Deattach parent of where the logs will be added before adding such logs
+      // in a loop as this seems to improve performance on most browsers.
       logBodyElt.innerHTML = "";
     }
-    logsPending = logsPending.slice(500);
-    displayLoadingHeader();
+
     const selectedLogIdx = state.getCurrentState(
       STATE_PROPS.SELECTED_LOG_INDEX
     );
-    for (const log of logsToDisplay) {
+    displayLoadingHeader();
+    for (let logIdx = 0; logIdx < logsToDisplay.length; logIdx++) {
+      const actualLogIdx = isResetting
+        ? logsToDisplay.length - (logIdx + 1)
+        : logIdx;
+      const log = logsToDisplay[actualLogIdx];
       const logElt = createLogElement(log[0]);
       if (log[1] === selectedLogIdx) {
         if (selectedElt !== null) {
@@ -385,15 +415,25 @@ export default function LogModule({
       }
       logElt.dataset.logId = String(log[1]);
       logElt.onclick = toggleCurrentElementSelection;
-      while (logContainerElt.children.length > MAX_DISPLAYED_LOG_ELEMENTS - 1) {
-        logContainerElt.removeChild(logContainerElt.children[0]);
+      if (logContainerElt.children.length >= MAX_DISPLAYED_LOG_ELEMENTS) {
+        if (timeoutInterval !== undefined) {
+          clearTimeout(timeoutInterval);
+          timeoutInterval = undefined;
+        }
+        if (isResetting) {
+          break;
+        } else {
+          logContainerElt.removeChild(logContainerElt.children[0]);
+        }
       }
-      logContainerElt.appendChild(logElt);
+      if (isResetting) {
+        logContainerElt.prepend(logElt);
+      } else {
+        logContainerElt.appendChild(logElt);
+      }
     }
 
-    if (logsPending.length > 0) {
-      timeoutInterval = setTimeout(displayNextPendingLogs, 50);
-    } else {
+    if (timeoutInterval !== undefined) {
       const headerType = getHeaderType();
       if (selectedElt === null && logContainerElt.childNodes.length === 0) {
         if (headerType !== "no-log") {
@@ -625,7 +665,6 @@ export default function LogModule({
    * modifying the complete log history.
    */
   function clearLogs() {
-    logsPending = [];
     clearTimeout(timeoutInterval);
     timeoutInterval = undefined;
     logContainerElt.innerHTML = "";
