@@ -379,6 +379,7 @@ export default function LogModule({
         ? newLogs.slice(MAX_DISPLAYED_LOG_ELEMENTS)
         : newLogs;
     if (isResetting && logsToDisplay.length > 500) {
+      displayLoadingHeader();
       logsToDisplay = logsToDisplay.slice(logsToDisplay.length - 500);
       const nextIterationLogs = logsToDisplay.slice(
         0,
@@ -399,7 +400,6 @@ export default function LogModule({
     const selectedLogIdx = state.getCurrentState(
       STATE_PROPS.SELECTED_LOG_INDEX
     );
-    displayLoadingHeader();
     for (let logIdx = 0; logIdx < logsToDisplay.length; logIdx++) {
       const actualLogIdx = isResetting
         ? logsToDisplay.length - (logIdx + 1)
