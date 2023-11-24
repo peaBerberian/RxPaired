@@ -574,7 +574,7 @@ export default function LogModule({
     if (filterObject.textFilter !== null) {
       const text = filterObject.textFilter.text;
       if (filterObject.textFilter.regex) {
-        const flags = filterObject.textFilter.caseSensitive ? "i" : undefined;
+        const flags = filterObject.textFilter.caseSensitive ? undefined : "i";
         const reg = new RegExp(text, flags);
         return (input: string) => checkLogDate(input) && reg.test(input);
       } else if (filterObject.textFilter.caseSensitive) {
