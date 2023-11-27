@@ -1,5 +1,5 @@
 import strHtml from "str-html";
-import { MAX_DISPLAYED_LOG_ELEMENTS, STATE_PROPS } from "../constants";
+import { DEFAULT_MAX_DISPLAYED_LOG_ELEMENTS, STATE_PROPS } from "../constants";
 import { UPDATE_TYPE } from "../observable_state";
 import { ModuleObject, ModuleFunctionArguments } from "./index";
 
@@ -32,6 +32,8 @@ export default function LogModule({
     maxTimeStamp: Infinity,
     textFilter: null,
   };
+
+  let maxNbDisplayedLogs = DEFAULT_MAX_DISPLAYED_LOG_ELEMENTS;
 
   /**
    * Log element's header which is going to show various information on what is
@@ -90,10 +92,18 @@ export default function LogModule({
     class="log-time-range"
     style="margin: 0px 5px"
   />` as HTMLInputElement;
+  const maximumNbLogsInputElt = strHtml`<input
+    type="input"
+    class="log-time-range"
+    style="margin: 0px 5px"
+    value=${maxNbDisplayedLogs}
+  />` as HTMLInputElement;
   minimumTimeInputElt.oninput = refreshFilters;
   minimumTimeInputElt.onchange = refreshFilters;
   maximumTimeInputElt.oninput = refreshFilters;
   maximumTimeInputElt.onchange = refreshFilters;
+  maximumNbLogsInputElt.oninput = onMaximumNbLogsInputChange;
+  maximumNbLogsInputElt.onchange = onMaximumNbLogsInputChange
 
   /** Text input element for only showing a sub-time-range of the logs. */
   const timeRangeInputElt = strHtml`<div class="log-wrapper">
@@ -102,6 +112,9 @@ export default function LogModule({
     </span>
     <span>
       Max. timestamp (empty for no limit): ${maximumTimeInputElt}
+    </span>
+    <span>
+      Max. displayed logs: ${maximumNbLogsInputElt}
     </span>
   </div>` as HTMLInputElement;
   timeRangeInputElt.style.fontSize = "0.9em";
@@ -375,8 +388,8 @@ export default function LogModule({
 
     const wasScrolledToBottom = isLogBodyScrolledToBottom();
     let logsToDisplay =
-      newLogs.length > MAX_DISPLAYED_LOG_ELEMENTS
-        ? newLogs.slice(MAX_DISPLAYED_LOG_ELEMENTS)
+      newLogs.length > maxNbDisplayedLogs
+        ? newLogs.slice(maxNbDisplayedLogs)
         : newLogs;
     if (isResetting && logsToDisplay.length > 500) {
       const nextIterationLogs = logsToDisplay.slice(
@@ -417,7 +430,7 @@ export default function LogModule({
       }
       logElt.dataset.logId = String(log[1]);
       logElt.onclick = toggleCurrentElementSelection;
-      if (logContainerElt.children.length >= MAX_DISPLAYED_LOG_ELEMENTS) {
+      if (logContainerElt.children.length >= maxNbDisplayedLogs) {
         if (timeoutInterval !== undefined) {
           clearTimeout(timeoutInterval);
           timeoutInterval = undefined;
@@ -589,6 +602,24 @@ export default function LogModule({
     } else {
       return checkLogDate;
     }
+  }
+
+  function onMaximumNbLogsInputChange() {
+    let newMax =
+      maximumNbLogsInputElt.value === ""
+        ? DEFAULT_MAX_DISPLAYED_LOG_ELEMENTS
+        : +maximumNbLogsInputElt.value;
+    if (isNaN(newMax)) {
+      newMax = DEFAULT_MAX_DISPLAYED_LOG_ELEMENTS;
+    }
+    if (newMax === maxNbDisplayedLogs) {
+      return;
+    }
+    maxNbDisplayedLogs = newMax;
+    onLogsHistoryChange(
+      "initial",
+      state.getCurrentState(STATE_PROPS.LOGS_HISTORY) ?? []
+    );
   }
 
   /**

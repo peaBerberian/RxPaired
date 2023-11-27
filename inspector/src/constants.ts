@@ -14,7 +14,7 @@ export const SERVER_URL = _INSPECTOR_DEBUGGER_URL_;
 export const CLIENT_SCRIPT_URL = __DEVICE_SCRIPT_URL__;
 
 /** Maximum number of individual logs that will be in the DOM at any given time. */
-export const MAX_DISPLAYED_LOG_ELEMENTS = 9001;
+export const DEFAULT_MAX_DISPLAYED_LOG_ELEMENTS = 9001;
 
 /** Key used in local storage to store module-related configuration. */
 export const MODULE_CONFIG_LS_ITEM = "module-config";
