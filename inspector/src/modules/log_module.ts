@@ -379,16 +379,18 @@ export default function LogModule({
         ? newLogs.slice(MAX_DISPLAYED_LOG_ELEMENTS)
         : newLogs;
     if (isResetting && logsToDisplay.length > 500) {
-      displayLoadingHeader();
-      logsToDisplay = logsToDisplay.slice(logsToDisplay.length - 500);
       const nextIterationLogs = logsToDisplay.slice(
         0,
         logsToDisplay.length - 500
       );
-      timeoutInterval = setTimeout(
-        () => displayNewLogs(nextIterationLogs, isResetting),
-        50
-      );
+      if (nextIterationLogs.length > 0) {
+        displayLoadingHeader();
+        timeoutInterval = setTimeout(() => {
+          timeoutInterval = undefined;
+          displayNewLogs(nextIterationLogs, isResetting);
+        }, 50);
+      }
+      logsToDisplay = logsToDisplay.slice(logsToDisplay.length - 500);
     }
 
     if (logsToDisplay.length >= 10) {
@@ -433,7 +435,7 @@ export default function LogModule({
       }
     }
 
-    if (timeoutInterval !== undefined) {
+    if (timeoutInterval === undefined) {
       const headerType = getHeaderType();
       if (selectedElt === null && logContainerElt.childNodes.length === 0) {
         if (headerType !== "no-log") {
