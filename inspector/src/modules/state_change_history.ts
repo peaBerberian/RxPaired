@@ -1,6 +1,6 @@
 import strHtml from "str-html";
 import { InspectorState, STATE_PROPS } from "../constants";
-import ObservableState from "../observable_state";
+import ObservableState, { UPDATE_TYPE } from "../observable_state";
 
 export default function StateChangeInformationModule({
   state,
@@ -16,7 +16,7 @@ export default function StateChangeInformationModule({
 
       // TODO more optimized: rely on push
       const stateHistory = state.getCurrentState(
-        STATE_PROPS.STATE_CHANGE_HISTORY,
+        STATE_PROPS.STATE_CHANGE_HISTORY
       );
 
       if (stateHistory === undefined) {
@@ -29,10 +29,26 @@ export default function StateChangeInformationModule({
           <th>State</th>
           <th>TS</th>
           <th>Time in prev. state (ms)</th>
+          <th>Focus</th>
         </tr>
       </table>`;
       for (let i = stateHistory?.length - 1; i >= 0; i--) {
         const stateInfo = stateHistory[i];
+        const tsMaxButton = strHtml`<button>◎</button>`;
+        tsMaxButton.onclick = function () {
+          state.updateState(
+            STATE_PROPS.LOG_MIN_TIMESTAMP_DISPLAYED,
+            UPDATE_TYPE.REPLACE,
+            0
+          );
+          state.updateState(
+            STATE_PROPS.LOG_MAX_TIMESTAMP_DISPLAYED,
+            UPDATE_TYPE.REPLACE,
+            stateInfo.timestamp
+          );
+          state.commitUpdates();
+        };
+
         tableElt.appendChild(
           strHtml`<tr>
             <td>${stateInfo.state}</td>
@@ -46,7 +62,8 @@ export default function StateChangeInformationModule({
                     ).toFixed(2)
               }
             </td>
-          </tr>`,
+            <td>${tsMaxButton}</td>
+          </tr>`
         );
       }
       if (tableElt.childNodes.length === 1) {
@@ -56,7 +73,7 @@ export default function StateChangeInformationModule({
       stateHistoryElt.appendChild(tableElt);
       moduleBodyElt.classList.remove("empty");
     },
-    true,
+    true
   );
   return {
     body: moduleBodyElt,

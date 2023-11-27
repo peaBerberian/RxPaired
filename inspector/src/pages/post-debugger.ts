@@ -38,9 +38,12 @@ export default function generatePostDebuggerPage(
     /* eslint-disable-next-line */
     (Object.keys(allState) as unknown as Array<keyof InspectorState>).forEach(
       (stateProp: keyof InspectorState) => {
+        // TODO special separate ObservableState object for those?
         if (
           stateProp !== STATE_PROPS.LOGS_HISTORY &&
-          stateProp !== STATE_PROPS.SELECTED_LOG_INDEX
+          stateProp !== STATE_PROPS.SELECTED_LOG_INDEX &&
+          stateProp !== STATE_PROPS.LOG_MIN_TIMESTAMP_DISPLAYED &&
+          stateProp !== STATE_PROPS.LOG_MAX_TIMESTAMP_DISPLAYED
         ) {
           inspectorState.updateState(stateProp, UPDATE_TYPE.REPLACE, undefined);
         }

@@ -68,12 +68,6 @@ export default function LogModule({
    */
   let selectedElt: HTMLElement | null = null;
 
-  /**
-   * The log "index" (linked to its index in `LOGS_HISTORY`) of the log
-   * currently selected by this LogModule.
-   */
-  let nextLogIdx = 0;
-
   /** If `true`, inputted search string are case sensitive. */
   let areSearchCaseSensitive = false;
 
@@ -83,14 +77,19 @@ export default function LogModule({
   const minimumTimeInputElt = strHtml`<input
     type="input"
     placeholder="0"
-    value="0"
+    value="${
+      state.getCurrentState(STATE_PROPS.LOG_MIN_TIMESTAMP_DISPLAYED) ?? 0
+    }"
     class="log-time-range"
     style="margin: 0px 5px"
   />` as HTMLInputElement;
+  const maxTs =
+    state.getCurrentState(STATE_PROPS.LOG_MAX_TIMESTAMP_DISPLAYED) ?? Infinity;
   const maximumTimeInputElt = strHtml`<input
     type="input"
     class="log-time-range"
     style="margin: 0px 5px"
+    value=${maxTs === Infinity ? "" : String(maxTs)}
   />` as HTMLInputElement;
   const maximumNbLogsInputElt = strHtml`<input
     type="input"
@@ -98,12 +97,12 @@ export default function LogModule({
     style="margin: 0px 5px"
     value=${maxNbDisplayedLogs}
   />` as HTMLInputElement;
-  minimumTimeInputElt.oninput = refreshFilters;
-  minimumTimeInputElt.onchange = refreshFilters;
-  maximumTimeInputElt.oninput = refreshFilters;
-  maximumTimeInputElt.onchange = refreshFilters;
+  minimumTimeInputElt.oninput = onMinimumTimeInputChange;
+  minimumTimeInputElt.onchange = onMinimumTimeInputChange;
+  maximumTimeInputElt.oninput = onMaximumTimeInputChange;
+  maximumTimeInputElt.onchange = onMaximumTimeInputChange;
   maximumNbLogsInputElt.oninput = onMaximumNbLogsInputChange;
-  maximumNbLogsInputElt.onchange = onMaximumNbLogsInputChange
+  maximumNbLogsInputElt.onchange = onMaximumNbLogsInputChange;
 
   /** Text input element for only showing a sub-time-range of the logs. */
   const timeRangeInputElt = strHtml`<div class="log-wrapper">
@@ -192,6 +191,15 @@ export default function LogModule({
 
   state.subscribe(STATE_PROPS.LOGS_HISTORY, onLogsHistoryChange, true);
   state.subscribe(STATE_PROPS.SELECTED_LOG_INDEX, onSelectedLogChange, true);
+  state.subscribe(
+    STATE_PROPS.LOG_MIN_TIMESTAMP_DISPLAYED,
+    onMinimumTimestampChange
+  );
+  state.subscribe(
+    STATE_PROPS.LOG_MAX_TIMESTAMP_DISPLAYED,
+    onMaximumTimestampChange
+  );
+  refreshFilters();
 
   logBodyElt.appendChild(logContainerElt);
 
@@ -208,6 +216,14 @@ export default function LogModule({
       timeoutInterval = undefined;
       state.unsubscribe(STATE_PROPS.LOGS_HISTORY, onLogsHistoryChange);
       state.unsubscribe(STATE_PROPS.SELECTED_LOG_INDEX, onSelectedLogChange);
+      state.unsubscribe(
+        STATE_PROPS.LOG_MIN_TIMESTAMP_DISPLAYED,
+        onMinimumTimestampChange
+      );
+      state.unsubscribe(
+        STATE_PROPS.LOG_MAX_TIMESTAMP_DISPLAYED,
+        onMaximumTimestampChange
+      );
 
       if (state.getCurrentState(STATE_PROPS.SELECTED_LOG_INDEX) !== undefined) {
         state.updateState(
@@ -288,10 +304,9 @@ export default function LogModule({
    */
   function onLogsHistoryChange(
     updateType: UPDATE_TYPE | "initial",
-    values: string[] | undefined
+    values: Array<[string, number]> | undefined
   ) {
     if (values === undefined) {
-      nextLogIdx = 0;
       if (timeoutInterval !== undefined) {
         clearTimeout(timeoutInterval);
         timeoutInterval = undefined;
@@ -309,24 +324,19 @@ export default function LogModule({
         clearTimeout(timeoutInterval);
         timeoutInterval = undefined;
       }
-      nextLogIdx = 0;
       clearLogs();
     }
 
-    const numberedValues = values.map((str): [string, number] => [
-      str,
-      nextLogIdx++,
-    ]);
     let filtered;
     if (
       filterObject.minTimeStamp === 0 &&
       filterObject.maxTimeStamp === Infinity &&
       filterObject.textFilter === null
     ) {
-      filtered = numberedValues;
+      filtered = values;
     } else {
       const filter = createFilterFunction();
-      filtered = numberedValues.filter(([str]) => filter(str));
+      filtered = values.filter(([str]) => filter(str));
     }
     displayNewLogs(filtered, isResetting);
   }
@@ -527,15 +537,11 @@ export default function LogModule({
    * Reapply filters on what is currently in `logFilterInputElt.value`.
    */
   function refreshFilters() {
-    let minRange: number = +minimumTimeInputElt.value;
-    if (isNaN(minRange) || minRange <= 0) {
-      minRange = 0;
-    }
-    let maxRange: number =
-      maximumTimeInputElt.value === "" ? Infinity : +maximumTimeInputElt.value;
-    if (isNaN(maxRange)) {
-      maxRange = Infinity;
-    }
+    const minRange =
+      state.getCurrentState(STATE_PROPS.LOG_MIN_TIMESTAMP_DISPLAYED) ?? 0;
+    const maxRange =
+      state.getCurrentState(STATE_PROPS.LOG_MAX_TIMESTAMP_DISPLAYED) ??
+      Infinity;
     const text = logFilterInputElt.value ?? "";
     if (
       filterObject.minTimeStamp === minRange &&
@@ -602,6 +608,45 @@ export default function LogModule({
     } else {
       return checkLogDate;
     }
+  }
+
+  function onMinimumTimeInputChange() {
+    let minRange: number = +minimumTimeInputElt.value;
+    if (isNaN(minRange) || minRange <= 0) {
+      minRange = 0;
+    }
+    if (
+      minRange ===
+      state.getCurrentState(STATE_PROPS.LOG_MIN_TIMESTAMP_DISPLAYED)
+    ) {
+      return;
+    }
+    state.updateState(
+      STATE_PROPS.LOG_MIN_TIMESTAMP_DISPLAYED,
+      UPDATE_TYPE.REPLACE,
+      minRange
+    );
+    state.commitUpdates();
+  }
+
+  function onMaximumTimeInputChange() {
+    let maxRange: number =
+      maximumTimeInputElt.value === "" ? Infinity : +maximumTimeInputElt.value;
+    if (isNaN(maxRange)) {
+      maxRange = Infinity;
+    }
+    if (
+      maxRange ===
+      state.getCurrentState(STATE_PROPS.LOG_MAX_TIMESTAMP_DISPLAYED)
+    ) {
+      return;
+    }
+    state.updateState(
+      STATE_PROPS.LOG_MAX_TIMESTAMP_DISPLAYED,
+      UPDATE_TYPE.REPLACE,
+      maxRange
+    );
+    state.commitUpdates();
   }
 
   function onMaximumNbLogsInputChange() {
@@ -705,6 +750,22 @@ export default function LogModule({
     if (getHeaderType() !== "no-log") {
       displayNoLogHeader();
     }
+  }
+
+  function onMinimumTimestampChange() {
+    const newMinText = String(
+      state.getCurrentState(STATE_PROPS.LOG_MIN_TIMESTAMP_DISPLAYED) ?? 0
+    );
+    minimumTimeInputElt.value = newMinText;
+    refreshFilters();
+  }
+
+  function onMaximumTimestampChange() {
+    const newMaxText =
+      String(state.getCurrentState(STATE_PROPS.LOG_MAX_TIMESTAMP_DISPLAYED)) ??
+      "";
+    maximumTimeInputElt.value = newMaxText;
+    refreshFilters();
   }
 }
 

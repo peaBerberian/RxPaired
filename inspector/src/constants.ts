@@ -44,8 +44,6 @@ export enum STATE_PROPS {
   MINIMIZED_MODULES = "minimizedModules",
   /** Array of the inspector module's id in the order they are in. */
   MODULES_ORDER = "modulesOrder",
-  /** Each log in chronological order, in an array. */
-  LOGS_HISTORY = "logsHistory",
   /**
    * History of "buffer gap" measures.
    *
@@ -82,12 +80,23 @@ export enum STATE_PROPS {
    */
   AUDIO_INVENTORY = "audioInventory",
   /**
+  * Each log in chronological order, in an array of 2-elements tuple:
+  *   1. The full log message to display.
+  *   2. An identifier for this particular log, useful for focusing on it.
+  */
+  LOGS_HISTORY = "logsHistory",
+  /**
    * If set, a log has been selected and thus all charts should refer to the
    * playback conditions up to that point.
    *
    * Set to the index in the `LOGS_HISTORY` array.
    */
   SELECTED_LOG_INDEX = "selectedLogIndex",
+  /**
+   * Minimum
+   */
+  LOG_MIN_TIMESTAMP_DISPLAYED = "logMinTimeStampDisplayed",
+  LOG_MAX_TIMESTAMP_DISPLAYED = "logMaxTimeStampDisplayed",
   /** History of network requests for audio segments for the current content. */
   AUDIO_REQUEST_HISTORY = "audioRequestHistory",
   /** History of network requests for video segments for the current content. */
@@ -105,7 +114,14 @@ export enum STATE_PROPS {
  * RxPlayer state on the page.
  */
 export interface InspectorState {
-  [STATE_PROPS.LOGS_HISTORY]?: string[];
+  /* TODO Another ObservableState Object due to its more specific rules? */
+  [STATE_PROPS.LOGS_HISTORY]?: Array<[string, number]>;
+  /* TODO Another ObservableState Object due to its more specific rules? */
+  [STATE_PROPS.SELECTED_LOG_INDEX]?: number | undefined;
+  /* TODO Another ObservableState Object due to its more specific rules? */
+  [STATE_PROPS.LOG_MIN_TIMESTAMP_DISPLAYED]?: number;
+  /* TODO Another ObservableState Object due to its more specific rules? */
+  [STATE_PROPS.LOG_MAX_TIMESTAMP_DISPLAYED]?: number;
   [STATE_PROPS.BUFFER_GAPS]?: Array<{
     bufferGap: number | undefined;
     timestamp: number;
@@ -116,7 +132,6 @@ export interface InspectorState {
   [STATE_PROPS.CONTENT_DURATION]?: number;
   [STATE_PROPS.VIDEO_INVENTORY]?: InventoryTimelineInfo;
   [STATE_PROPS.AUDIO_INVENTORY]?: InventoryTimelineInfo;
-  [STATE_PROPS.SELECTED_LOG_INDEX]?: number | undefined;
   [STATE_PROPS.AUDIO_REQUEST_HISTORY]?: RequestInformation[];
   [STATE_PROPS.VIDEO_REQUEST_HISTORY]?: RequestInformation[];
   [STATE_PROPS.TEXT_REQUEST_HISTORY]?: RequestInformation[];
