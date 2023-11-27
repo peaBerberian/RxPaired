@@ -68,6 +68,12 @@ export default function LogModule({
    */
   let selectedElt: HTMLElement | null = null;
 
+  /**
+   * The log "index" (linked to its index in `LOGS_HISTORY`) of the log
+   * currently selected by this LogModule.
+   */
+  let nextLogIdx = 0;
+
   /** If `true`, inputted search string are case sensitive. */
   let areSearchCaseSensitive = false;
 
@@ -304,9 +310,10 @@ export default function LogModule({
    */
   function onLogsHistoryChange(
     updateType: UPDATE_TYPE | "initial",
-    values: Array<[string, number]> | undefined
+    values: string[] | undefined
   ) {
     if (values === undefined) {
+      nextLogIdx = 0;
       if (timeoutInterval !== undefined) {
         clearTimeout(timeoutInterval);
         timeoutInterval = undefined;
@@ -319,6 +326,7 @@ export default function LogModule({
     let isResetting = false;
 
     if (updateType === UPDATE_TYPE.REPLACE || updateType === "initial") {
+      nextLogIdx = 0;
       isResetting = true;
       if (timeoutInterval !== undefined) {
         clearTimeout(timeoutInterval);
@@ -327,16 +335,20 @@ export default function LogModule({
       clearLogs();
     }
 
+    const numberedValues = values.map((str): [string, number] => [
+      str,
+      nextLogIdx++,
+    ]);
     let filtered;
     if (
       filterObject.minTimeStamp === 0 &&
       filterObject.maxTimeStamp === Infinity &&
       filterObject.textFilter === null
     ) {
-      filtered = values;
+      filtered = numberedValues;
     } else {
       const filter = createFilterFunction();
-      filtered = values.filter(([str]) => filter(str));
+      filtered = numberedValues.filter(([str]) => filter(str));
     }
     displayNewLogs(filtered, isResetting);
   }

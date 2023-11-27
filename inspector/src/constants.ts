@@ -79,11 +79,7 @@ export enum STATE_PROPS {
    * Information on what is stored on the media element audio's SourceBuffer.
    */
   AUDIO_INVENTORY = "audioInventory",
-  /**
-  * Each log in chronological order, in an array of 2-elements tuple:
-  *   1. The full log message to display.
-  *   2. An identifier for this particular log, useful for focusing on it.
-  */
+  /** Each log in chronological order, in an array of log messages. */
   LOGS_HISTORY = "logsHistory",
   /**
    * If set, a log has been selected and thus all charts should refer to the
@@ -92,10 +88,9 @@ export enum STATE_PROPS {
    * Set to the index in the `LOGS_HISTORY` array.
    */
   SELECTED_LOG_INDEX = "selectedLogIndex",
-  /**
-   * Minimum
-   */
+  /** Timestamp of the first displayed log in the log module. */
   LOG_MIN_TIMESTAMP_DISPLAYED = "logMinTimeStampDisplayed",
+  /** Timestamp of the last displayed log in the log module. */
   LOG_MAX_TIMESTAMP_DISPLAYED = "logMaxTimeStampDisplayed",
   /** History of network requests for audio segments for the current content. */
   AUDIO_REQUEST_HISTORY = "audioRequestHistory",
@@ -115,7 +110,7 @@ export enum STATE_PROPS {
  */
 export interface InspectorState {
   /* TODO Another ObservableState Object due to its more specific rules? */
-  [STATE_PROPS.LOGS_HISTORY]?: Array<[string, number]>;
+  [STATE_PROPS.LOGS_HISTORY]?: string[];
   /* TODO Another ObservableState Object due to its more specific rules? */
   [STATE_PROPS.SELECTED_LOG_INDEX]?: number | undefined;
   /* TODO Another ObservableState Object due to its more specific rules? */
