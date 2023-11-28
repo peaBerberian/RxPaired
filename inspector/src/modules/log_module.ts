@@ -82,30 +82,13 @@ export default function LogModule({
   /** Callbacks that will be called when the module is destroyed. */
   const onDestroyFns: Array<() => void> = [];
 
-  const minimumTimeInputElt = strHtml`<input
-    type="input"
-    placeholder="0"
-    value="${
-      state.getCurrentState(STATE_PROPS.LOG_MIN_TIMESTAMP_DISPLAYED) ?? 0
-    }"
-    class="log-time-range"
-  />` as HTMLInputElement;
-  const maxTs =
-    state.getCurrentState(STATE_PROPS.LOG_MAX_TIMESTAMP_DISPLAYED) ?? Infinity;
-  const maximumTimeInputElt = strHtml`<input
-    type="input"
-    class="log-time-range"
-    value=${maxTs === Infinity ? "" : String(maxTs)}
-  />` as HTMLInputElement;
+  const minimumTimeInputElt = createMinimumTimestampInputElement(state);
+  const maximumTimeInputElt = createMaximumTimestampInputElement(state);
   const maximumNbLogsInputElt = strHtml`<input
     type="input"
     class="log-time-range"
     value=${maxNbDisplayedLogs}
   />` as HTMLInputElement;
-  minimumTimeInputElt.oninput = onMinimumTimeInputChange;
-  minimumTimeInputElt.onchange = onMinimumTimeInputChange;
-  maximumTimeInputElt.oninput = onMaximumTimeInputChange;
-  maximumTimeInputElt.onchange = onMaximumTimeInputChange;
   maximumNbLogsInputElt.oninput = onMaximumNbLogsInputChange;
   maximumNbLogsInputElt.onchange = onMaximumNbLogsInputChange;
 
@@ -625,45 +608,6 @@ export default function LogModule({
     }
   }
 
-  function onMinimumTimeInputChange() {
-    let minRange: number = +minimumTimeInputElt.value;
-    if (isNaN(minRange) || minRange <= 0) {
-      minRange = 0;
-    }
-    if (
-      minRange ===
-      state.getCurrentState(STATE_PROPS.LOG_MIN_TIMESTAMP_DISPLAYED)
-    ) {
-      return;
-    }
-    state.updateState(
-      STATE_PROPS.LOG_MIN_TIMESTAMP_DISPLAYED,
-      UPDATE_TYPE.REPLACE,
-      minRange
-    );
-    state.commitUpdates();
-  }
-
-  function onMaximumTimeInputChange() {
-    let maxRange: number =
-      maximumTimeInputElt.value === "" ? Infinity : +maximumTimeInputElt.value;
-    if (isNaN(maxRange)) {
-      maxRange = Infinity;
-    }
-    if (
-      maxRange ===
-      state.getCurrentState(STATE_PROPS.LOG_MAX_TIMESTAMP_DISPLAYED)
-    ) {
-      return;
-    }
-    state.updateState(
-      STATE_PROPS.LOG_MAX_TIMESTAMP_DISPLAYED,
-      UPDATE_TYPE.REPLACE,
-      maxRange
-    );
-    state.commitUpdates();
-  }
-
   function onMaximumNbLogsInputChange() {
     let newMax =
       maximumNbLogsInputElt.value === ""
@@ -1006,4 +950,75 @@ function createTSResetButton(
     state.commitUpdates();
   };
   return resetButtonElt;
+}
+
+function createMinimumTimestampInputElement(
+  state: ObservableState<InspectorState>,
+): HTMLInputElement {
+  const minimumTimeInputElt = strHtml`<input
+    type="input"
+    placeholder="0"
+    value="${
+      state.getCurrentState(STATE_PROPS.LOG_MIN_TIMESTAMP_DISPLAYED) ?? 0
+    }"
+    class="log-time-range"
+  />` as HTMLInputElement;
+  minimumTimeInputElt.oninput = onMinimumTimeInputChange;
+  minimumTimeInputElt.onchange = onMinimumTimeInputChange;
+  return minimumTimeInputElt;
+
+  function onMinimumTimeInputChange() {
+    let minRange: number = +minimumTimeInputElt.value;
+    if (isNaN(minRange) || minRange <= 0) {
+      minRange = 0;
+    }
+    if (
+      minRange ===
+      state.getCurrentState(STATE_PROPS.LOG_MIN_TIMESTAMP_DISPLAYED)
+    ) {
+      return;
+    }
+    state.updateState(
+      STATE_PROPS.LOG_MIN_TIMESTAMP_DISPLAYED,
+      UPDATE_TYPE.REPLACE,
+      minRange
+    );
+    state.commitUpdates();
+  }
+}
+
+function createMaximumTimestampInputElement(
+  state: ObservableState<InspectorState>,
+): HTMLInputElement {
+  const maxTs =
+    state.getCurrentState(STATE_PROPS.LOG_MAX_TIMESTAMP_DISPLAYED) ?? Infinity;
+  const maximumTimeInputElt = strHtml`<input
+    type="input"
+    class="log-time-range"
+    value=${maxTs === Infinity ? "" : String(maxTs)}
+  />` as HTMLInputElement;
+  maximumTimeInputElt.oninput = onMaximumTimeInputChange;
+  maximumTimeInputElt.onchange = onMaximumTimeInputChange;
+
+  return maximumTimeInputElt;
+
+  function onMaximumTimeInputChange() {
+    let maxRange: number =
+      maximumTimeInputElt.value === "" ? Infinity : +maximumTimeInputElt.value;
+    if (isNaN(maxRange)) {
+      maxRange = Infinity;
+    }
+    if (
+      maxRange ===
+      state.getCurrentState(STATE_PROPS.LOG_MAX_TIMESTAMP_DISPLAYED)
+    ) {
+      return;
+    }
+    state.updateState(
+      STATE_PROPS.LOG_MAX_TIMESTAMP_DISPLAYED,
+      UPDATE_TYPE.REPLACE,
+      maxRange
+    );
+    state.commitUpdates();
+  }
 }
