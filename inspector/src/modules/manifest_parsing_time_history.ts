@@ -1,6 +1,6 @@
 import strHtml from "str-html";
 import { InspectorState, STATE_PROPS } from "../constants";
-import ObservableState from "../observable_state";
+import ObservableState, { UPDATE_TYPE } from "../observable_state";
 
 const MAX_ELEMENTS = 50;
 
@@ -38,9 +38,25 @@ export default function ManifestParsingTimeHistoryModule({
       </table>`;
       for (let i = manifestParsingTimeHistory.length - 1; i >= 0; i--) {
         const info = manifestParsingTimeHistory[i];
+        const timestampElt = strHtml`<td>${info.timestamp}</td>`;
+        timestampElt.style.cursor = "pointer";
+        timestampElt.style.textDecoration = "underline";
+        timestampElt.onclick = () => {
+          state.updateState(
+            STATE_PROPS.LOG_MIN_TIMESTAMP_DISPLAYED,
+            UPDATE_TYPE.REPLACE,
+            0
+          );
+          state.updateState(
+            STATE_PROPS.LOG_MAX_TIMESTAMP_DISPLAYED,
+            UPDATE_TYPE.REPLACE,
+            info.timestamp
+          );
+          state.commitUpdates();
+        };
         tableElt.appendChild(
           strHtml`<tr>
-            <td>${info.timestamp}</td>
+            ${timestampElt}
             <td>
               ${info.timeMs.toFixed(2)}
             </td>

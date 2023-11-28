@@ -1,6 +1,11 @@
 import strHtml from "str-html";
-import { DEFAULT_MAX_DISPLAYED_LOG_ELEMENTS, STATE_PROPS } from "../constants";
-import { UPDATE_TYPE } from "../observable_state";
+import {
+  ConfigState,
+  DEFAULT_MAX_DISPLAYED_LOG_ELEMENTS,
+  InspectorState,
+  STATE_PROPS,
+} from "../constants";
+import ObservableState, { UPDATE_TYPE } from "../observable_state";
 import { ModuleObject, ModuleFunctionArguments } from "./index";
 
 const LOADING_LOGS_MSG = "Loading logs...";
@@ -68,17 +73,14 @@ export default function LogModule({
    */
   let selectedElt: HTMLElement | null = null;
 
-  /**
-   * The log "index" (linked to its index in `LOGS_HISTORY`) of the log
-   * currently selected by this LogModule.
-   */
-  let nextLogIdx = 0;
-
   /** If `true`, inputted search string are case sensitive. */
   let areSearchCaseSensitive = false;
 
   /** If `true`, inputted search string are Regular Expression. */
   let areSearchRegex = false;
+
+  /** Callbacks that will be called when the module is destroyed. */
+  const onDestroyFns: Array<() => void> = [];
 
   const minimumTimeInputElt = strHtml`<input
     type="input"
@@ -87,20 +89,17 @@ export default function LogModule({
       state.getCurrentState(STATE_PROPS.LOG_MIN_TIMESTAMP_DISPLAYED) ?? 0
     }"
     class="log-time-range"
-    style="margin: 0px 5px"
   />` as HTMLInputElement;
   const maxTs =
     state.getCurrentState(STATE_PROPS.LOG_MAX_TIMESTAMP_DISPLAYED) ?? Infinity;
   const maximumTimeInputElt = strHtml`<input
     type="input"
     class="log-time-range"
-    style="margin: 0px 5px"
     value=${maxTs === Infinity ? "" : String(maxTs)}
   />` as HTMLInputElement;
   const maximumNbLogsInputElt = strHtml`<input
     type="input"
     class="log-time-range"
-    style="margin: 0px 5px"
     value=${maxNbDisplayedLogs}
   />` as HTMLInputElement;
   minimumTimeInputElt.oninput = onMinimumTimeInputChange;
@@ -112,19 +111,30 @@ export default function LogModule({
 
   /** Text input element for only showing a sub-time-range of the logs. */
   const timeRangeInputElt = strHtml`<div class="log-wrapper">
-    <span>
-      Min. timestamp: ${minimumTimeInputElt}
+    <span style="display: flex; flex-direction: column; align-items: center">
+      Min. timestamp
+      <span>${[
+        minimumTimeInputElt,
+        createMinimumTimestampButtonElements(state, onDestroyFns),
+      ]}
+      </span>
     </span>
-    <span>
-      Max. timestamp (empty for no limit): ${maximumTimeInputElt}
+    <span style="display: flex; flex-direction: column; align-items: center">
+      Max. timestamp (empty for no limit)
+      <span>${[
+        maximumTimeInputElt,
+        createMaximumTimestampButtonElements(state, onDestroyFns),
+      ]}
+      </span>
     </span>
-    <span>
-      Max. displayed logs: ${maximumNbLogsInputElt}
+    <span style="display: flex; flex-direction: column; align-items: center">
+      Max. displayed logs
+      <span>${maximumNbLogsInputElt}</span>
     </span>
   </div>` as HTMLInputElement;
   timeRangeInputElt.style.fontSize = "0.9em";
   timeRangeInputElt.style.display = "flex";
-  timeRangeInputElt.style.margin = "10px 0px 0px 0px";
+  timeRangeInputElt.style.margin = "10px 5px 0px 5px";
   timeRangeInputElt.style.overflow = "hidden";
   timeRangeInputElt.style.justifyContent = "space-between";
 
@@ -134,7 +144,7 @@ export default function LogModule({
   filterFlexElt.style.height = "40px";
   filterFlexElt.style.margin = "5px 0px";
 
-  const [caseSensitiveBtn, unsubCaseBtn] = createFilterButtonElement(
+  const caseSensitiveBtn = createFilterButtonElement(
     "Aa",
     "Enable case sensitivity",
     "Disable case sensitivity",
@@ -145,10 +155,12 @@ export default function LogModule({
     () => {
       areSearchCaseSensitive = false;
       refreshFilters();
-    }
+    },
+    configState,
+    onDestroyFns
   );
 
-  const [regexFilterButton, unsubRegexBtn] = createFilterButtonElement(
+  const regexFilterButton = createFilterButtonElement(
     ".*",
     "Enable RegExp mode",
     "Disable RegExp mode",
@@ -159,7 +171,9 @@ export default function LogModule({
     () => {
       areSearchRegex = false;
       refreshFilters();
-    }
+    },
+    configState,
+    onDestroyFns
   );
 
   /** Text input element for filtering logs. */
@@ -182,28 +196,40 @@ export default function LogModule({
   </div>`;
   allFiltersElt.style.padding = "5px";
   allFiltersElt.style.marginTop = "5px";
-  const unsubFiltersStyle = configState.subscribe(
-    STATE_PROPS.CSS_MODE,
-    () => {
-      allFiltersElt.style.backgroundColor =
-        configState.getCurrentState(STATE_PROPS.CSS_MODE) === "dark"
-          ? "#333"
-          : "#f2f2f2";
-    },
-    true
+  onDestroyFns.push(
+    configState.subscribe(
+      STATE_PROPS.CSS_MODE,
+      () => {
+        allFiltersElt.style.backgroundColor =
+          configState.getCurrentState(STATE_PROPS.CSS_MODE) === "dark"
+            ? "#333"
+            : "#f2f2f2";
+      },
+      true
+    )
   );
   allFiltersElt.appendChild(timeRangeInputElt);
   allFiltersElt.appendChild(filterFlexElt);
 
-  state.subscribe(STATE_PROPS.LOGS_HISTORY, onLogsHistoryChange, true);
-  state.subscribe(STATE_PROPS.SELECTED_LOG_INDEX, onSelectedLogChange, true);
-  state.subscribe(
-    STATE_PROPS.LOG_MIN_TIMESTAMP_DISPLAYED,
-    onMinimumTimestampChange
+  onDestroyFns.push(
+    state.subscribe(STATE_PROPS.LOGS_HISTORY, onLogsHistoryChange, true)
   );
-  state.subscribe(
-    STATE_PROPS.LOG_MAX_TIMESTAMP_DISPLAYED,
-    onMaximumTimestampChange
+  onDestroyFns.push(
+    state.subscribe(STATE_PROPS.SELECTED_LOG_ID, onSelectedLogChange, true)
+  );
+  onDestroyFns.push(
+    state.subscribe(
+      STATE_PROPS.LOG_MIN_TIMESTAMP_DISPLAYED,
+      onMinimumTimestampChange,
+      true
+    )
+  );
+  onDestroyFns.push(
+    state.subscribe(
+      STATE_PROPS.LOG_MAX_TIMESTAMP_DISPLAYED,
+      onMaximumTimestampChange,
+      true
+    )
   );
   refreshFilters();
 
@@ -212,28 +238,15 @@ export default function LogModule({
   return {
     body: strHtml`<div>${[logHeaderElt, allFiltersElt, logBodyElt]}</div>`,
     clear() {
-      unsubCaseBtn();
-      unsubRegexBtn();
-      unsubFiltersStyle();
       clearLogs();
     },
     destroy() {
       clearTimeout(timeoutInterval);
       timeoutInterval = undefined;
-      state.unsubscribe(STATE_PROPS.LOGS_HISTORY, onLogsHistoryChange);
-      state.unsubscribe(STATE_PROPS.SELECTED_LOG_INDEX, onSelectedLogChange);
-      state.unsubscribe(
-        STATE_PROPS.LOG_MIN_TIMESTAMP_DISPLAYED,
-        onMinimumTimestampChange
-      );
-      state.unsubscribe(
-        STATE_PROPS.LOG_MAX_TIMESTAMP_DISPLAYED,
-        onMaximumTimestampChange
-      );
-
-      if (state.getCurrentState(STATE_PROPS.SELECTED_LOG_INDEX) !== undefined) {
+      onDestroyFns.forEach((cb) => cb());
+      if (state.getCurrentState(STATE_PROPS.SELECTED_LOG_ID) !== undefined) {
         state.updateState(
-          STATE_PROPS.SELECTED_LOG_INDEX,
+          STATE_PROPS.SELECTED_LOG_ID,
           UPDATE_TYPE.REPLACE,
           undefined
         );
@@ -268,7 +281,7 @@ export default function LogModule({
     ]}</span>`;
     clickSpan.onclick = function () {
       state.updateState(
-        STATE_PROPS.SELECTED_LOG_INDEX,
+        STATE_PROPS.SELECTED_LOG_ID,
         UPDATE_TYPE.REPLACE,
         undefined
       );
@@ -310,10 +323,9 @@ export default function LogModule({
    */
   function onLogsHistoryChange(
     updateType: UPDATE_TYPE | "initial",
-    values: string[] | undefined
+    values: Array<[string, number]> | undefined
   ) {
     if (values === undefined) {
-      nextLogIdx = 0;
       if (timeoutInterval !== undefined) {
         clearTimeout(timeoutInterval);
         timeoutInterval = undefined;
@@ -326,7 +338,6 @@ export default function LogModule({
     let isResetting = false;
 
     if (updateType === UPDATE_TYPE.REPLACE || updateType === "initial") {
-      nextLogIdx = 0;
       isResetting = true;
       if (timeoutInterval !== undefined) {
         clearTimeout(timeoutInterval);
@@ -335,20 +346,16 @@ export default function LogModule({
       clearLogs();
     }
 
-    const numberedValues = values.map((str): [string, number] => [
-      str,
-      nextLogIdx++,
-    ]);
     let filtered;
     if (
       filterObject.minTimeStamp === 0 &&
       filterObject.maxTimeStamp === Infinity &&
       filterObject.textFilter === null
     ) {
-      filtered = numberedValues;
+      filtered = values.slice();
     } else {
       const filter = createFilterFunction();
-      filtered = numberedValues.filter(([str]) => filter(str));
+      filtered = values.filter(([str]) => filter(str));
     }
     displayNewLogs(filtered, isResetting);
   }
@@ -359,17 +366,17 @@ export default function LogModule({
    * concurrent LogModules.
    */
   function onSelectedLogChange() {
-    const hasLogIdxSelected =
-      state.getCurrentState(STATE_PROPS.SELECTED_LOG_INDEX) !== undefined;
+    const hasLogSelected =
+      state.getCurrentState(STATE_PROPS.SELECTED_LOG_ID) !== undefined;
     const headerType = getHeaderType();
-    if (!hasLogIdxSelected && logContainerElt.childNodes.length === 0) {
+    if (!hasLogSelected && logContainerElt.childNodes.length === 0) {
       if (headerType !== "no-log") {
         displayNoLogHeader();
       }
       return;
     }
 
-    if (hasLogIdxSelected) {
+    if (hasLogSelected) {
       if (headerType !== "selected") {
         displayLogSelectedHeader();
       }
@@ -434,16 +441,14 @@ export default function LogModule({
       logBodyElt.innerHTML = "";
     }
 
-    const selectedLogIdx = state.getCurrentState(
-      STATE_PROPS.SELECTED_LOG_INDEX
-    );
+    const selectedLogId = state.getCurrentState(STATE_PROPS.SELECTED_LOG_ID);
     for (let logIdx = 0; logIdx < logsToDisplay.length; logIdx++) {
       const actualLogIdx = isResetting
         ? logsToDisplay.length - (logIdx + 1)
         : logIdx;
       const log = logsToDisplay[actualLogIdx];
       const logElt = createLogElement(log[0]);
-      if (log[1] === selectedLogIdx) {
+      if (log[1] === selectedLogId) {
         if (selectedElt !== null) {
           selectedElt.classList.remove("focused-bg");
         }
@@ -512,8 +517,8 @@ export default function LogModule({
       console.error("No element selected");
       return;
     }
-    const currentLogIdx = +String(logElt.dataset?.logId);
-    if (isNaN(currentLogIdx)) {
+    const currentLogId = +String(logElt.dataset?.logId);
+    if (isNaN(currentLogId)) {
       console.error("The element selected had a bad log id");
       return;
     }
@@ -521,12 +526,10 @@ export default function LogModule({
       selectedElt.classList.remove("focused-bg");
       selectedElt = null;
     }
-    const selectedLogIdx = state.getCurrentState(
-      STATE_PROPS.SELECTED_LOG_INDEX
-    );
-    if (selectedLogIdx === currentLogIdx) {
+    const selectedLogId = state.getCurrentState(STATE_PROPS.SELECTED_LOG_ID);
+    if (selectedLogId === currentLogId) {
       state.updateState(
-        STATE_PROPS.SELECTED_LOG_INDEX,
+        STATE_PROPS.SELECTED_LOG_ID,
         UPDATE_TYPE.REPLACE,
         undefined
       );
@@ -535,9 +538,9 @@ export default function LogModule({
     }
 
     state.updateState(
-      STATE_PROPS.SELECTED_LOG_INDEX,
+      STATE_PROPS.SELECTED_LOG_ID,
       UPDATE_TYPE.REPLACE,
-      currentLogIdx
+      currentLogId
     );
     selectedElt = logElt;
 
@@ -680,77 +683,6 @@ export default function LogModule({
   }
 
   /**
-   * Create a button element that will be displayed alongside the filter bar.
-   * @param {string} innerText - The text to display inside the button
-   * @param {string} titleDisabled - The title (e.g. in tooltip) that will be
-   * shown when the button is not enabled.
-   * @param {string} titleEnabled - The title (e.g. in tooltip) that will be
-   * shown when the button is enabled.
-   * @param {Function} onEnabled - The function that should be called when the
-   * button is enabled.
-   * @param {Function} onEnabled - The function that should be called when the
-   * feature behind the button is enabled.
-   * @param {Function} onDisabled - The function that should be called when the
-   * feature behind the button is disabled.
-   * @returns {Array} Returns a tuple of two values:
-   *   - HTMLElement of the button
-   *   - Code to be called when the button is removed from the DOM
-   */
-  function createFilterButtonElement(
-    innerText: string,
-    titleDisabled: string,
-    titleEnabled: string,
-    onEnabled: () => void,
-    onDisabled: () => void
-  ): [HTMLElement, () => void] {
-    let isDisabled = true;
-    let isDarkMode =
-      configState.getCurrentState(STATE_PROPS.CSS_MODE) === "dark";
-    const unsub = configState.subscribe(STATE_PROPS.CSS_MODE, () => {
-      isDarkMode = configState.getCurrentState(STATE_PROPS.CSS_MODE) === "dark";
-      if (isDisabled) {
-        setDisabledStyle();
-      } else {
-        setEnabledStyle();
-      }
-    });
-    const buttonElt = strHtml`<button class="log-filter-button">${innerText}</button>`;
-    buttonElt.onclick = () => {
-      if (isDisabled) {
-        isDisabled = false;
-        setEnabledStyle();
-        buttonElt.title = titleEnabled;
-        onEnabled();
-      } else {
-        isDisabled = true;
-        buttonElt.title = titleDisabled;
-        setDisabledStyle();
-        buttonElt.style.color = isDarkMode ? "#ffffff" : "#000000";
-        onDisabled();
-      }
-    };
-
-    buttonElt.title = titleDisabled;
-    buttonElt.style.cursor = "pointer";
-    buttonElt.style.fontWeight = "bold";
-    buttonElt.style.margin = "6px 5px";
-    buttonElt.style.border = "none";
-    buttonElt.style.fontSize = "11px";
-    buttonElt.style.padding = "4px";
-    buttonElt.style.backgroundColor = "transparent";
-    setDisabledStyle();
-    return [buttonElt, unsub];
-
-    function setEnabledStyle() {
-      buttonElt.style.color = isDarkMode ? "#d3ffcf" : "#990033";
-    }
-
-    function setDisabledStyle() {
-      buttonElt.style.color = isDarkMode ? "#ffffff" : "#000000";
-    }
-  }
-
-  /**
    * Clear all logs currently displayed or pending to be displayed, without
    * modifying the complete log history.
    */
@@ -765,20 +697,105 @@ export default function LogModule({
   }
 
   function onMinimumTimestampChange() {
-    const newMinText = String(
-      state.getCurrentState(STATE_PROPS.LOG_MIN_TIMESTAMP_DISPLAYED) ?? 0
-    );
+    const newMin =
+      state.getCurrentState(STATE_PROPS.LOG_MIN_TIMESTAMP_DISPLAYED) ?? 0;
+    // minimumTimeMinusButtonElt.disabled = newMin === 0;
+    // minimumTimeResetButtonElt.disabled = newMin === 0;
+    const newMinText = String(newMin);
     minimumTimeInputElt.value = newMinText;
     refreshFilters();
   }
 
   function onMaximumTimestampChange() {
-    const newMaxText =
-      String(state.getCurrentState(STATE_PROPS.LOG_MAX_TIMESTAMP_DISPLAYED)) ??
-      "";
+    const newMax =
+      state.getCurrentState(STATE_PROPS.LOG_MAX_TIMESTAMP_DISPLAYED) ??
+      Infinity;
+    const newMaxText = newMax === Infinity ? "" : String(newMax);
     maximumTimeInputElt.value = newMaxText;
     refreshFilters();
   }
+}
+
+/**
+ * Create a button element that will be displayed alongside the filter bar.
+ * @param {string} innerText - The text to display inside the button
+ * @param {string} titleDisabled - The title (e.g. in tooltip) that will be
+ * shown when the button is not enabled.
+ * @param {string} titleEnabled - The title (e.g. in tooltip) that will be
+ * shown when the button is enabled.
+ * @param {Function} onEnabled - The function that should be called when the
+ * button is enabled.
+ * @param {Function} onEnabled - The function that should be called when the
+ * feature behind the button is enabled.
+ * @param {Function} onDisabled - The function that should be called when the
+ * feature behind the button is disabled.
+ * @param {Object} configState - Object reporting the current page config's
+ * state.
+ * @param {Array.<Function>} cleanUpFns - Will push function(s) allowing to
+ * unregister the listeners registered by this function.
+ * @returns {Array} Returns the HTMLElement for the button.
+ */
+function createFilterButtonElement(
+  innerText: string,
+  titleDisabled: string,
+  titleEnabled: string,
+  onEnabled: () => void,
+  onDisabled: () => void,
+  configState: ObservableState<ConfigState>,
+  cleanUpFns: Array<() => void>
+): HTMLElement {
+  let isDisabled = true;
+  let isDarkMode = configState.getCurrentState(STATE_PROPS.CSS_MODE) === "dark";
+  cleanUpFns.push(
+    configState.subscribe(STATE_PROPS.CSS_MODE, () => {
+      isDarkMode = configState.getCurrentState(STATE_PROPS.CSS_MODE) === "dark";
+      if (isDisabled) {
+        setEnabledFilterButtonStyle(buttonElt, isDarkMode);
+      } else {
+        setNonEnabledFilterButtonStyle(buttonElt, isDarkMode);
+      }
+    })
+  );
+  const buttonElt = strHtml`<button class="log-filter-button">${innerText}</button>`;
+  buttonElt.onclick = () => {
+    if (isDisabled) {
+      isDisabled = false;
+      setNonEnabledFilterButtonStyle(buttonElt, isDarkMode);
+      buttonElt.title = titleEnabled;
+      onEnabled();
+    } else {
+      isDisabled = true;
+      buttonElt.title = titleDisabled;
+      setEnabledFilterButtonStyle(buttonElt, isDarkMode);
+      buttonElt.style.color = isDarkMode ? "#ffffff" : "#000000";
+      onDisabled();
+    }
+  };
+
+  buttonElt.title = titleDisabled;
+  buttonElt.style.cursor = "pointer";
+  buttonElt.style.fontWeight = "bold";
+  buttonElt.style.margin = "6px 5px";
+  buttonElt.style.border = "none";
+  buttonElt.style.fontSize = "11px";
+  buttonElt.style.padding = "4px";
+  buttonElt.style.backgroundColor = "transparent";
+  setEnabledFilterButtonStyle(buttonElt, isDarkMode);
+  return buttonElt;
+}
+
+function setNonEnabledFilterButtonStyle(
+  buttonElt: HTMLElement,
+  isDarkMode: boolean
+) {
+  buttonElt.style.color = isDarkMode ? "#d3ffcf" : "#990033";
+}
+
+function setEnabledFilterButtonStyle(
+  buttonElt: HTMLElement,
+  isDarkMode: boolean
+) {
+  buttonElt.style.color = isDarkMode ? "#ffffff" : "#000000";
 }
 
 /**
@@ -807,4 +824,186 @@ export function createLogElement(logTxt: string): HTMLElement {
       ? "log-line log-" + namespace.toLowerCase()
       : "log-line log-unknown";
   return strHtml`<pre class=${className}>${formattedMsg}</pre>`;
+}
+
+function createMinimumTimestampButtonElements(
+  state: ObservableState<InspectorState>,
+  cleanUpFns: Array<() => void>
+): HTMLButtonElement[] {
+  return [
+    createTSMinusButton(
+      state,
+      STATE_PROPS.LOG_MIN_TIMESTAMP_DISPLAYED,
+      0,
+      cleanUpFns
+    ),
+    createTSPlusButton(
+      state,
+      STATE_PROPS.LOG_MIN_TIMESTAMP_DISPLAYED,
+      0,
+      cleanUpFns
+    ),
+    createTSResetButton(state, STATE_PROPS.LOG_MIN_TIMESTAMP_DISPLAYED, 0),
+  ];
+}
+
+function createMaximumTimestampButtonElements(
+  state: ObservableState<InspectorState>,
+  cleanUpFns: Array<() => void>
+): HTMLButtonElement[] {
+  return [
+    createTSMinusButton(
+      state,
+      STATE_PROPS.LOG_MAX_TIMESTAMP_DISPLAYED,
+      Infinity,
+      cleanUpFns
+    ),
+    createTSPlusButton(
+      state,
+      STATE_PROPS.LOG_MAX_TIMESTAMP_DISPLAYED,
+      Infinity,
+      cleanUpFns
+    ),
+    createTSResetButton(
+      state,
+      STATE_PROPS.LOG_MAX_TIMESTAMP_DISPLAYED,
+      Infinity
+    ),
+  ];
+}
+
+/**
+ * @param {Object} state - Object reporting the current application's state.
+ * @param {string} linkedState - The actual state property the minus button is
+ * linked to.
+ * @param {number} defaultValue
+ * @param {Array.<Function>} cleanUpFns - Will push function(s) allowing to
+ * unregister the listeners registered by this function.
+ * @returns {HTMLButtonElement}
+ */
+function createTSMinusButton(
+  state: ObservableState<InspectorState>,
+  linkedState:
+    | STATE_PROPS.LOG_MAX_TIMESTAMP_DISPLAYED
+    | STATE_PROPS.LOG_MIN_TIMESTAMP_DISPLAYED,
+  defaultValue: number,
+  cleanUpFns: Array<() => void>
+): HTMLButtonElement {
+  const minusButtonElt =
+    strHtml`<button title="Remove 1 second">-</button>` as HTMLButtonElement;
+  minusButtonElt.style.border = "none";
+  minusButtonElt.style.backgroundColor = "transparent";
+  minusButtonElt.style.cursor = "pointer";
+  minusButtonElt.style.fontWeight = "bold";
+  minusButtonElt.onclick = function () {
+    const current = state.getCurrentState(linkedState) ?? defaultValue;
+    if (current === Infinity || current === 0) {
+      return;
+    }
+    state.updateState(
+      linkedState,
+      UPDATE_TYPE.REPLACE,
+      Math.max(current - 1000, 0)
+    );
+    state.commitUpdates();
+  };
+
+  cleanUpFns.push(
+    state.subscribe(
+      linkedState,
+      () => {
+        const newVal = state.getCurrentState(linkedState) ?? defaultValue;
+        if (newVal === Infinity || newVal === 0) {
+          minusButtonElt.disabled = true;
+          minusButtonElt.style.cursor = "default";
+        } else {
+          minusButtonElt.disabled = false;
+          minusButtonElt.style.cursor = "pointer";
+        }
+      },
+      true
+    )
+  );
+  return minusButtonElt;
+}
+
+/**
+ * @param {Object} state - Object reporting the current application's state.
+ * @param {string} linkedState - The actual state property the minus button is
+ * linked to.
+ * @param {number} defaultValue
+ * @param {Array.<Function>} cleanUpFns - Will push function(s) allowing to
+ * unregister the listeners registered by this function.
+ * @returns {HTMLButtonElement}
+ */
+function createTSPlusButton(
+  state: ObservableState<InspectorState>,
+  linkedState:
+    | STATE_PROPS.LOG_MAX_TIMESTAMP_DISPLAYED
+    | STATE_PROPS.LOG_MIN_TIMESTAMP_DISPLAYED,
+  defaultValue: number,
+  cleanUpFns: Array<() => void>
+): HTMLButtonElement {
+  const plusButtonElt =
+    strHtml`<button title="Add 1 second">+</button>` as HTMLButtonElement;
+  plusButtonElt.style.border = "none";
+  plusButtonElt.style.backgroundColor = "transparent";
+  plusButtonElt.style.cursor = "pointer";
+  plusButtonElt.style.fontWeight = "bold";
+  plusButtonElt.onclick = function () {
+    const current = state.getCurrentState(linkedState) ?? defaultValue;
+    if (current === Infinity) {
+      return;
+    }
+    state.updateState(linkedState, UPDATE_TYPE.REPLACE, current + 1000);
+    state.commitUpdates();
+  };
+  cleanUpFns.push(
+    state.subscribe(
+      linkedState,
+      () => {
+        const newVal = state.getCurrentState(linkedState) ?? defaultValue;
+        if (newVal === Infinity) {
+          plusButtonElt.disabled = true;
+          plusButtonElt.style.cursor = "default";
+        } else {
+          plusButtonElt.disabled = false;
+          plusButtonElt.style.cursor = "pointer";
+        }
+      },
+      true
+    )
+  );
+  return plusButtonElt;
+}
+
+/**
+ * @param {Object} state - Object reporting the current application's state.
+ * @param {string} linkedState - The actual state property the minus button is
+ * linked to.
+ * @param {number} defaultValue
+ * @returns {HTMLButtonElement}
+ */
+function createTSResetButton(
+  state: ObservableState<InspectorState>,
+  linkedState:
+    | STATE_PROPS.LOG_MAX_TIMESTAMP_DISPLAYED
+    | STATE_PROPS.LOG_MIN_TIMESTAMP_DISPLAYED,
+  defaultValue: number
+): HTMLButtonElement {
+  const resetButtonElt =
+    strHtml`<button title="Reset to default value">↺</button>` as HTMLButtonElement;
+  resetButtonElt.style.border = "none";
+  resetButtonElt.style.backgroundColor = "transparent";
+  resetButtonElt.style.cursor = "pointer";
+  resetButtonElt.style.fontWeight = "bold";
+  resetButtonElt.onclick = function () {
+    const current = state.getCurrentState(linkedState) ?? 0;
+    if (current === defaultValue || current === undefined) {
+      return;
+    }
+    state.updateState(linkedState, UPDATE_TYPE.REPLACE, undefined);
+    state.commitUpdates();
+  };
+  return resetButtonElt;
 }

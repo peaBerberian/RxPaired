@@ -41,7 +41,7 @@ const isChromiumBasedBrowser = (window as any).chrome != null;
 export default function generateLiveDebuggingPage(
   password: string,
   tokenId: string,
-  configState: ObservableState<ConfigState>,
+  configState: ObservableState<ConfigState>
 ): () => void {
   /** Define sendInstruction` globally, to send JS instructions to the device. */
   (window as unknown as Record<string, unknown>).sendInstruction =
@@ -60,12 +60,16 @@ export default function generateLiveDebuggingPage(
    */
   let wasAckReceived = false;
 
+  const initialHistory =
+    inspectorState.getCurrentState(STATE_PROPS.LOGS_HISTORY) ?? [];
+  let nextLogId = initialHistory.reduce((acc, val) => Math.max(acc, val[1]), 0);
+
   const errorContainerElt = strHtml`<div/>`;
   const headerElt = createLiveDebuggerHeaderElement(
     tokenId,
     currentSocket,
     configState,
-    inspectorState,
+    inspectorState
   );
   const modulesContainerElt = strHtml`<div/>`;
   const liveDebuggingBodyElt = strHtml`<div>
@@ -75,9 +79,9 @@ export default function generateLiveDebuggingPage(
   </div>`;
   document.body.appendChild(liveDebuggingBodyElt);
 
-  inspectorState.subscribe(STATE_PROPS.SELECTED_LOG_INDEX, () => {
+  inspectorState.subscribe(STATE_PROPS.SELECTED_LOG_ID, () => {
     const allState = inspectorState.getCurrentState();
-    const selectedLogIdx = allState[STATE_PROPS.SELECTED_LOG_INDEX];
+    const selectedLogId = allState[STATE_PROPS.SELECTED_LOG_ID];
     const history = allState[STATE_PROPS.LOGS_HISTORY] ?? [];
     /* eslint-disable-next-line */
     (Object.keys(allState) as unknown as Array<keyof InspectorState>).forEach(
@@ -85,22 +89,30 @@ export default function generateLiveDebuggingPage(
         // TODO special separate ObservableState object for those?
         if (
           stateProp !== STATE_PROPS.LOGS_HISTORY &&
-          stateProp !== STATE_PROPS.SELECTED_LOG_INDEX &&
+          stateProp !== STATE_PROPS.SELECTED_LOG_ID &&
           stateProp !== STATE_PROPS.LOG_MIN_TIMESTAMP_DISPLAYED &&
           stateProp !== STATE_PROPS.LOG_MAX_TIMESTAMP_DISPLAYED
         ) {
           inspectorState.updateState(stateProp, UPDATE_TYPE.REPLACE, undefined);
         }
-      },
+      }
     );
-    if (selectedLogIdx === undefined) {
+    if (selectedLogId === undefined) {
       updateStatesFromLogGroup(inspectorState, history);
       inspectorState.commitUpdates();
       return;
     } else {
-      const consideredLogs = history.slice(0, selectedLogIdx + 1);
-      updateStatesFromLogGroup(inspectorState, consideredLogs);
-      inspectorState.commitUpdates();
+      const selectedLogIdx = history.findIndex(
+        ([_msg, id]) => id === selectedLogId
+      );
+      if (selectedLogIdx < 0) {
+        updateStatesFromLogGroup(inspectorState, history);
+        inspectorState.commitUpdates();
+      } else {
+        const consideredLogs = history.slice(0, selectedLogIdx + 1);
+        updateStatesFromLogGroup(inspectorState, consideredLogs);
+        inspectorState.commitUpdates();
+      }
     }
   });
 
@@ -131,13 +143,17 @@ export default function generateLiveDebuggingPage(
       displayError(
         errorContainerElt,
         "Unable to start WebSocket connection to RxPaired's server. " +
-        "This may be linked to either an issue with your network connection, " +
-        "a firewall policy, " +
-        "an issue with the RxPaired server and/or " +
-        "a wrong server password (on that last point, you may enter a " +
-        "different one by clicking on the \"Password\" link).");
+          "This may be linked to either an issue with your network connection, " +
+          "a firewall policy, " +
+          "an issue with the RxPaired server and/or " +
+          "a wrong server password (on that last point, you may enter a " +
+          'different one by clicking on the "Password" link).'
+      );
     } else {
-      displayError(errorContainerElt, "WebSocket connection closed unexpectedly.");
+      displayError(
+        errorContainerElt,
+        "WebSocket connection closed unexpectedly."
+      );
     }
   }
 
@@ -154,8 +170,7 @@ export default function generateLiveDebuggingPage(
       return;
     }
     const hasSelectedLog =
-      inspectorState.getCurrentState(STATE_PROPS.SELECTED_LOG_INDEX) !==
-      undefined;
+      inspectorState.getCurrentState(STATE_PROPS.SELECTED_LOG_ID) !== undefined;
 
     if (event.data === "ping") {
       currentSocket.send("pong");
@@ -181,14 +196,19 @@ export default function generateLiveDebuggingPage(
             const initLog = `${initTimestamp.toFixed(2)} [Init] Local-Date:${
               signal.value.dateMs
             }`;
-            let updates = [initLog];
+            let updates: Array<[string, number]> = [[initLog, nextLogId++]];
             if (signal.value?.history?.length > 0) {
-              updates = updates.concat(signal.value.history as string[]);
+              updates = updates.concat(
+                (signal.value.history as string[]).map((str) => [
+                  str,
+                  nextLogId++,
+                ])
+              );
             }
             inspectorState.updateState(
               STATE_PROPS.LOGS_HISTORY,
               UPDATE_TYPE.PUSH,
-              updates,
+              updates
             );
             if (!hasSelectedLog) {
               updateStatesFromLogGroup(inspectorState, updates);
@@ -200,7 +220,7 @@ export default function generateLiveDebuggingPage(
           if (typeof value.id === "string") {
             const emphasizedId = emphasizeForConsole(value.id as string);
             console.log(
-              `---> Result of instruction ${emphasizedId}: ${value.data}`,
+              `---> Result of instruction ${emphasizedId}: ${value.data}`
             );
           }
         } else if (signal.type === "eval-error") {
@@ -215,7 +235,7 @@ export default function generateLiveDebuggingPage(
             }
             const emphasizedId = emphasizeForConsole(value.id as string);
             console.log(
-              `---> Failure of instruction ${emphasizedId}: ${errorString}`,
+              `---> Failure of instruction ${emphasizedId}: ${errorString}`
             );
           }
         }
@@ -226,17 +246,17 @@ export default function generateLiveDebuggingPage(
         console.error("Could not parse signalling message", err);
         displayError(
           errorContainerElt,
-          "Invalid signaling message format received",
+          "Invalid signaling message format received"
         );
         return;
       }
     } else {
       const newLog = event.data;
       inspectorState.updateState(STATE_PROPS.LOGS_HISTORY, UPDATE_TYPE.PUSH, [
-        newLog,
+        [newLog, nextLogId++],
       ]);
       if (!hasSelectedLog) {
-        updateStateFromLog(inspectorState, event.data);
+        updateStateFromLog(inspectorState, event.data, nextLogId - 1);
       }
       inspectorState.commitUpdates();
     }
@@ -251,7 +271,7 @@ export default function generateLiveDebuggingPage(
           id,
           instruction,
         },
-      }),
+      })
     );
     const emphasizedId = emphasizeForConsole(id);
     console.log(`<--- Instruction ${emphasizedId} sent`);
@@ -270,7 +290,7 @@ function createLiveDebuggerHeaderElement(
   tokenId: string,
   currentSocket: WebSocket,
   configState: ObservableState<ConfigState>,
-  inspectorState: ObservableState<InspectorState>,
+  inspectorState: ObservableState<InspectorState>
 ): HTMLElement {
   return strHtml`<div class="header">
     <div class="token-title">
@@ -325,7 +345,7 @@ function createCloseConnectionButton(currentSocket: WebSocket): HTMLElement {
  * @returns {HTMLButtonElement}
  */
 function createExportLogsButton(
-  inspectorState: ObservableState<InspectorState>,
+  inspectorState: ObservableState<InspectorState>
 ): HTMLButtonElement {
   const buttonElt =
     strHtml`<button>${"💾 Export"}</button>` as HTMLButtonElement;
@@ -340,7 +360,7 @@ function createExportLogsButton(
  * @returns {HTMLButtonElement}
  */
 function createClearAllButton(
-  inspectorState: ObservableState<InspectorState>,
+  inspectorState: ObservableState<InspectorState>
 ): HTMLButtonElement {
   const buttonElt =
     strHtml`<button>${"🧹 Clear all logs"}</button>` as HTMLButtonElement;
@@ -354,10 +374,10 @@ function createClearAllButton(
  * @param {Object} inspectorState
  */
 function clearInspectorState(
-  inspectorState: ObservableState<InspectorState>,
+  inspectorState: ObservableState<InspectorState>
 ): void {
   const allProps = Object.keys(inspectorState.getCurrentState()) as Array<
-  keyof InspectorState
+    keyof InspectorState
   >;
   allProps.forEach((prop) => {
     inspectorState.updateState(prop, UPDATE_TYPE.REPLACE, undefined);
@@ -394,7 +414,7 @@ function exportLogs(inspectorState: ObservableState<InspectorState>): void {
  */
 function startWebsocketConnection(
   password: string,
-  tokenId: string,
+  tokenId: string
 ): WebSocket {
   const wsUrl =
     password === ""

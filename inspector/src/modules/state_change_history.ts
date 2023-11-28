@@ -8,7 +8,9 @@ export default function StateChangeInformationModule({
   state: ObservableState<InspectorState>;
 }) {
   const stateHistoryElt = strHtml`<div>No state information</div>`;
-  const moduleBodyElt = strHtml`<div class="state-history-body module-body">${stateHistoryElt}</div>`;
+  const moduleBodyElt = strHtml`<div class="state-history-body module-body">${[
+    stateHistoryElt
+  ]}</div>`;
   const unsubscribeHistory = state.subscribe(
     STATE_PROPS.STATE_CHANGE_HISTORY,
     () => {
@@ -29,13 +31,37 @@ export default function StateChangeInformationModule({
           <th>State</th>
           <th>TS</th>
           <th>Time in prev. state (ms)</th>
-          <th>Focus</th>
+          <th>Time Travel</th>
         </tr>
       </table>`;
       for (let i = stateHistory?.length - 1; i >= 0; i--) {
         const stateInfo = stateHistory[i];
-        const tsMaxButton = strHtml`<button>◎</button>`;
-        tsMaxButton.onclick = function () {
+        const tsFocusButton = strHtml`<button>◎</button>`;
+        tsFocusButton.title =
+          "Focus on this log and set it as the last one in the history";
+        tsFocusButton.onclick = function () {
+          state.updateState(
+            STATE_PROPS.LOG_MIN_TIMESTAMP_DISPLAYED,
+            UPDATE_TYPE.REPLACE,
+            0
+          );
+          state.updateState(
+            STATE_PROPS.LOG_MAX_TIMESTAMP_DISPLAYED,
+            UPDATE_TYPE.REPLACE,
+            stateInfo.timestamp
+          );
+          state.updateState(
+            STATE_PROPS.SELECTED_LOG_ID,
+            UPDATE_TYPE.REPLACE,
+            stateInfo.logId
+          );
+          state.commitUpdates();
+        };
+
+        const timestampElt = strHtml`<td>${stateInfo.timestamp}</td>`;
+        timestampElt.style.cursor = "pointer";
+        timestampElt.style.textDecoration = "underline";
+        timestampElt.onclick = () => {
           state.updateState(
             STATE_PROPS.LOG_MIN_TIMESTAMP_DISPLAYED,
             UPDATE_TYPE.REPLACE,
@@ -52,7 +78,7 @@ export default function StateChangeInformationModule({
         tableElt.appendChild(
           strHtml`<tr>
             <td>${stateInfo.state}</td>
-            <td>${stateInfo.timestamp}</td>
+            ${timestampElt}
             <td>
               ${
                 i === 0
@@ -62,7 +88,7 @@ export default function StateChangeInformationModule({
                     ).toFixed(2)
               }
             </td>
-            <td>${tsMaxButton}</td>
+            <td>${tsFocusButton}</td>
           </tr>`
         );
       }

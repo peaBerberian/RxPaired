@@ -8,14 +8,16 @@ import ObservableState, { UPDATE_TYPE } from "./observable_state";
  * modules relying on those updated states.
  * @param {Object} state
  * @param {string} newLog
+ * @param {number} newLogId
  */
 export default function updateStateFromLog(
   state: ObservableState<InspectorState>,
   newLog: string,
+  newLogId: number
 ): void {
   for (const proc of LogProcessors) {
     if (proc.filter(newLog)) {
-      const updateRes = proc.processor(newLog);
+      const updateRes = proc.processor(newLog, newLogId);
       for (const update of updateRes) {
         state.updateState(
           update.property,
@@ -36,7 +38,7 @@ export default function updateStateFromLog(
  */
 export function updateStatesFromLogGroup(
   state: ObservableState<InspectorState>,
-  logs: string[],
+  logs: Array<[string, number]>,
 ): void {
   const pendingUpdates: Array<StateUpdate<keyof InspectorState>> = [];
 
@@ -62,8 +64,8 @@ export function updateStatesFromLogGroup(
     const currLog = logs[i];
     for (let checkIdx = 0; checkIdx < remainingChecks.length; checkIdx++) {
       const currCheck = remainingChecks[checkIdx];
-      if (currCheck.filter(currLog)) {
-        const updates = currCheck.processor(currLog);
+      if (currCheck.filter(currLog[0])) {
+        const updates = currCheck.processor(currLog[0], currLog[1]);
         for (const update of updates) {
           if (!updatedStates.has(update.property)) {
             pendingUpdates.push(update);

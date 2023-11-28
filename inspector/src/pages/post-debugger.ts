@@ -31,9 +31,9 @@ export default function generatePostDebuggerPage(
   </div>`;
   document.body.appendChild(bodyElement);
 
-  inspectorState.subscribe(STATE_PROPS.SELECTED_LOG_INDEX, () => {
+  inspectorState.subscribe(STATE_PROPS.SELECTED_LOG_ID, () => {
     const allState = inspectorState.getCurrentState();
-    const selectedLogIdx = allState[STATE_PROPS.SELECTED_LOG_INDEX];
+    const selectedLogId = allState[STATE_PROPS.SELECTED_LOG_ID];
     const history = allState[STATE_PROPS.LOGS_HISTORY] ?? [];
     /* eslint-disable-next-line */
     (Object.keys(allState) as unknown as Array<keyof InspectorState>).forEach(
@@ -41,7 +41,7 @@ export default function generatePostDebuggerPage(
         // TODO special separate ObservableState object for those?
         if (
           stateProp !== STATE_PROPS.LOGS_HISTORY &&
-          stateProp !== STATE_PROPS.SELECTED_LOG_INDEX &&
+          stateProp !== STATE_PROPS.SELECTED_LOG_ID &&
           stateProp !== STATE_PROPS.LOG_MIN_TIMESTAMP_DISPLAYED &&
           stateProp !== STATE_PROPS.LOG_MAX_TIMESTAMP_DISPLAYED
         ) {
@@ -49,14 +49,22 @@ export default function generatePostDebuggerPage(
         }
       },
     );
-    if (selectedLogIdx === undefined) {
+    if (selectedLogId === undefined) {
       updateStatesFromLogGroup(inspectorState, history);
       inspectorState.commitUpdates();
       return;
     } else {
-      const consideredLogs = history.slice(0, selectedLogIdx + 1);
-      updateStatesFromLogGroup(inspectorState, consideredLogs);
-      inspectorState.commitUpdates();
+      const selectedLogIdx = history.findIndex(
+        ([_msg, id]) => id === selectedLogId
+      );
+      if (selectedLogIdx < 0) {
+        updateStatesFromLogGroup(inspectorState, history);
+        inspectorState.commitUpdates();
+      } else {
+        const consideredLogs = history.slice(0, selectedLogIdx + 1);
+        updateStatesFromLogGroup(inspectorState, consideredLogs);
+        inspectorState.commitUpdates();
+      }
     }
   });
 
@@ -107,8 +115,9 @@ function createImportFileButton(
         return;
       }
       const dataStr = loadTarget.result;
-      const logs: string[] = [];
+      const logs: Array<[string, number]> = [];
       let remaininStrConsidered = dataStr;
+      let id = 0;
       while (remaininStrConsidered.length > 0) {
         let indexOfEnd: number;
         let offset = 0;
@@ -136,7 +145,7 @@ function createImportFileButton(
           indexOfEnd = indexOfBrk + offset;
         }
         const logLine = remaininStrConsidered.substring(0, indexOfEnd);
-        logs.push(logLine);
+        logs.push([logLine, id++]);
         remaininStrConsidered = remaininStrConsidered.substring(indexOfEnd + 1);
       }
 

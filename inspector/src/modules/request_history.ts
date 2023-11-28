@@ -1,12 +1,12 @@
 import strHtml from "str-html";
 import { InspectorState, RequestInformation, STATE_PROPS } from "../constants";
-import ObservableState from "../observable_state";
+import ObservableState, { UPDATE_TYPE } from "../observable_state";
 import { ModuleFunction } from ".";
 
 const MAX_REQ_ELEMENTS = 50;
 
 export default function generateRequestHistoryModule(
-  mediaType: "audio" | "video" | "text",
+  mediaType: "audio" | "video" | "text"
 ): ModuleFunction {
   return function RequestInformationModule({
     state,
@@ -31,11 +31,11 @@ export default function generateRequestHistoryModule(
 
     const unsubscribeLogHistory = state.subscribe(
       STATE_PROPS.LOGS_HISTORY,
-      updatePendingTimeElt,
+      updatePendingTimeElt
     );
     const unsubscribeSelected = state.subscribe(
-      STATE_PROPS.SELECTED_LOG_INDEX,
-      updatePendingTimeElt,
+      STATE_PROPS.SELECTED_LOG_ID,
+      updatePendingTimeElt
     );
 
     const unsubscribeHistory = state.subscribe(
@@ -65,24 +65,45 @@ export default function generateRequestHistoryModule(
       </table>`;
         for (let i = requestInfo?.length - 1; i >= 0; i--) {
           const req = requestInfo[i];
+
+          const timestampElt = strHtml`<td>${req.timestamp}</td>`;
+          timestampElt.style.cursor = "pointer";
+          timestampElt.style.textDecoration = "underline";
+          timestampElt.onclick = () => {
+            state.updateState(
+              STATE_PROPS.LOG_MIN_TIMESTAMP_DISPLAYED,
+              UPDATE_TYPE.REPLACE,
+              0
+            );
+            state.updateState(
+              STATE_PROPS.LOG_MAX_TIMESTAMP_DISPLAYED,
+              UPDATE_TYPE.REPLACE,
+              req.timestamp
+            );
+            state.commitUpdates();
+          };
+
           if (canStillReceivePending && req.eventType === "start") {
             pendingRequestInfo = {
               element: strHtml`<td> - </td>`,
               timestamp: req.timestamp,
             };
             updatePendingTimeElt();
-
             const newElt = strHtml`<tr>
-            <td>${req.timestamp}</td>
+            ${timestampElt}
             <td>pending</td>
             ${pendingRequestInfo.element}
             <td>${req.periodId}</td>
             <td>${req.representationId}</td>
             <td>
-              ${req.segmentStart === -1 ? "init" : req.segmentStart}
+              ${req.segmentStart === -1 ? "init" : req.segmentStart.toFixed(2)}
             </td>
             <td>
-              ${req.segmentDuration === -1 ? "-" : req.segmentDuration}
+              ${
+                req.segmentDuration === -1
+                  ? "-"
+                  : req.segmentDuration.toFixed(2)
+              }
             </td>
           </tr>`;
             tableElt.appendChild(newElt);
@@ -116,7 +137,7 @@ export default function generateRequestHistoryModule(
               ) {
                 tableElt.appendChild(
                   strHtml`<tr>
-                  <td>${reqBase.timestamp}</td>
+                  ${timestampElt}
                   <td>${req.eventType}</td>
                   <td>
                     ${(req.timestamp - reqBase.timestamp).toFixed(2)}
@@ -129,7 +150,7 @@ export default function generateRequestHistoryModule(
                   <td>
                     ${req.segmentDuration === -1 ? "-" : req.segmentDuration}
                   </td>
-                </tr>`,
+                </tr>`
                 );
                 if (tableElt.childNodes.length >= MAX_REQ_ELEMENTS - 1) {
                   requestDataElt.appendChild(tableElt);
@@ -148,7 +169,7 @@ export default function generateRequestHistoryModule(
         requestDataElt.appendChild(tableElt);
         moduleBodyElt.classList.remove("empty");
       },
-      true,
+      true
     );
     return {
       body: moduleBodyElt,
@@ -170,28 +191,31 @@ export default function generateRequestHistoryModule(
       }
       let lastKnownTimestamp: number | undefined;
       const logs = state.getCurrentState(STATE_PROPS.LOGS_HISTORY) ?? [];
-      const selected =
-        state.getCurrentState(STATE_PROPS.SELECTED_LOG_INDEX) ??
-        logs.length - 1;
-      if (selected !== -1 && logs.length > selected) {
-        lastKnownTimestamp = parseFloat(logs[selected]);
-        if (isNaN(lastKnownTimestamp)) {
-          lastKnownTimestamp = undefined;
+      const selectedLogId = state.getCurrentState(STATE_PROPS.SELECTED_LOG_ID);
+      if (selectedLogId === undefined) {
+        if (logs.length > 0) {
+          lastKnownTimestamp = parseFloat(logs[logs.length - 1][0]);
         }
+      } else {
+        const selectedLogElt = logs.find(([_msg, id]) => id === selectedLogId);
+        if (selectedLogElt !== undefined) {
+          lastKnownTimestamp = parseFloat(selectedLogElt[0]);
+        }
+      }
+      if (typeof lastKnownTimestamp === "number" && isNaN(lastKnownTimestamp)) {
+        lastKnownTimestamp = undefined;
       }
       pendingRequestInfo.element.textContent =
         lastKnownTimestamp === undefined
           ? " - "
-          : `+${(lastKnownTimestamp - pendingRequestInfo.timestamp).toFixed(
-              2,
-            )}ms`;
+          : `+${lastKnownTimestamp - pendingRequestInfo.timestamp}ms`;
     }
   };
 }
 
 function isRequestingSameSegment(
   req1: RequestInformation,
-  req2: RequestInformation,
+  req2: RequestInformation
 ) {
   return (
     req1.periodId === req2.periodId &&
