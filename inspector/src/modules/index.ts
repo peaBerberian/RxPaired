@@ -1,4 +1,4 @@
-import { ConfigState, InspectorState } from "../constants";
+import { ConfigState, InspectorState, LogViewState } from "../constants";
 import ObservableState from "../observable_state";
 import generateAudioVideoBufferContentModule from "./buffer_audio_video_content_module";
 import BufferContentModule from "./buffer_content_module";
@@ -177,6 +177,8 @@ export interface ModuleObject {
 export interface ModuleFunctionArguments {
   /** Object reporting the current application's state. */
   state: ObservableState<InspectorState>;
+  /** State related to the current view made into logs. */
+  logView: ObservableState<LogViewState>;
   /** Object reporting the current page config's state. */
   configState: ObservableState<ConfigState>;
   /** Token ID currently used to identify which device we are communicating with. */

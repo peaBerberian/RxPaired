@@ -1,11 +1,13 @@
 import strHtml from "str-html";
-import { InspectorState, STATE_PROPS } from "../constants";
+import { InspectorState, LogViewState, STATE_PROPS } from "../constants";
 import ObservableState, { UPDATE_TYPE } from "../observable_state";
 
 export default function StateChangeInformationModule({
   state,
+  logView,
 }: {
   state: ObservableState<InspectorState>;
+  logView: ObservableState<LogViewState>;
 }) {
   const stateHistoryElt = strHtml`<div>No state information</div>`;
   const moduleBodyElt = strHtml`<div class="state-history-body module-body">${[
@@ -40,39 +42,39 @@ export default function StateChangeInformationModule({
         tsFocusButton.title =
           "Focus on this log and set it as the last one in the history";
         tsFocusButton.onclick = function () {
-          state.updateState(
+          logView.updateState(
             STATE_PROPS.LOG_MIN_TIMESTAMP_DISPLAYED,
             UPDATE_TYPE.REPLACE,
             0
           );
-          state.updateState(
+          logView.updateState(
             STATE_PROPS.LOG_MAX_TIMESTAMP_DISPLAYED,
             UPDATE_TYPE.REPLACE,
             stateInfo.timestamp
           );
-          state.updateState(
+          logView.updateState(
             STATE_PROPS.SELECTED_LOG_ID,
             UPDATE_TYPE.REPLACE,
             stateInfo.logId
           );
-          state.commitUpdates();
+          logView.commitUpdates();
         };
 
         const timestampElt = strHtml`<td>${stateInfo.timestamp}</td>`;
         timestampElt.style.cursor = "pointer";
         timestampElt.style.textDecoration = "underline";
         timestampElt.onclick = () => {
-          state.updateState(
+          logView.updateState(
             STATE_PROPS.LOG_MIN_TIMESTAMP_DISPLAYED,
             UPDATE_TYPE.REPLACE,
             0
           );
-          state.updateState(
+          logView.updateState(
             STATE_PROPS.LOG_MAX_TIMESTAMP_DISPLAYED,
             UPDATE_TYPE.REPLACE,
             stateInfo.timestamp
           );
-          state.commitUpdates();
+          logView.commitUpdates();
         };
 
         tableElt.appendChild(

@@ -1,16 +1,17 @@
 import strHtml from "str-html";
-import { InspectorState, STATE_PROPS } from "../constants";
+import { InspectorState, LogViewState, STATE_PROPS } from "../constants";
 import ObservableState, { UPDATE_TYPE } from "../observable_state";
 
 const MAX_ELEMENTS = 50;
 
 export default function ManifestParsingTimeHistoryModule({
   state,
+  logView,
 }: {
   state: ObservableState<InspectorState>;
+  logView: ObservableState<LogViewState>;
 }) {
-  const manifestParsingHistoryElt =
-    strHtml`<div>No manifest parsing information</div>`;
+  const manifestParsingHistoryElt = strHtml`<div>No manifest parsing information</div>`;
   const moduleBodyElt = strHtml`<div class="state-history-body module-body">
     ${manifestParsingHistoryElt}
   </div>`;
@@ -21,7 +22,7 @@ export default function ManifestParsingTimeHistoryModule({
 
       // TODO more optimized: rely on push
       const manifestParsingTimeHistory = state.getCurrentState(
-        STATE_PROPS.MANIFEST_PARSING_TIME_HISTORY,
+        STATE_PROPS.MANIFEST_PARSING_TIME_HISTORY
       );
 
       if (manifestParsingTimeHistory === undefined) {
@@ -42,17 +43,17 @@ export default function ManifestParsingTimeHistoryModule({
         timestampElt.style.cursor = "pointer";
         timestampElt.style.textDecoration = "underline";
         timestampElt.onclick = () => {
-          state.updateState(
+          logView.updateState(
             STATE_PROPS.LOG_MIN_TIMESTAMP_DISPLAYED,
             UPDATE_TYPE.REPLACE,
             0
           );
-          state.updateState(
+          logView.updateState(
             STATE_PROPS.LOG_MAX_TIMESTAMP_DISPLAYED,
             UPDATE_TYPE.REPLACE,
             info.timestamp
           );
-          state.commitUpdates();
+          logView.commitUpdates();
         };
         tableElt.appendChild(
           strHtml`<tr>
@@ -70,7 +71,7 @@ export default function ManifestParsingTimeHistoryModule({
                     ).toFixed(2)
               }
             </td>
-          </tr>`,
+          </tr>`
         );
         if (tableElt.childNodes.length >= MAX_ELEMENTS - 1) {
           manifestParsingHistoryElt.appendChild(tableElt);
@@ -85,7 +86,7 @@ export default function ManifestParsingTimeHistoryModule({
       manifestParsingHistoryElt.appendChild(tableElt);
       moduleBodyElt.classList.remove("empty");
     },
-    true,
+    true
   );
   return {
     body: moduleBodyElt,

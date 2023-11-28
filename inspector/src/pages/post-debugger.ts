@@ -1,5 +1,10 @@
 import strHtml from "str-html";
-import { ConfigState, InspectorState, STATE_PROPS } from "../constants";
+import {
+  ConfigState,
+  InspectorState,
+  LogViewState,
+  STATE_PROPS,
+} from "../constants";
 import createModules from "../create_modules";
 import ObservableState, { UPDATE_TYPE } from "../observable_state";
 import { updateStatesFromLogGroup } from "../update_state_from_log";
@@ -17,37 +22,31 @@ const START_LOG_LINE_REGEXP = /^[0-9]+\.[0-9]{2} \[/;
  * by this page. Should be called when the page is disposed.
  */
 export default function generatePostDebuggerPage(
-  configState: ObservableState<ConfigState>,
+  configState: ObservableState<ConfigState>
 ): () => void {
   const inspectorState = new ObservableState<InspectorState>();
+  const logViewState = new ObservableState<LogViewState>();
   const modulesContainerElt = strHtml`<div/>`;
   const bodyElement = strHtml`<div>
     ${createPostDebuggerHeaderElement(configState)}
     <div class="page-input-block">
       <span>Log file to import: </span>
-      ${createImportFileButton(inspectorState)}
+      ${createImportFileButton(inspectorState, logViewState)}
     </div>
     ${modulesContainerElt}
   </div>`;
   document.body.appendChild(bodyElement);
 
-  inspectorState.subscribe(STATE_PROPS.SELECTED_LOG_ID, () => {
-    const allState = inspectorState.getCurrentState();
-    const selectedLogId = allState[STATE_PROPS.SELECTED_LOG_ID];
-    const history = allState[STATE_PROPS.LOGS_HISTORY] ?? [];
+  logViewState.subscribe(STATE_PROPS.SELECTED_LOG_ID, () => {
+    const logViewProps = logViewState.getCurrentState();
+    const selectedLogId = logViewProps[STATE_PROPS.SELECTED_LOG_ID];
+    const history = logViewProps[STATE_PROPS.LOGS_HISTORY] ?? [];
+    const stateProps = inspectorState.getCurrentState();
     /* eslint-disable-next-line */
-    (Object.keys(allState) as unknown as Array<keyof InspectorState>).forEach(
+    (Object.keys(stateProps) as unknown as Array<keyof InspectorState>).forEach(
       (stateProp: keyof InspectorState) => {
-        // TODO special separate ObservableState object for those?
-        if (
-          stateProp !== STATE_PROPS.LOGS_HISTORY &&
-          stateProp !== STATE_PROPS.SELECTED_LOG_ID &&
-          stateProp !== STATE_PROPS.LOG_MIN_TIMESTAMP_DISPLAYED &&
-          stateProp !== STATE_PROPS.LOG_MAX_TIMESTAMP_DISPLAYED
-        ) {
-          inspectorState.updateState(stateProp, UPDATE_TYPE.REPLACE, undefined);
-        }
-      },
+        inspectorState.updateState(stateProp, UPDATE_TYPE.REPLACE, undefined);
+      }
     );
     if (selectedLogId === undefined) {
       updateStatesFromLogGroup(inspectorState, history);
@@ -72,6 +71,7 @@ export default function generatePostDebuggerPage(
     containerElt: modulesContainerElt,
     context: "post-debugger",
     configState,
+    logViewState,
     inspectorState,
   });
 
@@ -84,6 +84,7 @@ export default function generatePostDebuggerPage(
 
 function createImportFileButton(
   inspectorState: ObservableState<InspectorState>,
+  logViewState: ObservableState<LogViewState>
 ): HTMLInputElement {
   const fileInputEl =
     strHtml`<input name="file" type="file">` as HTMLInputElement;
@@ -124,7 +125,7 @@ function createImportFileButton(
         let indexOfBrk = remaininStrConsidered.indexOf("\n");
         while (indexOfBrk >= 0) {
           const strAfterBrk = remaininStrConsidered.substring(
-            indexOfBrk + 1 + offset,
+            indexOfBrk + 1 + offset
           );
           const nextCharCode = strAfterBrk.charCodeAt(0);
           if (
@@ -149,13 +150,14 @@ function createImportFileButton(
         remaininStrConsidered = remaininStrConsidered.substring(indexOfEnd + 1);
       }
 
-      inspectorState.updateState(
+      logViewState.updateState(
         STATE_PROPS.LOGS_HISTORY,
         UPDATE_TYPE.REPLACE,
-        logs,
+        logs
       );
       updateStatesFromLogGroup(inspectorState, logs);
       inspectorState.commitUpdates();
+      logViewState.commitUpdates();
     };
 
     reader.readAsText(file);
@@ -169,7 +171,7 @@ function createImportFileButton(
  * @returns {HTMLElement}
  */
 function createPostDebuggerHeaderElement(
-  configState: ObservableState<ConfigState>,
+  configState: ObservableState<ConfigState>
 ): HTMLElement {
   return strHtml`<div class="header">
     <div class="token-title">

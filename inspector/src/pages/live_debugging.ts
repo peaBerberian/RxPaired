@@ -2,6 +2,7 @@ import strHtml from "str-html";
 import {
   ConfigState,
   InspectorState,
+  LogViewState,
   SERVER_URL,
   STATE_PROPS,
 } from "../constants";
@@ -47,6 +48,8 @@ export default function generateLiveDebuggingPage(
   (window as unknown as Record<string, unknown>).sendInstruction =
     sendInstruction;
 
+  /** Stores the state of currently-inspected logs. */
+  const logViewState = new ObservableState<LogViewState>();
   /** Store the state on which the inspector modules will depend. */
   const inspectorState = new ObservableState<InspectorState>();
   /**
@@ -61,7 +64,7 @@ export default function generateLiveDebuggingPage(
   let wasAckReceived = false;
 
   const initialHistory =
-    inspectorState.getCurrentState(STATE_PROPS.LOGS_HISTORY) ?? [];
+    logViewState.getCurrentState(STATE_PROPS.LOGS_HISTORY) ?? [];
   let nextLogId = initialHistory.reduce((acc, val) => Math.max(acc, val[1]), 0);
 
   const errorContainerElt = strHtml`<div/>`;
@@ -69,6 +72,7 @@ export default function generateLiveDebuggingPage(
     tokenId,
     currentSocket,
     configState,
+    logViewState,
     inspectorState
   );
   const modulesContainerElt = strHtml`<div/>`;
@@ -79,22 +83,16 @@ export default function generateLiveDebuggingPage(
   </div>`;
   document.body.appendChild(liveDebuggingBodyElt);
 
-  inspectorState.subscribe(STATE_PROPS.SELECTED_LOG_ID, () => {
-    const allState = inspectorState.getCurrentState();
-    const selectedLogId = allState[STATE_PROPS.SELECTED_LOG_ID];
-    const history = allState[STATE_PROPS.LOGS_HISTORY] ?? [];
+  logViewState.subscribe(STATE_PROPS.SELECTED_LOG_ID, () => {
+    const logViewProps = logViewState.getCurrentState();
+    const selectedLogId = logViewProps[STATE_PROPS.SELECTED_LOG_ID];
+    const history = logViewProps[STATE_PROPS.LOGS_HISTORY] ?? [];
+    const stateProps = inspectorState.getCurrentState();
     /* eslint-disable-next-line */
-    (Object.keys(allState) as unknown as Array<keyof InspectorState>).forEach(
+    (Object.keys(stateProps) as unknown as Array<keyof InspectorState>).forEach(
       (stateProp: keyof InspectorState) => {
         // TODO special separate ObservableState object for those?
-        if (
-          stateProp !== STATE_PROPS.LOGS_HISTORY &&
-          stateProp !== STATE_PROPS.SELECTED_LOG_ID &&
-          stateProp !== STATE_PROPS.LOG_MIN_TIMESTAMP_DISPLAYED &&
-          stateProp !== STATE_PROPS.LOG_MAX_TIMESTAMP_DISPLAYED
-        ) {
-          inspectorState.updateState(stateProp, UPDATE_TYPE.REPLACE, undefined);
-        }
+        inspectorState.updateState(stateProp, UPDATE_TYPE.REPLACE, undefined);
       }
     );
     if (selectedLogId === undefined) {
@@ -120,6 +118,7 @@ export default function generateLiveDebuggingPage(
     containerElt: modulesContainerElt,
     context: "live-debugging",
     tokenId,
+    logViewState,
     configState,
     inspectorState,
   });
@@ -170,7 +169,7 @@ export default function generateLiveDebuggingPage(
       return;
     }
     const hasSelectedLog =
-      inspectorState.getCurrentState(STATE_PROPS.SELECTED_LOG_ID) !== undefined;
+      logViewState.getCurrentState(STATE_PROPS.SELECTED_LOG_ID) !== undefined;
 
     if (event.data === "ping") {
       currentSocket.send("pong");
@@ -190,7 +189,7 @@ export default function generateLiveDebuggingPage(
           // This is always the first message sent by a given device.
           // If this is not the first message from a WebSocket, then another
           // device just took the token.
-          clearInspectorState(inspectorState);
+          clearInspectorState(inspectorState, logViewState);
           const initTimestamp = signal.value?.timestamp;
           if (typeof initTimestamp === "number") {
             const initLog = `${initTimestamp.toFixed(2)} [Init] Local-Date:${
@@ -205,7 +204,7 @@ export default function generateLiveDebuggingPage(
                 ])
               );
             }
-            inspectorState.updateState(
+            logViewState.updateState(
               STATE_PROPS.LOGS_HISTORY,
               UPDATE_TYPE.PUSH,
               updates
@@ -214,6 +213,7 @@ export default function generateLiveDebuggingPage(
               updateStatesFromLogGroup(inspectorState, updates);
             }
             inspectorState.commitUpdates();
+            logViewState.commitUpdates();
           }
         } else if (signal.type === "eval-result") {
           const { value } = signal;
@@ -252,7 +252,7 @@ export default function generateLiveDebuggingPage(
       }
     } else {
       const newLog = event.data;
-      inspectorState.updateState(STATE_PROPS.LOGS_HISTORY, UPDATE_TYPE.PUSH, [
+      logViewState.updateState(STATE_PROPS.LOGS_HISTORY, UPDATE_TYPE.PUSH, [
         [newLog, nextLogId++],
       ]);
       if (!hasSelectedLog) {
@@ -290,6 +290,7 @@ function createLiveDebuggerHeaderElement(
   tokenId: string,
   currentSocket: WebSocket,
   configState: ObservableState<ConfigState>,
+  logViewState: ObservableState<LogViewState>,
   inspectorState: ObservableState<InspectorState>
 ): HTMLElement {
   return strHtml`<div class="header">
@@ -313,9 +314,9 @@ function createLiveDebuggerHeaderElement(
       ]}</span>
     </div>
     <div class="header-item">${[
-      createExportLogsButton(inspectorState),
+      createExportLogsButton(logViewState),
       createCloseConnectionButton(currentSocket),
-      createClearAllButton(inspectorState),
+      createClearAllButton(inspectorState, logViewState),
       createClearStoredConfigButton(configState),
       createDarkLightModeButton(configState),
     ]}</div>
@@ -345,12 +346,12 @@ function createCloseConnectionButton(currentSocket: WebSocket): HTMLElement {
  * @returns {HTMLButtonElement}
  */
 function createExportLogsButton(
-  inspectorState: ObservableState<InspectorState>
+  logViewState: ObservableState<LogViewState>
 ): HTMLButtonElement {
   const buttonElt =
     strHtml`<button>${"💾 Export"}</button>` as HTMLButtonElement;
   buttonElt.onclick = function () {
-    exportLogs(inspectorState);
+    exportLogs(logViewState);
   };
   return buttonElt;
 }
@@ -360,12 +361,13 @@ function createExportLogsButton(
  * @returns {HTMLButtonElement}
  */
 function createClearAllButton(
-  inspectorState: ObservableState<InspectorState>
+  inspectorState: ObservableState<InspectorState>,
+  logViewState: ObservableState<LogViewState>
 ): HTMLButtonElement {
   const buttonElt =
     strHtml`<button>${"🧹 Clear all logs"}</button>` as HTMLButtonElement;
   buttonElt.onclick = function () {
-    clearInspectorState(inspectorState);
+    clearInspectorState(inspectorState, logViewState);
   };
   return buttonElt;
 }
@@ -374,27 +376,39 @@ function createClearAllButton(
  * @param {Object} inspectorState
  */
 function clearInspectorState(
-  inspectorState: ObservableState<InspectorState>
+  inspectorState: ObservableState<InspectorState>,
+  logViewState: ObservableState<LogViewState>
 ): void {
-  const allProps = Object.keys(inspectorState.getCurrentState()) as Array<
-    keyof InspectorState
-  >;
-  allProps.forEach((prop) => {
-    inspectorState.updateState(prop, UPDATE_TYPE.REPLACE, undefined);
-  });
-  inspectorState.commitUpdates();
+  {
+    const stateProps = Object.keys(inspectorState.getCurrentState()) as Array<
+      keyof InspectorState
+    >;
+    stateProps.forEach((prop) => {
+      inspectorState.updateState(prop, UPDATE_TYPE.REPLACE, undefined);
+    });
+    inspectorState.commitUpdates();
+  }
+  {
+    const logViewProps = Object.keys(logViewState.getCurrentState()) as Array<
+      keyof LogViewState
+    >;
+    logViewProps.forEach((prop) => {
+      logViewState.updateState(prop, UPDATE_TYPE.REPLACE, undefined);
+    });
+    logViewState.commitUpdates();
+  }
 }
 
 /**
  * Download all logs in a txt file.
- * @param {Object} inspectorState
+ * @param {Object} logViewState
  */
-function exportLogs(inspectorState: ObservableState<InspectorState>): void {
+function exportLogs(logViewState: ObservableState<LogViewState>): void {
   const aElt = document.createElement("a");
   aElt.style.display = "none";
   document.body.appendChild(aElt);
   const logsHistory =
-    inspectorState.getCurrentState(STATE_PROPS.LOGS_HISTORY) ?? [];
+    logViewState.getCurrentState(STATE_PROPS.LOGS_HISTORY) ?? [];
   const logExport = logsHistory.join("\n");
   const blob = new Blob([logExport], { type: "octet/stream" });
   const url = window.URL.createObjectURL(blob);

@@ -79,11 +79,11 @@ export enum STATE_PROPS {
    * Information on what is stored on the media element audio's SourceBuffer.
    */
   AUDIO_INVENTORY = "audioInventory",
- /**
-  * Each log in chronological order, in an array of 2-elements tuple:
-  *   1. The full log message to display.
-  *   2. An identifier for this particular log, useful for focusing on it.
-  */
+  /**
+   * Each log in chronological order, in an array of 2-elements tuple:
+   *   1. The full log message to display.
+   *   2. An identifier for this particular log, useful for focusing on it.
+   */
   LOGS_HISTORY = "logsHistory",
   /**
    * If set, a log has been selected and thus all charts should refer to the
@@ -109,18 +109,11 @@ export enum STATE_PROPS {
 }
 
 /**
- * State properties listen by the inspector modules, which actually reflect the
- * RxPlayer state on the page.
+ * State properties listen by the inspector modules, related to either the
+ * situation at the time of the last log or at the time of the selected log,
+ * depending on the current log view.
  */
 export interface InspectorState {
-  /* TODO Another ObservableState Object due to its more specific rules? */
-  [STATE_PROPS.LOGS_HISTORY]?: Array<[string, number]>;
-  /* TODO Another ObservableState Object due to its more specific rules? */
-  [STATE_PROPS.SELECTED_LOG_ID]?: number | undefined;
-  /* TODO Another ObservableState Object due to its more specific rules? */
-  [STATE_PROPS.LOG_MIN_TIMESTAMP_DISPLAYED]?: number;
-  /* TODO Another ObservableState Object due to its more specific rules? */
-  [STATE_PROPS.LOG_MAX_TIMESTAMP_DISPLAYED]?: number;
   [STATE_PROPS.BUFFER_GAPS]?: Array<{
     bufferGap: number | undefined;
     timestamp: number;
@@ -143,6 +136,16 @@ export interface InspectorState {
     timeMs: number;
     timestamp: number;
   }>;
+}
+
+/**
+ * State properties specifically related to the logs currently inspected.
+ */
+export interface LogViewState {
+  [STATE_PROPS.LOGS_HISTORY]?: Array<[string, number]>;
+  [STATE_PROPS.SELECTED_LOG_ID]?: number | undefined;
+  [STATE_PROPS.LOG_MIN_TIMESTAMP_DISPLAYED]?: number;
+  [STATE_PROPS.LOG_MAX_TIMESTAMP_DISPLAYED]?: number;
 }
 
 /** State linked to the Inspector page layout and configuration. */

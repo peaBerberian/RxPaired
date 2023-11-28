@@ -1,5 +1,10 @@
 import strHtml from "str-html";
-import { InspectorState, RequestInformation, STATE_PROPS } from "../constants";
+import {
+  InspectorState,
+  LogViewState,
+  RequestInformation,
+  STATE_PROPS,
+} from "../constants";
 import ObservableState, { UPDATE_TYPE } from "../observable_state";
 import { ModuleFunction } from ".";
 
@@ -10,8 +15,10 @@ export default function generateRequestHistoryModule(
 ): ModuleFunction {
   return function RequestInformationModule({
     state,
+    logView,
   }: {
     state: ObservableState<InspectorState>;
+    logView: ObservableState<LogViewState>;
   }) {
     const requestDataElt = strHtml`<div>No request information</div>`;
     const moduleBodyElt = strHtml`<div class="request-history-body module-body">
@@ -29,11 +36,11 @@ export default function generateRequestHistoryModule(
       timestamp: number;
     } | null = null;
 
-    const unsubscribeLogHistory = state.subscribe(
+    const unsubscribeLogHistory = logView.subscribe(
       STATE_PROPS.LOGS_HISTORY,
       updatePendingTimeElt
     );
-    const unsubscribeSelected = state.subscribe(
+    const unsubscribeSelected = logView.subscribe(
       STATE_PROPS.SELECTED_LOG_ID,
       updatePendingTimeElt
     );
@@ -70,17 +77,17 @@ export default function generateRequestHistoryModule(
           timestampElt.style.cursor = "pointer";
           timestampElt.style.textDecoration = "underline";
           timestampElt.onclick = () => {
-            state.updateState(
+            logView.updateState(
               STATE_PROPS.LOG_MIN_TIMESTAMP_DISPLAYED,
               UPDATE_TYPE.REPLACE,
               0
             );
-            state.updateState(
+            logView.updateState(
               STATE_PROPS.LOG_MAX_TIMESTAMP_DISPLAYED,
               UPDATE_TYPE.REPLACE,
               req.timestamp
             );
-            state.commitUpdates();
+            logView.commitUpdates();
           };
 
           if (canStillReceivePending && req.eventType === "start") {
@@ -190,8 +197,10 @@ export default function generateRequestHistoryModule(
         return;
       }
       let lastKnownTimestamp: number | undefined;
-      const logs = state.getCurrentState(STATE_PROPS.LOGS_HISTORY) ?? [];
-      const selectedLogId = state.getCurrentState(STATE_PROPS.SELECTED_LOG_ID);
+      const logs = logView.getCurrentState(STATE_PROPS.LOGS_HISTORY) ?? [];
+      const selectedLogId = logView.getCurrentState(
+        STATE_PROPS.SELECTED_LOG_ID
+      );
       if (selectedLogId === undefined) {
         if (logs.length > 0) {
           lastKnownTimestamp = parseFloat(logs[logs.length - 1][0]);
