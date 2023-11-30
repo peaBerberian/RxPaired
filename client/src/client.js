@@ -401,36 +401,52 @@ function init(currentScriptSrc, playerClass) {
         return;
       }
       let val;
+      let instructionId = formattedObj.value.id
       try {
         // Contrary to popular belief eval is the best and surest function ever
         val = evaluate(formattedObj.value.instruction);
-      } catch (err) {
-        const errorMessage =
-          typeof err?.message === "string" ? err.message : undefined;
-        const errorName = typeof err?.name === "string" ? err.name : undefined;
-        socket.send(
-          safeJsonStringify({
-            type: "eval-error",
-            value: {
-              error: { message: errorMessage, name: errorName },
-              id: formattedObj.value.id,
-            },
+        // handle the case where instruction is async
+        if (typeof window.Promise === "function" && val instanceof Promise) {
+          val.then((value) => {
+            sendSuccessToSocket(value, socket, instructionId)
+          }).catch((err) => {
+            sendErrorToSocket(err, socket, instructionId)
           })
-        );
-        return;
+        } else {
+          sendSuccessToSocket(val, socket, instructionId)
+        }
+      } catch (err) {
+        sendErrorToSocket(err, socket, instructionId)
       }
-      socket.send(
-        safeJsonStringify({
-          type: "eval-result",
-          value: {
-            data: processEvalReturn(val),
-            id: formattedObj.value.id,
-          },
-        })
-      );
-      return;
     }
   });
+
+  function sendErrorToSocket(err, socket, instructionId) {
+    const errorMessage =
+          typeof err?.message === "string" ? err.message : undefined;
+        const errorName = typeof err?.name === "string" ? err.name : undefined;
+    socket.send(
+      safeJsonStringify({
+        type: "eval-error",
+        value: {
+          error: { message: errorMessage, name: errorName },
+          id: instructionId,
+        },
+      })
+    );
+  }
+
+  function sendSuccessToSocket(val, socket, instructionId) {
+    socket.send(
+      safeJsonStringify({
+        type: "eval-result",
+        value: {
+          data: processEvalReturn(val),
+          id: instructionId,
+        },
+      })
+    );
+  }
 
   function processEvalReturn(val) {
     let processed;
@@ -452,7 +468,7 @@ function init(currentScriptSrc, playerClass) {
 
       case "object":
         try {
-          processed = safeJsonStringify(arg);
+          processed = safeJsonStringify(val);
         } catch (_) {}
         break;
       default:
