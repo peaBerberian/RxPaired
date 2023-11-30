@@ -359,7 +359,7 @@ function init(currentScriptSrc, playerClass) {
   socket.addEventListener("error", abort);
   socket.addEventListener("close", abort);
 
-  socket.addEventListener("message", async function (event) {
+  socket.addEventListener("message", function (event) {
     if (event == null || event.data == null) {
       console.error("RxPaired: No message received from WebSocket");
       return;
