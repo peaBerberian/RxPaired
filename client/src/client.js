@@ -359,7 +359,7 @@ function init(currentScriptSrc, playerClass) {
   socket.addEventListener("error", abort);
   socket.addEventListener("close", abort);
 
-  socket.addEventListener("message", function (event) {
+  socket.addEventListener("message", async function (event) {
     if (event == null || event.data == null) {
       console.error("RxPaired: No message received from WebSocket");
       return;
@@ -404,6 +404,9 @@ function init(currentScriptSrc, playerClass) {
       try {
         // Contrary to popular belief eval is the best and surest function ever
         val = evaluate(formattedObj.value.instruction);
+        if (val instanceof Promise) {
+          val = await val;
+        }
       } catch (err) {
         const errorMessage =
           typeof err?.message === "string" ? err.message : undefined;
@@ -452,7 +455,7 @@ function init(currentScriptSrc, playerClass) {
 
       case "object":
         try {
-          processed = safeJsonStringify(arg);
+          processed = safeJsonStringify(val);
         } catch (_) {}
         break;
       default:
