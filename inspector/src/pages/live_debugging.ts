@@ -259,6 +259,7 @@ export default function generateLiveDebuggingPage(
         updateStateFromLog(inspectorState, event.data, nextLogId - 1);
       }
       inspectorState.commitUpdates();
+      logViewState.commitUpdates();
     }
   }
 
