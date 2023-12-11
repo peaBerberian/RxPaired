@@ -410,7 +410,7 @@ function exportLogs(logViewState: ObservableState<LogViewState>): void {
   document.body.appendChild(aElt);
   const logsHistory =
     logViewState.getCurrentState(STATE_PROPS.LOGS_HISTORY) ?? [];
-  const logExport = logsHistory.join("\n");
+  const logExport = logsHistory.map(([log, _ts]) => log).join("\n");
   const blob = new Blob([logExport], { type: "octet/stream" });
   const url = window.URL.createObjectURL(blob);
   aElt.href = url;
