@@ -8,6 +8,7 @@
 /client/.npmrc
 
 /server/node_modules/
+/server/RxPaired-server.bundle.cjs
 /server/server-logs.txt
 /server/logs-*.txt
 /server/build

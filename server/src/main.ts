@@ -202,7 +202,7 @@ const persistentTokensStorage = new PersistentTokensStorage();
 
 let activeTokensList: ActiveTokensList;
 if (persistentTokensFile !== undefined) {
-  const stored = await persistentTokensStorage.initializeWithPath(persistentTokensFile);
+  const stored = persistentTokensStorage.initializeWithPath(persistentTokensFile);
   activeTokensList = new ActiveTokensList(stored);
 } else {
   activeTokensList = new ActiveTokensList([]);

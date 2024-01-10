@@ -1,4 +1,4 @@
-import { readFile, writeFile } from "fs";
+import { readFileSync, writeFile } from "fs";
 import {
   DeviceInitData,
   LogHistoryData,
@@ -47,95 +47,93 @@ export default class PersistentTokensStorage {
    * @returns {Promise.<Array.<Object>>} - Parsed persistent token information
    * found in the file at the communicated path.
    */
-  public initializeWithPath(path: string): Promise<TokenMetadata[]> {
+  public initializeWithPath(path: string): TokenMetadata[] {
     this._tokens = [];
     this._path = path;
-    return new Promise((res) => {
-      readFile(path, null, (err, data) => {
-        if (err !== null) {
-          logger.log("No persistent file found: " + path);
-          res([]);
-          return;
-        }
-        logger.log("Persistent file found: " + path);
-        try {
-          const json = data.toString();
-          const formatted = JSON.parse(json) as StoredTokenMetadata[];
-          let isWellFormatted = true;
-          if (Array.isArray(formatted)) {
-            for (const item of formatted) {
-              if (
-                typeof item.date !== "number" ||
-                typeof item.expirationDate !== "number" ||
-                typeof item.tokenId !== "string" ||
-                typeof item.initData !== "object" ||
-                typeof item.history !== "object"
-              ) {
-                isWellFormatted = false;
-                break;
-              } else if (
-                !Array.isArray(item.history.history) ||
-                typeof item.history.maxHistorySize !== "number"
-              ) {
-                isWellFormatted = false;
-                break;
-              } else if (
-                item.history.history.some((h) => typeof h !== "string")
-              ) {
-                isWellFormatted = false;
-                break;
-              } else if (item.initData !== null) {
-                if (
-                  typeof item.initData.dateMs !== "number" ||
-                  typeof item.initData.timestamp !== "number"
-                ) {
-                  isWellFormatted = false;
-                  break;
-                }
-              }
+    let data;
+    try {
+      data = readFileSync(path, null);
+    } catch (err) {
+      logger.log("No persistent file found: " + path);
+      return [];
+    }
+    logger.log("Persistent file found: " + path);
+    try {
+      const json = data.toString();
+      const formatted = JSON.parse(json) as StoredTokenMetadata[];
+      let isWellFormatted = true;
+      if (Array.isArray(formatted)) {
+        for (const item of formatted) {
+          if (
+            typeof item.date !== "number" ||
+            typeof item.expirationDate !== "number" ||
+            typeof item.tokenId !== "string" ||
+            typeof item.initData !== "object" ||
+            typeof item.history !== "object"
+          ) {
+            isWellFormatted = false;
+            break;
+          } else if (
+            !Array.isArray(item.history.history) ||
+            typeof item.history.maxHistorySize !== "number"
+          ) {
+            isWellFormatted = false;
+            break;
+          } else if (
+            item.history.history.some((h) => typeof h !== "string")
+          ) {
+            isWellFormatted = false;
+            break;
+          } else if (item.initData !== null) {
+            if (
+              typeof item.initData.dateMs !== "number" ||
+              typeof item.initData.timestamp !== "number"
+            ) {
+              isWellFormatted = false;
+              break;
             }
           }
-          if (isWellFormatted) {
-            const date = Date.now();
-            this._tokens = formatted.reduce((acc: TokenMetadata[], f) => {
-              if (f.expirationDate <= date) {
-                console.log("FFOFE", f.expirationDate, date);
-                return acc;
-              }
-              const md = new TokenMetadata(
-                TokenType.Persistent,
-                f.tokenId,
-                f.history.maxHistorySize,
-                f.expirationDate - date,
-                f.date
-              );
-              md.setDeviceInitData(f.initData);
-              f.history.history.forEach((h) => {
-                md.addLogToHistory(h);
-              });
-              acc.push(md);
-              return acc;
-            }, []);
-          } else {
-            logger.warn("Persistent tokens file not well formatted");
+        }
+      }
+      if (isWellFormatted) {
+        const date = Date.now();
+        this._tokens = formatted.reduce((acc: TokenMetadata[], f) => {
+          if (f.expirationDate <= date) {
+            console.log("FFOFE", f.expirationDate, date);
+            return acc;
           }
-        } catch (error) {
-          /* eslint-disable */
-          const errToStr: string =
-            typeof (error as null | undefined | { message?: unknown })
-              ?.message !== "string"
-              ? "Unknown Error"
-              : ((error as null | undefined | { message?: unknown })
-                  ?.message as string);
-          /* eslint-enable */
-          logger.warn("Could not open persistent token file: " + errToStr);
-        }
-        if (this._tokens.length > 0) {
-          logger.log("Found stored persistent tokens: " + String(this._tokens.length));
-        }
-        res(this._tokens);
-      });
-    });
+          const md = new TokenMetadata(
+            TokenType.Persistent,
+            f.tokenId,
+            f.history.maxHistorySize,
+            f.expirationDate - date,
+            f.date
+          );
+          md.setDeviceInitData(f.initData);
+          f.history.history.forEach((h) => {
+            md.addLogToHistory(h);
+          });
+          acc.push(md);
+          return acc;
+        }, []);
+      } else {
+        logger.warn("Persistent tokens file not well formatted");
+      }
+    } catch (error) {
+      /* eslint-disable */
+      const errToStr: string =
+        typeof (error as null | undefined | { message?: unknown })
+          ?.message !== "string"
+          ? "Unknown Error"
+          : ((error as null | undefined | { message?: unknown })
+              ?.message as string);
+      /* eslint-enable */
+      logger.warn("Could not open persistent token file: " + errToStr);
+    }
+    if (this._tokens.length > 0) {
+      logger.log("Found stored persistent tokens: " + String(this._tokens.length));
+    }
+    return this._tokens;
   }
 
   /**
