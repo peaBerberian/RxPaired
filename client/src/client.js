@@ -148,7 +148,7 @@ function init(currentScriptSrc, playerClass) {
         arguments[1] != null &&
         typeof arguments[1].method === "string"
       ) {
-        method = arguments[0].method;
+        method = arguments[1].method;
       } else {
         method = "GET";
       }
