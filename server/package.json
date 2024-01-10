@@ -6,6 +6,7 @@
   "type": "module",
   "scripts": {
     "build": "tsc --project .",
+    "bundle": "npm run build && esbuild --bundle --platform=node ./RxPaired-server --outfile=RxPaired-server.bundle.cjs",
     "run": "node ./build/main.js",
     "start": "npm run build && npm run run",
     "check": "tsc --noEmit --project .",
@@ -21,6 +22,7 @@
     "@types/node": "20.4.5",
     "@types/ws": "8.5.5",
     "@typescript-eslint/eslint-plugin": "6.2.1",
+    "esbuild": "0.19.11",
     "eslint": "8.46.0",
     "eslint-plugin-import": "2.28.0",
     "eslint-plugin-jsdoc": "46.4.5",
