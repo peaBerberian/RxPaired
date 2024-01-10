@@ -32,10 +32,12 @@ export default function LogModule({
       caseSensitive: boolean;
       regex: boolean;
     };
+    textToExclude: string;
   } = {
     minTimeStamp: 0,
     maxTimeStamp: Infinity,
     textFilter: null,
+    textToExclude: "",
   };
 
   let maxNbDisplayedLogs = DEFAULT_MAX_DISPLAYED_LOG_ELEMENTS;
@@ -170,9 +172,21 @@ export default function LogModule({
   logFilterInputElt.oninput = refreshFilters;
   logFilterInputElt.onchange = refreshFilters;
 
+
+  const logExcludeFilterInputElt = strHtml`<input
+  type="input"
+  placeholder="Exclude logs based on text, e.g. [info] HXR"
+  class="log-filter"
+/>` as HTMLInputElement;
+  logExcludeFilterInputElt.style.margin = "5px";
+  logExcludeFilterInputElt.style.width = "calc(100% - 9px)";
+  logExcludeFilterInputElt.oninput = refreshFilters;
+  logExcludeFilterInputElt.onchange = refreshFilters;
+
   filterFlexElt.appendChild(caseSensitiveBtn);
   filterFlexElt.appendChild(regexFilterButton);
   filterFlexElt.appendChild(logFilterInputElt);
+  filterFlexElt.appendChild(logExcludeFilterInputElt);
 
   const allFiltersElt = strHtml`<div>
     <div style="border-bottom: 1px dotted;">Filters</div>
@@ -333,7 +347,8 @@ export default function LogModule({
     if (
       filterObject.minTimeStamp === 0 &&
       filterObject.maxTimeStamp === Infinity &&
-      filterObject.textFilter === null
+      filterObject.textFilter === null &&
+      filterObject.textToExclude === ""
     ) {
       filtered = values.slice();
     } else {
@@ -541,6 +556,7 @@ export default function LogModule({
       logView.getCurrentState(STATE_PROPS.LOG_MAX_TIMESTAMP_DISPLAYED) ??
       Infinity;
     const text = logFilterInputElt.value ?? "";
+    const excludeText = logExcludeFilterInputElt.value ?? "";
     if (
       filterObject.minTimeStamp === minRange &&
       filterObject.maxTimeStamp === maxRange &&
@@ -548,12 +564,14 @@ export default function LogModule({
         ? filterObject.textFilter === null
         : filterObject.textFilter?.text === text &&
           filterObject.textFilter.caseSensitive === areSearchCaseSensitive &&
-          filterObject.textFilter.regex === areSearchRegex)
+          filterObject.textFilter.regex === areSearchRegex) &&
+      (excludeText === filterObject.textToExclude) 
     ) {
       return; // Nothing changed
     }
     filterObject.minTimeStamp = minRange;
     filterObject.maxTimeStamp = maxRange;
+    filterObject.textToExclude = excludeText;
     if (text === "") {
       filterObject.textFilter = null;
     } else {
@@ -590,21 +608,38 @@ export default function LogModule({
         );
       };
     }
+    let checkTextFilter : (input : string) => boolean;
     if (filterObject.textFilter !== null) {
       const text = filterObject.textFilter.text;
       if (filterObject.textFilter.regex) {
         const flags = filterObject.textFilter.caseSensitive ? undefined : "i";
         const reg = new RegExp(text, flags);
-        return (input: string) => checkLogDate(input) && reg.test(input);
+        checkTextFilter = (input: string) => reg.test(input);
       } else if (filterObject.textFilter.caseSensitive) {
-        return (input: string) => checkLogDate(input) && input.includes(text);
+        checkTextFilter = (input: string) => input.includes(text);
       } else {
         const toLower = text.toLowerCase();
-        return (input: string) =>
-          checkLogDate(input) && input.toLowerCase().includes(toLower);
+        checkTextFilter = (input: string) => input.toLowerCase().includes(toLower);
       }
     } else {
-      return checkLogDate;
+      checkTextFilter = (_input: string) => true;
+    }
+
+    let checkTextExclude : (input: string) => boolean;
+    if (filterObject.textToExclude === "") {
+      checkTextExclude = (_input: string) => true;
+    } else {
+      const textToExclude = filterObject.textToExclude;
+      const splitted = textToExclude.trim().split(/\s+/);
+      checkTextExclude = (input: string) => {
+        const doesNotIncludeForbiddenText = (str: string) => !input.includes(str)
+        return splitted.every(doesNotIncludeForbiddenText);
+      }
+    }
+    return (input: string) => {
+      return checkLogDate(input) &&
+             checkTextFilter(input) &&
+             checkTextExclude(input);
     }
   }
 
