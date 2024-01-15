@@ -119,15 +119,15 @@ export default function LogModule({
   </div>` as HTMLInputElement;
   timeRangeInputElt.style.fontSize = "0.9em";
   timeRangeInputElt.style.display = "flex";
-  timeRangeInputElt.style.margin = "10px 5px 0px 5px";
+  timeRangeInputElt.style.marginTop = "10px";
   timeRangeInputElt.style.overflow = "hidden";
   timeRangeInputElt.style.justifyContent = "space-between";
 
   /** Wrapper elements allowing to filter logs. */
   const filterFlexElt = strHtml`<div class="log-wrapper"/>`;
   filterFlexElt.style.display = "flex";
-  filterFlexElt.style.height = "40px";
   filterFlexElt.style.margin = "5px 0px";
+  filterFlexElt.style.gap = "4px";
 
   const caseSensitiveBtn = createFilterButtonElement(
     "Aa",
@@ -167,8 +167,7 @@ export default function LogModule({
     placeholder="Filter logs based on text"
     class="log-filter"
   />` as HTMLInputElement;
-  logFilterInputElt.style.margin = "5px";
-  logFilterInputElt.style.width = "calc(100% - 9px)";
+  logFilterInputElt.style.width = "100%";
   logFilterInputElt.oninput = refreshFilters;
   logFilterInputElt.onchange = refreshFilters;
 
@@ -178,21 +177,21 @@ export default function LogModule({
   placeholder="Exclude logs based on text, e.g. [info] HXR"
   class="log-filter"
 />` as HTMLInputElement;
-  logExcludeFilterInputElt.style.margin = "5px";
-  logExcludeFilterInputElt.style.width = "calc(100% - 9px)";
+  logExcludeFilterInputElt.style.marginLeft = "56px";
   logExcludeFilterInputElt.oninput = refreshFilters;
   logExcludeFilterInputElt.onchange = refreshFilters;
 
   filterFlexElt.appendChild(caseSensitiveBtn);
   filterFlexElt.appendChild(regexFilterButton);
   filterFlexElt.appendChild(logFilterInputElt);
-  filterFlexElt.appendChild(logExcludeFilterInputElt);
 
   const allFiltersElt = strHtml`<div>
     <div style="border-bottom: 1px dotted;">Filters</div>
   </div>`;
-  allFiltersElt.style.padding = "5px";
+  allFiltersElt.style.padding = "8px";
   allFiltersElt.style.marginTop = "5px";
+  allFiltersElt.style.display = "flex";
+  allFiltersElt.style.flexDirection = "column";
   onDestroyFns.push(
     configState.subscribe(
       STATE_PROPS.CSS_MODE,
@@ -207,6 +206,7 @@ export default function LogModule({
   );
   allFiltersElt.appendChild(timeRangeInputElt);
   allFiltersElt.appendChild(filterFlexElt);
+  allFiltersElt.appendChild(logExcludeFilterInputElt);
 
   onDestroyFns.push(
     logView.subscribe(STATE_PROPS.LOGS_HISTORY, onLogsHistoryChange, true)
@@ -754,10 +754,11 @@ function createFilterButtonElement(
   buttonElt.title = titleDisabled;
   buttonElt.style.cursor = "pointer";
   buttonElt.style.fontWeight = "bold";
-  buttonElt.style.margin = "6px 5px";
-  buttonElt.style.border = "none";
   buttonElt.style.fontSize = "11px";
-  buttonElt.style.padding = "4px";
+  buttonElt.style.minWidth = "24px";
+  buttonElt.style.padding = "0px 0px";
+  buttonElt.style.border = "1px solid";
+  buttonElt.style.borderRadius = "4px";
   buttonElt.style.backgroundColor = "transparent";
   setEnabledFilterButtonStyle(buttonElt, isDarkMode);
   return buttonElt;
@@ -768,6 +769,7 @@ function setNonEnabledFilterButtonStyle(
   isDarkMode: boolean
 ) {
   buttonElt.style.color = isDarkMode ? "#d3ffcf" : "#990033";
+  buttonElt.style.borderColor = isDarkMode ? "#d3ffcf" : "#990033";
 }
 
 function setEnabledFilterButtonStyle(
@@ -775,6 +777,7 @@ function setEnabledFilterButtonStyle(
   isDarkMode: boolean
 ) {
   buttonElt.style.color = isDarkMode ? "#ffffff" : "#000000";
+  buttonElt.style.borderColor = isDarkMode ? "#767676" : "#767676";
 }
 
 /**
