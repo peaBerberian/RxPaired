@@ -32,10 +32,12 @@ export default function LogModule({
       caseSensitive: boolean;
       regex: boolean;
     };
+    textToExclude: string;
   } = {
     minTimeStamp: 0,
     maxTimeStamp: Infinity,
     textFilter: null,
+    textToExclude: "",
   };
 
   let maxNbDisplayedLogs = DEFAULT_MAX_DISPLAYED_LOG_ELEMENTS;
@@ -117,15 +119,15 @@ export default function LogModule({
   </div>` as HTMLInputElement;
   timeRangeInputElt.style.fontSize = "0.9em";
   timeRangeInputElt.style.display = "flex";
-  timeRangeInputElt.style.margin = "10px 5px 0px 5px";
+  timeRangeInputElt.style.marginTop = "10px";
   timeRangeInputElt.style.overflow = "hidden";
   timeRangeInputElt.style.justifyContent = "space-between";
 
   /** Wrapper elements allowing to filter logs. */
   const filterFlexElt = strHtml`<div class="log-wrapper"/>`;
   filterFlexElt.style.display = "flex";
-  filterFlexElt.style.height = "40px";
   filterFlexElt.style.margin = "5px 0px";
+  filterFlexElt.style.gap = "4px";
 
   const caseSensitiveBtn = createFilterButtonElement(
     "Aa",
@@ -165,10 +167,18 @@ export default function LogModule({
     placeholder="Filter logs based on text"
     class="log-filter"
   />` as HTMLInputElement;
-  logFilterInputElt.style.margin = "5px";
-  logFilterInputElt.style.width = "calc(100% - 9px)";
+  logFilterInputElt.style.width = "100%";
   logFilterInputElt.oninput = refreshFilters;
   logFilterInputElt.onchange = refreshFilters;
+
+
+  const logExcludeFilterInputElt = strHtml`<input
+  type="input"
+  placeholder="Exclude logs based on text, e.g. [info] XHR"
+  class="log-filter"
+/>` as HTMLInputElement;
+  logExcludeFilterInputElt.oninput = refreshFilters;
+  logExcludeFilterInputElt.onchange = refreshFilters;
 
   filterFlexElt.appendChild(caseSensitiveBtn);
   filterFlexElt.appendChild(regexFilterButton);
@@ -177,8 +187,10 @@ export default function LogModule({
   const allFiltersElt = strHtml`<div>
     <div style="border-bottom: 1px dotted;">Filters</div>
   </div>`;
-  allFiltersElt.style.padding = "5px";
+  allFiltersElt.style.padding = "8px";
   allFiltersElt.style.marginTop = "5px";
+  allFiltersElt.style.display = "flex";
+  allFiltersElt.style.flexDirection = "column";
   onDestroyFns.push(
     configState.subscribe(
       STATE_PROPS.CSS_MODE,
@@ -193,6 +205,7 @@ export default function LogModule({
   );
   allFiltersElt.appendChild(timeRangeInputElt);
   allFiltersElt.appendChild(filterFlexElt);
+  allFiltersElt.appendChild(logExcludeFilterInputElt);
 
   onDestroyFns.push(
     logView.subscribe(STATE_PROPS.LOGS_HISTORY, onLogsHistoryChange, true)
@@ -333,7 +346,8 @@ export default function LogModule({
     if (
       filterObject.minTimeStamp === 0 &&
       filterObject.maxTimeStamp === Infinity &&
-      filterObject.textFilter === null
+      filterObject.textFilter === null &&
+      filterObject.textToExclude === ""
     ) {
       filtered = values.slice();
     } else {
@@ -541,6 +555,7 @@ export default function LogModule({
       logView.getCurrentState(STATE_PROPS.LOG_MAX_TIMESTAMP_DISPLAYED) ??
       Infinity;
     const text = logFilterInputElt.value ?? "";
+    const excludeText = logExcludeFilterInputElt.value ?? "";
     if (
       filterObject.minTimeStamp === minRange &&
       filterObject.maxTimeStamp === maxRange &&
@@ -548,12 +563,14 @@ export default function LogModule({
         ? filterObject.textFilter === null
         : filterObject.textFilter?.text === text &&
           filterObject.textFilter.caseSensitive === areSearchCaseSensitive &&
-          filterObject.textFilter.regex === areSearchRegex)
+          filterObject.textFilter.regex === areSearchRegex) &&
+      (excludeText === filterObject.textToExclude) 
     ) {
       return; // Nothing changed
     }
     filterObject.minTimeStamp = minRange;
     filterObject.maxTimeStamp = maxRange;
+    filterObject.textToExclude = excludeText;
     if (text === "") {
       filterObject.textFilter = null;
     } else {
@@ -590,21 +607,38 @@ export default function LogModule({
         );
       };
     }
+    let checkTextFilter : (input : string) => boolean;
     if (filterObject.textFilter !== null) {
       const text = filterObject.textFilter.text;
       if (filterObject.textFilter.regex) {
         const flags = filterObject.textFilter.caseSensitive ? undefined : "i";
         const reg = new RegExp(text, flags);
-        return (input: string) => checkLogDate(input) && reg.test(input);
+        checkTextFilter = (input: string) => reg.test(input);
       } else if (filterObject.textFilter.caseSensitive) {
-        return (input: string) => checkLogDate(input) && input.includes(text);
+        checkTextFilter = (input: string) => input.includes(text);
       } else {
         const toLower = text.toLowerCase();
-        return (input: string) =>
-          checkLogDate(input) && input.toLowerCase().includes(toLower);
+        checkTextFilter = (input: string) => input.toLowerCase().includes(toLower);
       }
     } else {
-      return checkLogDate;
+      checkTextFilter = (_input: string) => true;
+    }
+
+    let checkTextExclude : (input: string) => boolean;
+    if (filterObject.textToExclude === "") {
+      checkTextExclude = (_input: string) => true;
+    } else {
+      const textToExclude = filterObject.textToExclude;
+      const splitted = textToExclude.trim().split(/\s+/);
+      checkTextExclude = (input: string) => {
+        const doesNotIncludeForbiddenText = (str: string) => !input.includes(str)
+        return splitted.every(doesNotIncludeForbiddenText);
+      }
+    }
+    return (input: string) => {
+      return checkLogDate(input) &&
+             checkTextFilter(input) &&
+             checkTextExclude(input);
     }
   }
 
@@ -719,10 +753,11 @@ function createFilterButtonElement(
   buttonElt.title = titleDisabled;
   buttonElt.style.cursor = "pointer";
   buttonElt.style.fontWeight = "bold";
-  buttonElt.style.margin = "6px 5px";
-  buttonElt.style.border = "none";
   buttonElt.style.fontSize = "11px";
-  buttonElt.style.padding = "4px";
+  buttonElt.style.minWidth = "24px";
+  buttonElt.style.padding = "0px 0px";
+  buttonElt.style.border = "1px solid";
+  buttonElt.style.borderRadius = "4px";
   buttonElt.style.backgroundColor = "transparent";
   setEnabledFilterButtonStyle(buttonElt, isDarkMode);
   return buttonElt;
@@ -733,6 +768,7 @@ function setNonEnabledFilterButtonStyle(
   isDarkMode: boolean
 ) {
   buttonElt.style.color = isDarkMode ? "#d3ffcf" : "#990033";
+  buttonElt.style.borderColor = isDarkMode ? "#d3ffcf" : "#990033";
 }
 
 function setEnabledFilterButtonStyle(
@@ -740,6 +776,7 @@ function setEnabledFilterButtonStyle(
   isDarkMode: boolean
 ) {
   buttonElt.style.color = isDarkMode ? "#ffffff" : "#000000";
+  buttonElt.style.borderColor = isDarkMode ? "#767676" : "#767676";
 }
 
 /**
