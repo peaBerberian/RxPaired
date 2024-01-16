@@ -174,7 +174,7 @@ export default function LogModule({
 
   const logExcludeFilterInputElt = strHtml`<input
   type="input"
-  placeholder="Exclude logs based on text, e.g. [info] HXR"
+  placeholder="Exclude logs based on text, e.g. [info] XHR"
   class="log-filter"
 />` as HTMLInputElement;
   logExcludeFilterInputElt.style.marginLeft = "56px";
