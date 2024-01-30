@@ -85,7 +85,26 @@ export default function LogModule({
   const onDestroyFns: Array<() => void> = [];
 
   const minimumTimeInputElt = createMinimumTimestampInputElement(logView);
+  const minimumDateInputElt = createMinimumDateInputElement(logView);
+  const toggleTimeRepresentation = () => {
+    if (configState.getCurrentState(STATE_PROPS.TIME_REPRESENTATION) === "date") {
+      minimumTimeInputElt.style.display = "none";
+      minimumDateInputElt.style.display = "unset";
+    } else {
+      minimumTimeInputElt.style.display = "unset";
+      minimumDateInputElt.style.display = "none";
+    }
+  }
+  onDestroyFns.push(
+    configState.subscribe(
+      STATE_PROPS.TIME_REPRESENTATION,
+      toggleTimeRepresentation,
+      true
+    )
+  );
+
   const maximumTimeInputElt = createMaximumTimestampInputElement(logView);
+  const timeRepresentationSwitch = createTimeRepresentationSwitch(configState)
   const maximumNbLogsInputElt = strHtml`<input
     type="input"
     class="log-time-range"
@@ -96,10 +115,12 @@ export default function LogModule({
 
   /** Text input element for only showing a sub-time-range of the logs. */
   const timeRangeInputElt = strHtml`<div class="log-wrapper">
+    ${[ timeRepresentationSwitch ]}
     <span style="display: flex; flex-direction: column; align-items: center">
       Min. timestamp
       <span>${[
         minimumTimeInputElt,
+        minimumDateInputElt,
         createMinimumTimestampButtonElements(logView, onDestroyFns),
       ]}
       </span>
@@ -211,6 +232,9 @@ export default function LogModule({
     logView.subscribe(STATE_PROPS.LOGS_HISTORY, onLogsHistoryChange, true)
   );
   onDestroyFns.push(
+    configState.subscribe(STATE_PROPS.TIME_REPRESENTATION, reloadLogsHistory, true)
+  )
+  onDestroyFns.push(
     logView.subscribe(STATE_PROPS.SELECTED_LOG_ID, onSelectedLogChange, true)
   );
   onDestroyFns.push(
@@ -227,6 +251,20 @@ export default function LogModule({
       true
     )
   );
+  onDestroyFns.push(
+    logView.subscribe(
+      STATE_PROPS.LOG_MIN_TIMESTAMP_DISPLAYED,
+      onMinimumDateChange,
+      true
+    )
+  );
+  onDestroyFns.push(
+    logView.subscribe(
+      STATE_PROPS.DATE_AT_PAGE_LOAD,
+      onMinimumDateChange,
+      true
+    )
+  )
   refreshFilters();
 
   logBodyElt.appendChild(logContainerElt);
@@ -312,6 +350,9 @@ export default function LogModule({
     return "no-log";
   }
 
+  function reloadLogsHistory() {
+    onLogsHistoryChange(UPDATE_TYPE.REPLACE, logView.getCurrentState(STATE_PROPS.LOGS_HISTORY))
+  }
   /**
    * Callback triggered when the global history of logs changes.
    * @param {string} updateType
@@ -444,7 +485,7 @@ export default function LogModule({
         ? logsToDisplay.length - (logIdx + 1)
         : logIdx;
       const log = logsToDisplay[actualLogIdx];
-      const logElt = createLogElement(log[0]);
+      const logElt = createLogElement(log[0], logView, configState);
       if (log[1] === selectedLogId) {
         if (selectedElt !== null) {
           selectedElt.classList.remove("focused-bg");
@@ -692,6 +733,21 @@ export default function LogModule({
     maximumTimeInputElt.value = newMaxText;
     refreshFilters();
   }
+
+  function onMinimumDateChange() {
+    console.log("onMinimumDate")
+    const newMin =
+      logView.getCurrentState(STATE_PROPS.LOG_MIN_TIMESTAMP_DISPLAYED) ?? 0
+    const dateAtLoad = logView.getCurrentState(STATE_PROPS.DATE_AT_PAGE_LOAD)
+    const minDateInMs = (dateAtLoad ?? 0) + (newMin ?? 0);
+    const value = new Date(minDateInMs).toISOString().slice(0, 19);;
+    minimumDateInputElt.value = value;
+    refreshFilters();
+  }
+
+  function onMinimumDateLoad() {
+    console.log("minimumDateLoad")
+  }
 }
 
 /**
@@ -783,18 +839,33 @@ function setEnabledFilterButtonStyle(
  * @param {string} logTxt
  * @returns {HTMLElement}
  */
-export function createLogElement(logTxt: string): HTMLElement {
+export function createLogElement(
+  logTxt: string,
+  logView: ObservableState<LogViewState>,
+  configState: ObservableState<ConfigState>,
+  ): HTMLElement {
   let namespace;
-  let formattedMsg = logTxt;
-  const indexOfNamespaceStart = logTxt.indexOf("[");
+  // let formattedMsg = logTxt;
+  const timeRegex = /(\d+\.\d+)(.*)/
+  let match = logTxt.match(timeRegex)
+  let formattedMsg;
+  if(match !== null && configState.getCurrentState(STATE_PROPS.TIME_REPRESENTATION) === "date") {
+    const dateAtPageLoad = logView.getCurrentState(STATE_PROPS.DATE_AT_PAGE_LOAD) ?? 0
+    const timestamp = Number(match[1]) + dateAtPageLoad;
+    const dateStr = (new Date(timestamp)).toISOString().substring(0, 19);
+    formattedMsg = dateStr + match[2]
+  } else {
+    formattedMsg = logTxt;
+  }
+  const indexOfNamespaceStart = formattedMsg.indexOf("[");
   if (indexOfNamespaceStart >= 0) {
-    const indexOfNamespaceEnd = logTxt.indexOf("]");
+    const indexOfNamespaceEnd = formattedMsg.indexOf("]");
     if (indexOfNamespaceEnd > 0) {
-      namespace = logTxt.substring(
+      namespace = formattedMsg.substring(
         indexOfNamespaceStart + 1,
         indexOfNamespaceEnd
       );
-      formattedMsg = logTxt.replace(
+      formattedMsg = formattedMsg.replace(
         /\n/g,
         "\n" + " ".repeat(indexOfNamespaceEnd + 2)
       );
@@ -989,6 +1060,67 @@ function createTSResetButton(
   return resetButtonElt;
 }
 
+function createTimeRepresentationSwitch(logView: ObservableState<ConfigState>) {
+  const isTimestamp = true; // otherwise it's a date
+  const checkbox = strHtml`<input
+    type="checkbox"
+    name="timeRepresentation"
+    id="timeRepresentation"
+    value="${isTimestamp}"
+  />` as HTMLInputElement
+  function onChange(): void {
+    logView.updateState(
+      STATE_PROPS.TIME_REPRESENTATION,
+      UPDATE_TYPE.REPLACE,
+      checkbox.checked ? "date" : "timestamp",
+    );
+    logView.commitUpdates();
+  }
+  checkbox.onchange = onChange;
+  const label = strHtml`<label for="timeRepresentation">Time representation</label>`;
+  const wrapper = strHtml`<div></div>`;
+  wrapper.appendChild(label);
+  wrapper.appendChild(checkbox);
+  return wrapper;
+}
+
+function createMinimumDateInputElement(
+  logView: ObservableState<LogViewState>,
+): HTMLInputElement {
+  const dateAtLoad = logView.getCurrentState(STATE_PROPS.DATE_AT_PAGE_LOAD);
+  const minTimeStamp = logView.getCurrentState(STATE_PROPS.LOG_MIN_TIMESTAMP_DISPLAYED);
+  const minDateInMs = (dateAtLoad ?? 0) + (minTimeStamp ?? 0);
+  const value = new Date(minDateInMs).toISOString().slice(0, 19);;
+  console.log('new Value', value);
+  const element = strHtml`<input
+  type="datetime-local"
+  id="meeting-time"
+  name="meeting-time"
+  value="${value}"
+  step="1"
+  />` as HTMLInputElement
+
+  function onMinimumTimeInputChange(): void {
+    let dateInStr: string = element.value;
+    console.log('dateInStr', dateInStr)
+    // adding Z to assume the date string is UTC
+    const dateInMs = new Date(dateInStr + "Z").getTime();
+    const dateAtLoad = logView.getCurrentState(STATE_PROPS.DATE_AT_PAGE_LOAD)
+    const timeLoad = logView.getCurrentState(STATE_PROPS.DATE_AT_PAGE_LOAD)
+
+    console.log('dateInSeconds - (dateLoad ?? 0)', dateInMs - (dateAtLoad ?? 0))
+    logView.updateState(
+      STATE_PROPS.LOG_MIN_TIMESTAMP_DISPLAYED,
+      UPDATE_TYPE.REPLACE,
+      dateInMs - (dateAtLoad ?? 0)
+    );
+    logView.commitUpdates();
+  }
+  // element.oninput = onMinimumTimeInputChange;
+  element.onchange = onMinimumTimeInputChange;
+  return element;
+}
+
 function createMinimumTimestampInputElement(
   logView: ObservableState<LogViewState>,
 ): HTMLInputElement {
@@ -1029,6 +1161,7 @@ function createMaximumTimestampInputElement(
 ): HTMLInputElement {
   const maxTs =
     logView.getCurrentState(STATE_PROPS.LOG_MAX_TIMESTAMP_DISPLAYED) ?? Infinity;
+    console.log('MaxTs', maxTs)
   const maximumTimeInputElt = strHtml`<input
     type="input"
     class="log-time-range"

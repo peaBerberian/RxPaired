@@ -117,6 +117,8 @@ function createImportFileButton(
       }
       const dataStr = loadTarget.result;
       const logs: Array<[string, number]> = [];
+      let timeAtPageLoad;
+      let dateAtPageLoad;
       let remaininStrConsidered = dataStr;
       let id = 0;
       while (remaininStrConsidered.length > 0) {
@@ -145,7 +147,14 @@ function createImportFileButton(
         } else {
           indexOfEnd = indexOfBrk + offset;
         }
-        const logLine = remaininStrConsidered.substring(0, indexOfEnd);
+        let logLine = remaininStrConsidered.substring(0, indexOfEnd);
+  
+        if(isInitLog(logLine)) {
+          let init = parseAndGenerateInitLog(logLine)
+          logLine = init.log
+          timeAtPageLoad = init.timeAtPageLoad
+          dateAtPageLoad = init.dateAtPageLoad
+        }
         logs.push([logLine, id++]);
         remaininStrConsidered = remaininStrConsidered.substring(indexOfEnd + 1);
       }
@@ -155,6 +164,19 @@ function createImportFileButton(
         UPDATE_TYPE.REPLACE,
         logs
       );
+
+      console.log('dateAtPageLoad ?? Date.now()', dateAtPageLoad)
+      logViewState.updateState(
+        STATE_PROPS.DATE_AT_PAGE_LOAD,
+        UPDATE_TYPE.REPLACE,
+        dateAtPageLoad ?? Date.now()
+      )
+
+      logViewState.updateState(
+        STATE_PROPS.TIME_AT_PAGE_LOAD,
+        UPDATE_TYPE.REPLACE,
+        timeAtPageLoad ?? 0
+      )
       updateStatesFromLogGroup(inspectorState, logs);
       inspectorState.commitUpdates();
       logViewState.commitUpdates();
@@ -195,4 +217,43 @@ function createPostDebuggerHeaderElement(
       createDarkLightModeButton(configState),
     ]}</div>
   </div>`;
+}
+
+
+function isInitLog(log: string) {
+  if(log.startsWith("{")) {
+    try {
+      const signal = JSON.parse(log);
+      return signal.type === "Init"    
+    } catch {
+      return false
+    }
+  }
+  return false;
+}
+
+function parseAndGenerateInitLog(log: string) {
+  const defaultLog = {
+    log: "",
+    timeAtPageLoad: 0,
+    dateAtPageLoad: 0
+  }
+  try {
+    const signal = JSON.parse(log);
+    if (signal.type === "Init") {
+      const initTimestamp = signal.value?.timestamp;
+      const dateMs = signal.value.dateMs
+
+      if (typeof initTimestamp === "number" && typeof dateMs === "number") {
+        return {
+          log: `${initTimestamp.toFixed(2)} [Init] Local-Date:${dateMs}`,
+          timeAtPageLoad: initTimestamp,
+          dateAtPageLoad: dateMs
+        };
+      }
+    }
+    return defaultLog
+  } catch {
+    return defaultLog
+  }
 }

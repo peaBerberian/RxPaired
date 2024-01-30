@@ -62,6 +62,11 @@ function initializeGlobalConfig() {
     UPDATE_TYPE.REPLACE,
     currentModuleConfig[STATE_PROPS.MODULES_ORDER] ?? []
   );
+  configState.updateState(
+    STATE_PROPS.TIME_REPRESENTATION,
+    UPDATE_TYPE.REPLACE,
+    "timestamp"
+  )
   configState.commitUpdates();
   configState.subscribe(STATE_PROPS.CSS_MODE, () => {
     const isDark = configState.getCurrentState(STATE_PROPS.CSS_MODE) === "dark";

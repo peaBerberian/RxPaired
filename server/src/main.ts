@@ -1,4 +1,5 @@
 import { appendFile } from "fs";
+import { createForwardedMessage } from "./forward_message";
 import { IncomingMessage } from "http";
 import process from "process";
 import * as commander from "commander";
@@ -307,13 +308,17 @@ deviceSocket.on("connection", (ws, req) => {
     checkers.checkDeviceMessageLimit();
     /* eslint-disable-next-line @typescript-eslint/no-base-to-string */
     let messageStr = message.toString();
+    // There can be different variants of a message depending on the context of
+    // the receiver.
+    const forwardedMessage = createForwardedMessage();
+
     if (messageStr.length > maxLogLength) {
       return;
     }
-
     if (messageStr === "pong") {
       return;
-    } else if (existingToken?.device !== null && messageStr.startsWith("Init ")) {
+    }
+    if (existingToken?.device !== null && messageStr.startsWith("Init ")) {
       writeLog("log", "received Init message",
                { address: req.socket.remoteAddress, tokenId });
       const matches = messageStr.match(INIT_REGEX);
@@ -326,34 +331,39 @@ deviceSocket.on("connection", (ws, req) => {
         const dateMs = +matches[2];
         existingToken.setDeviceInitData({ timestamp, dateMs });
         const { history, maxHistorySize } = existingToken.getCurrentHistory();
-        messageStr = JSON.stringify({
+        const inspectorInitMsg = JSON.stringify({
           type: "Init",
           value: { timestamp, dateMs, history, maxHistorySize },
         });
+        const storedInitMsg = JSON.stringify({
+          type: "Init",
+          value: { timestamp, dateMs},
+        });
+        forwardedMessage.setMessage(inspectorInitMsg, "inspector");
+        forwardedMessage.setMessage(storedInitMsg, "disk");
+      }
+    } else if (messageStr[0] !== "{") {
+      try {
+        /* eslint-disable */ // In a try so anything goes :p
+        const parsed = JSON.parse(messageStr);
+        if (parsed.type === "eval-result" || parsed.type === "eval-error") {
+          forwardedMessage.setMessage(messageStr, "inspector");
+        }
+      } catch (_) {
+        // We don't care
       }
     } else {
-      let bypassHistoryAndLogfile = false;
-      if (messageStr[0] !== "{") {
-        try {
-          /* eslint-disable */ // In a try so anything goes :p
-          const parsed = JSON.parse(messageStr);
-          if (parsed.type === "eval-result" || parsed.type === "eval-error") {
-            /* eslint-enable */
-            bypassHistoryAndLogfile = true;
-          }
-        } catch (_) {
-          // We don't care
-        }
-      }
-      if (!bypassHistoryAndLogfile) {
-        existingToken?.addLogToHistory(messageStr);
-        if (shouldCreateLogFiles) {
-          appendFile(getLogFileName(logFileNameSuffix), messageStr + "\n", function() {
-            // on finished. Do nothing for now.
-          });
-        }
-      }
+      forwardedMessage.setMessage(messageStr, "inspector");
     }
+    if (!forwardedMessage.getMessage("history")) {
+      existingToken?.addLogToHistory(messageStr);
+    }
+    if(!forwardedMessage.getMessage("disk") && shouldCreateLogFiles){
+        appendFile(getLogFileName(logFileNameSuffix), messageStr + "\n", function() {
+          // on finished. Do nothing for now.
+        });
+    }
+    
     if (existingToken.getDeviceInitData() === null) {
       return;
     }
