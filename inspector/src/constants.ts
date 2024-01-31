@@ -152,10 +152,7 @@ export interface LogViewState {
   [STATE_PROPS.SELECTED_LOG_ID]?: number | undefined;
   [STATE_PROPS.LOG_MIN_TIMESTAMP_DISPLAYED]?: number;
   [STATE_PROPS.LOG_MAX_TIMESTAMP_DISPLAYED]?: number;
-  [STATE_PROPS.TIME_AT_PAGE_LOAD]?: number;
   [STATE_PROPS.DATE_AT_PAGE_LOAD]?: number;
-  [STATE_PROPS.LOG_MAX_TIMESTAMP_DISPLAYED]?: number;
-
 }
 
 /** State linked to the Inspector page layout and configuration. */

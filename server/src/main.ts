@@ -353,7 +353,7 @@ deviceSocket.on("connection", (ws, req) => {
         // We don't care
       }
     } else {
-      forwardedMessage.setMessage(messageStr, "inspector");
+      forwardedMessage.setMessage(messageStr, ["inspector", "history"]);
     }
     if (!forwardedMessage.getMessage("history")) {
       existingToken?.addLogToHistory(messageStr);
@@ -368,7 +368,7 @@ deviceSocket.on("connection", (ws, req) => {
       return;
     }
     for (const inspector of existingToken.inspectors) {
-      sendMessageToInspector(messageStr, inspector.webSocket, req, tokenId);
+      sendMessageToInspector(forwardedMessage.getMessage('inspector'), inspector.webSocket, req, tokenId);
     }
   });
   ws.on("close", () => {

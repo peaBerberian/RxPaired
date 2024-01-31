@@ -94,6 +94,7 @@ export default function LogModule({
       minimumTimeInputElt.style.display = "unset";
       minimumDateInputElt.style.display = "none";
     }
+    reloadLogsHistory();
   }
   onDestroyFns.push(
     configState.subscribe(
@@ -231,9 +232,6 @@ export default function LogModule({
   onDestroyFns.push(
     logView.subscribe(STATE_PROPS.LOGS_HISTORY, onLogsHistoryChange, true)
   );
-  onDestroyFns.push(
-    configState.subscribe(STATE_PROPS.TIME_REPRESENTATION, reloadLogsHistory, true)
-  )
   onDestroyFns.push(
     logView.subscribe(STATE_PROPS.SELECTED_LOG_ID, onSelectedLogChange, true)
   );
@@ -735,18 +733,13 @@ export default function LogModule({
   }
 
   function onMinimumDateChange() {
-    console.log("onMinimumDate")
     const newMin =
       logView.getCurrentState(STATE_PROPS.LOG_MIN_TIMESTAMP_DISPLAYED) ?? 0
     const dateAtLoad = logView.getCurrentState(STATE_PROPS.DATE_AT_PAGE_LOAD)
     const minDateInMs = (dateAtLoad ?? 0) + (newMin ?? 0);
-    const value = new Date(minDateInMs).toISOString().slice(0, 19);;
+    const value = new Date(minDateInMs).toISOString().slice(0, 22);
     minimumDateInputElt.value = value;
     refreshFilters();
-  }
-
-  function onMinimumDateLoad() {
-    console.log("minimumDateLoad")
   }
 }
 
@@ -846,7 +839,7 @@ export function createLogElement(
   ): HTMLElement {
   let namespace;
   // let formattedMsg = logTxt;
-  const timeRegex = /(\d+\.\d+)(.*)/
+  const timeRegex = /^(\d+(?:.)?(?:\d+)?) (.*)$/
   let match = logTxt.match(timeRegex)
   let formattedMsg;
   if(match !== null && configState.getCurrentState(STATE_PROPS.TIME_REPRESENTATION) === "date") {
@@ -1090,25 +1083,22 @@ function createMinimumDateInputElement(
   const dateAtLoad = logView.getCurrentState(STATE_PROPS.DATE_AT_PAGE_LOAD);
   const minTimeStamp = logView.getCurrentState(STATE_PROPS.LOG_MIN_TIMESTAMP_DISPLAYED);
   const minDateInMs = (dateAtLoad ?? 0) + (minTimeStamp ?? 0);
-  const value = new Date(minDateInMs).toISOString().slice(0, 19);;
-  console.log('new Value', value);
+  const value = new Date(minDateInMs).toISOString().slice(0, 22);
   const element = strHtml`<input
   type="datetime-local"
   id="meeting-time"
   name="meeting-time"
   value="${value}"
-  step="1"
+  step="0.1"
   />` as HTMLInputElement
 
   function onMinimumTimeInputChange(): void {
     let dateInStr: string = element.value;
-    console.log('dateInStr', dateInStr)
     // adding Z to assume the date string is UTC
     const dateInMs = new Date(dateInStr + "Z").getTime();
     const dateAtLoad = logView.getCurrentState(STATE_PROPS.DATE_AT_PAGE_LOAD)
     const timeLoad = logView.getCurrentState(STATE_PROPS.DATE_AT_PAGE_LOAD)
 
-    console.log('dateInSeconds - (dateLoad ?? 0)', dateInMs - (dateAtLoad ?? 0))
     logView.updateState(
       STATE_PROPS.LOG_MIN_TIMESTAMP_DISPLAYED,
       UPDATE_TYPE.REPLACE,
@@ -1161,7 +1151,6 @@ function createMaximumTimestampInputElement(
 ): HTMLInputElement {
   const maxTs =
     logView.getCurrentState(STATE_PROPS.LOG_MAX_TIMESTAMP_DISPLAYED) ?? Infinity;
-    console.log('MaxTs', maxTs)
   const maximumTimeInputElt = strHtml`<input
     type="input"
     class="log-time-range"

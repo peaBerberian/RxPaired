@@ -117,7 +117,7 @@ function createImportFileButton(
       }
       const dataStr = loadTarget.result;
       const logs: Array<[string, number]> = [];
-      let timeAtPageLoad;
+      let timeAtInit;
       let dateAtPageLoad;
       let remaininStrConsidered = dataStr;
       let id = 0;
@@ -152,7 +152,7 @@ function createImportFileButton(
         if(isInitLog(logLine)) {
           let init = parseAndGenerateInitLog(logLine)
           logLine = init.log
-          timeAtPageLoad = init.timeAtPageLoad
+          timeAtInit = init.timeAtInit
           dateAtPageLoad = init.dateAtPageLoad
         }
         logs.push([logLine, id++]);
@@ -172,11 +172,6 @@ function createImportFileButton(
         dateAtPageLoad ?? Date.now()
       )
 
-      logViewState.updateState(
-        STATE_PROPS.TIME_AT_PAGE_LOAD,
-        UPDATE_TYPE.REPLACE,
-        timeAtPageLoad ?? 0
-      )
       updateStatesFromLogGroup(inspectorState, logs);
       inspectorState.commitUpdates();
       logViewState.commitUpdates();
@@ -235,7 +230,7 @@ function isInitLog(log: string) {
 function parseAndGenerateInitLog(log: string) {
   const defaultLog = {
     log: "",
-    timeAtPageLoad: 0,
+    timeAtInit: 0,
     dateAtPageLoad: 0
   }
   try {
@@ -247,8 +242,8 @@ function parseAndGenerateInitLog(log: string) {
       if (typeof initTimestamp === "number" && typeof dateMs === "number") {
         return {
           log: `${initTimestamp.toFixed(2)} [Init] Local-Date:${dateMs}`,
-          timeAtPageLoad: initTimestamp,
-          dateAtPageLoad: dateMs
+          timeAtInit: initTimestamp,
+          dateAtPageLoad: dateMs - initTimestamp,
         };
       }
     }
