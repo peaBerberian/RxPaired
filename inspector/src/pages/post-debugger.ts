@@ -165,7 +165,6 @@ function createImportFileButton(
         logs
       );
 
-      console.log('dateAtPageLoad ?? Date.now()', dateAtPageLoad)
       logViewState.updateState(
         STATE_PROPS.DATE_AT_PAGE_LOAD,
         UPDATE_TYPE.REPLACE,
@@ -237,7 +236,7 @@ function parseAndGenerateInitLog(log: string) {
     const signal = JSON.parse(log);
     if (signal.type === "Init") {
       const initTimestamp = signal.value?.timestamp;
-      const dateMs = signal.value.dateMs
+      const dateMs = signal.value?.dateMs
 
       if (typeof initTimestamp === "number" && typeof dateMs === "number") {
         return {
