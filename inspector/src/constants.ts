@@ -96,8 +96,6 @@ export enum STATE_PROPS {
   TIME_REPRESENTATION = "timeRepresentation",
   /** Date at which the client has loaded and sent the init */
   DATE_AT_PAGE_LOAD = "dateAtPageLoad",
-  /** Time elapsed (from performance.now) at the moment the page the the init */
-  TIME_AT_PAGE_LOAD = "timeAtPageLoad",
   /** Timestamp of the first displayed log in the log module. */
   LOG_MIN_TIMESTAMP_DISPLAYED = "logMinTimeStampDisplayed",
   /** Timestamp of the last displayed log in the log module. */
