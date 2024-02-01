@@ -1,5 +1,4 @@
 import { appendFile } from "fs";
-import { createForwardedMessage } from "./forward_message";
 import { IncomingMessage } from "http";
 import process from "process";
 import * as commander from "commander";
@@ -308,9 +307,9 @@ deviceSocket.on("connection", (ws, req) => {
     checkers.checkDeviceMessageLimit();
     /* eslint-disable-next-line @typescript-eslint/no-base-to-string */
     let messageStr = message.toString();
-    // There can be different variants of a message depending on the context of
-    // the receiver.
-    const forwardedMessage = createForwardedMessage();
+    let storedMsg = "";
+    let inspectorMsg = "";
+    let historyMsg = "";
 
     if (messageStr.length > maxLogLength) {
       return;
@@ -331,35 +330,35 @@ deviceSocket.on("connection", (ws, req) => {
         const dateMs = +matches[2];
         existingToken.setDeviceInitData({ timestamp, dateMs });
         const { history, maxHistorySize } = existingToken.getCurrentHistory();
-        const inspectorInitMsg = JSON.stringify({
+        inspectorMsg = JSON.stringify({
           type: "Init",
           value: { timestamp, dateMs, history, maxHistorySize },
         });
-        const storedInitMsg = JSON.stringify({
+        storedMsg = JSON.stringify({
           type: "Init",
           value: { timestamp, dateMs},
         });
-        forwardedMessage.setMessage(inspectorInitMsg, "inspector");
-        forwardedMessage.setMessage(storedInitMsg, "disk");
       }
     } else if (messageStr[0] !== "{") {
       try {
         /* eslint-disable */ // In a try so anything goes :p
         const parsed = JSON.parse(messageStr);
         if (parsed.type === "eval-result" || parsed.type === "eval-error") {
-          forwardedMessage.setMessage(messageStr, "inspector");
+          inspectorMsg = messageStr;
         }
       } catch (_) {
         // We don't care
       }
     } else {
-      forwardedMessage.setMessage(messageStr, ["inspector", "history"]);
+      inspectorMsg = messageStr;
+      storedMsg = messageStr;
+      historyMsg = messageStr;
     }
-    if (!forwardedMessage.getMessage("history")) {
-      existingToken?.addLogToHistory(messageStr);
+    if (historyMsg) {
+      existingToken?.addLogToHistory(historyMsg);
     }
-    if(!forwardedMessage.getMessage("disk") && shouldCreateLogFiles){
-        appendFile(getLogFileName(logFileNameSuffix), messageStr + "\n", function() {
+    if(storedMsg && shouldCreateLogFiles){
+        appendFile(getLogFileName(logFileNameSuffix), storedMsg + "\n", function() {
           // on finished. Do nothing for now.
         });
     }
@@ -368,7 +367,7 @@ deviceSocket.on("connection", (ws, req) => {
       return;
     }
     for (const inspector of existingToken.inspectors) {
-      sendMessageToInspector(forwardedMessage.getMessage('inspector'), inspector.webSocket, req, tokenId);
+      sendMessageToInspector(inspectorMsg, inspector.webSocket, req, tokenId);
     }
   });
   ws.on("close", () => {
