@@ -12,6 +12,7 @@ import { generatePageUrl } from "../utils";
 import {
   createClearStoredConfigButton,
   createDarkLightModeButton,
+  createTimeRepresentationSwitch,
 } from "./utils";
 
 const START_LOG_LINE_REGEXP = /^[0-9]+\.[0-9]{2} \[/;
@@ -208,6 +209,7 @@ function createPostDebuggerHeaderElement(
     </div>
     <div class="header-item">${[
       createClearStoredConfigButton(configState),
+      createTimeRepresentationSwitch(configState),
       createDarkLightModeButton(configState),
     ]}</div>
   </div>`;

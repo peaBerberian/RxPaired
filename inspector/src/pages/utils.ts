@@ -98,3 +98,30 @@ export function createClearStoredConfigButton(
   }
   return buttonElt;
 }
+
+export function createTimeRepresentationSwitch(logView: ObservableState<ConfigState>) {
+  const isTimestamp = true; // otherwise it's a date
+  const timeLabel = "Display: 🕒 Time";
+  const dateLabel = "Display: 🗓️ Date";
+  const label = strHtml`<label for="timeRepresentation">${isTimestamp ? timeLabel : dateLabel}</label>`;
+  const checkbox = strHtml`<input
+    type="checkbox"
+    name="timeRepresentation"
+    id="timeRepresentation"
+    value="${isTimestamp}"
+  />` as HTMLInputElement
+  function onChange(): void {
+    label.innerText = checkbox.checked ?  dateLabel : timeLabel;
+    logView.updateState(
+      STATE_PROPS.TIME_REPRESENTATION,
+      UPDATE_TYPE.REPLACE,
+      checkbox.checked ? "date" : "timestamp",
+    );
+    logView.commitUpdates();
+  }
+  checkbox.onchange = onChange;
+  const wrapper = strHtml`<span></span>`;
+  wrapper.appendChild(label);
+  wrapper.appendChild(checkbox);
+  return wrapper;
+}

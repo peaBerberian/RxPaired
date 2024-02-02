@@ -15,6 +15,7 @@ import { displayError, generatePageUrl } from "../utils";
 import {
   createClearStoredConfigButton,
   createDarkLightModeButton,
+  createTimeRepresentationSwitch,
 } from "./utils";
 
 /**
@@ -319,6 +320,7 @@ function createLiveDebuggerHeaderElement(
       createCloseConnectionButton(currentSocket),
       createClearAllButton(inspectorState, logViewState),
       createClearStoredConfigButton(configState),
+      createTimeRepresentationSwitch(configState),
       createDarkLightModeButton(configState),
     ]}</div>
   </div>`;

@@ -106,7 +106,6 @@ export default function LogModule({
   );
 
   const maximumTimeInputElt = createMaximumTimestampInputElement(logView);
-  const timeRepresentationSwitch = createTimeRepresentationSwitch(configState)
   const maximumNbLogsInputElt = strHtml`<input
     type="input"
     class="log-time-range"
@@ -117,7 +116,6 @@ export default function LogModule({
 
   /** Text input element for only showing a sub-time-range of the logs. */
   const timeRangeInputElt = strHtml`<div class="log-wrapper">
-    ${[ timeRepresentationSwitch ]}
     <span style="display: flex; flex-direction: column; align-items: center">
       Min. timestamp
       <span>${[
@@ -1052,30 +1050,6 @@ function createTSResetButton(
     logView.commitUpdates();
   };
   return resetButtonElt;
-}
-
-function createTimeRepresentationSwitch(logView: ObservableState<ConfigState>) {
-  const isTimestamp = true; // otherwise it's a date
-  const checkbox = strHtml`<input
-    type="checkbox"
-    name="timeRepresentation"
-    id="timeRepresentation"
-    value="${isTimestamp}"
-  />` as HTMLInputElement
-  function onChange(): void {
-    logView.updateState(
-      STATE_PROPS.TIME_REPRESENTATION,
-      UPDATE_TYPE.REPLACE,
-      checkbox.checked ? "date" : "timestamp",
-    );
-    logView.commitUpdates();
-  }
-  checkbox.onchange = onChange;
-  const label = strHtml`<label for="timeRepresentation">Time representation</label>`;
-  const wrapper = strHtml`<div></div>`;
-  wrapper.appendChild(label);
-  wrapper.appendChild(checkbox);
-  return wrapper;
 }
 
 function createMinimumDateInputElement(

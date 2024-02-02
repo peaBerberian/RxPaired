@@ -112,6 +112,7 @@ export enum STATE_PROPS {
   MANIFEST_PARSING_TIME_HISTORY = "manifestParsingTimeHistory",
 }
 
+type TimeRepresentation = "date" | "timestamp";
 /**
  * State properties listen by the inspector modules, related to either the
  * situation at the time of the last log or at the time of the selected log,
@@ -160,7 +161,7 @@ export interface ConfigState {
   [STATE_PROPS.WIDTH_RATIOS]?: Partial<Record<string, number>>;
   [STATE_PROPS.MINIMIZED_MODULES]?: string[];
   [STATE_PROPS.MODULES_ORDER]?: string[];
-  [STATE_PROPS.TIME_REPRESENTATION]?: string;
+  [STATE_PROPS.TIME_REPRESENTATION]?: TimeRepresentation;
 }
 
 /**

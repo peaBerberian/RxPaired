@@ -155,17 +155,30 @@
         white-space: nowrap;
       }
 
-      .header-item button {
+      .header-item button,
+      .header-item label {
         cursor: pointer;
         border-radius: 2px;
         margin: 0px 3px;
       }
-      .dark .header-item button {
+
+      .header-item label {
+        font-size: 13px;
+        padding: 3px 8px;
+      }
+
+      .header-item input[type="checkbox"] {
+        display: none;
+      }
+
+      .dark .header-item button,
+      .dark .header-item label {
         background-color: #111;
         border: 1px dotted #ccc;
         color: #ddd;
       }
-      .light .header-item button {
+      .light .header-item button,
+      .light .header-item label {
         background-color: #eee;
         border: 1px dotted #444;
         color: #111;
