@@ -118,7 +118,6 @@ function createImportFileButton(
       }
       const dataStr = loadTarget.result;
       const logs: Array<[string, number]> = [];
-      let timeAtInit;
       let dateAtPageLoad;
       let remaininStrConsidered = dataStr;
       let id = 0;
@@ -153,7 +152,6 @@ function createImportFileButton(
         if(isInitLog(logLine)) {
           let init = parseAndGenerateInitLog(logLine)
           logLine = init.log
-          timeAtInit = init.timeAtInit
           dateAtPageLoad = init.dateAtPageLoad
         }
         logs.push([logLine, id++]);
@@ -231,7 +229,6 @@ function isInitLog(log: string) {
 function parseAndGenerateInitLog(log: string) {
   const defaultLog = {
     log: "",
-    timeAtInit: 0,
     dateAtPageLoad: 0
   }
   try {
@@ -243,7 +240,6 @@ function parseAndGenerateInitLog(log: string) {
       if (typeof initTimestamp === "number" && typeof dateMs === "number") {
         return {
           log: `${initTimestamp.toFixed(2)} [Init] Local-Date:${dateMs}`,
-          timeAtInit: initTimestamp,
           dateAtPageLoad: dateMs - initTimestamp,
         };
       }
