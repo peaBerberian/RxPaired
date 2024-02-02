@@ -65,7 +65,7 @@ function initializeGlobalConfig() {
   configState.updateState(
     STATE_PROPS.TIME_REPRESENTATION,
     UPDATE_TYPE.REPLACE,
-    "timestamp"
+    currentModuleConfig[STATE_PROPS.TIME_REPRESENTATION] ?? "timestamp"
   )
   configState.commitUpdates();
   configState.subscribe(STATE_PROPS.CSS_MODE, () => {
@@ -103,6 +103,15 @@ function initializeGlobalConfig() {
     const closedModules =
       configState.getCurrentState(STATE_PROPS.MODULES_ORDER) ?? [];
     currentModuleConfig[STATE_PROPS.MODULES_ORDER] = closedModules;
+    localStorage.setItem(
+      MODULE_CONFIG_LS_ITEM,
+      JSON.stringify(currentModuleConfig)
+    );
+  });
+  configState.subscribe(STATE_PROPS.TIME_REPRESENTATION, () => {
+    const timeRepresentation =
+      configState.getCurrentState(STATE_PROPS.TIME_REPRESENTATION) ?? "timestamp";
+    currentModuleConfig[STATE_PROPS.TIME_REPRESENTATION] = timeRepresentation;
     localStorage.setItem(
       MODULE_CONFIG_LS_ITEM,
       JSON.stringify(currentModuleConfig)

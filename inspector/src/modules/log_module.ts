@@ -768,13 +768,11 @@ export default function LogModule({
     const dateAtLoad = logView.getCurrentState(STATE_PROPS.DATE_AT_PAGE_LOAD) ?? 0
     const maxDateInMs = dateAtLoad + newMax;
     let value: string;
-    console.log(maxDateInMs);
     if(maxDateInMs === Infinity) {
       value = "";
     }else {
       value = convertDateToLocalISOString(new Date(maxDateInMs));
     }
-    console.log('vale', value);
     maximumDateInputElt.value = value;
     refreshFilters();
   }
