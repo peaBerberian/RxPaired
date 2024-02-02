@@ -7,6 +7,7 @@ import {
 } from "../constants";
 import ObservableState, { UPDATE_TYPE } from "../observable_state";
 import { ModuleObject, ModuleFunctionArguments } from "./index";
+import { convertDateToLocalISOString } from "../utils";
 
 const LOADING_LOGS_MSG = "Loading logs...";
 const NO_LOG_SELECTED_MSG =
@@ -735,9 +736,9 @@ export default function LogModule({
   function onMinimumDateChange() {
     const newMin =
       logView.getCurrentState(STATE_PROPS.LOG_MIN_TIMESTAMP_DISPLAYED) ?? 0
-    const dateAtLoad = logView.getCurrentState(STATE_PROPS.DATE_AT_PAGE_LOAD)
-    const minDateInMs = (dateAtLoad ?? 0) + (newMin ?? 0);
-    const value = new Date(minDateInMs).toISOString().slice(0, 22);
+    const dateAtLoad = logView.getCurrentState(STATE_PROPS.DATE_AT_PAGE_LOAD) ?? 0
+    const minDateInMs = dateAtLoad + newMin;
+    const value = convertDateToLocalISOString(new Date(minDateInMs));
     minimumDateInputElt.value = value;
     refreshFilters();
   }
@@ -845,7 +846,7 @@ export function createLogElement(
   if(match !== null && configState.getCurrentState(STATE_PROPS.TIME_REPRESENTATION) === "date") {
     const dateAtPageLoad = logView.getCurrentState(STATE_PROPS.DATE_AT_PAGE_LOAD) ?? 0
     const timestamp = Number(match[1]) + dateAtPageLoad;
-    const dateStr = (new Date(timestamp)).toISOString().substring(0, 19);
+    const dateStr = convertDateToLocalISOString(new Date(timestamp));
     formattedMsg = dateStr + match[2]
   } else {
     formattedMsg = logTxt;
@@ -1083,7 +1084,7 @@ function createMinimumDateInputElement(
   const dateAtLoad = logView.getCurrentState(STATE_PROPS.DATE_AT_PAGE_LOAD);
   const minTimeStamp = logView.getCurrentState(STATE_PROPS.LOG_MIN_TIMESTAMP_DISPLAYED);
   const minDateInMs = (dateAtLoad ?? 0) + (minTimeStamp ?? 0);
-  const value = new Date(minDateInMs).toISOString().slice(0, 22);
+  const value = convertDateToLocalISOString(new Date(minDateInMs));
   const element = strHtml`<input
   type="datetime-local"
   id="meeting-time"
@@ -1094,10 +1095,8 @@ function createMinimumDateInputElement(
 
   function onMinimumTimeInputChange(): void {
     let dateInStr: string = element.value;
-    // adding Z to assume the date string is UTC
-    const dateInMs = new Date(dateInStr + "Z").getTime();
+    const dateInMs = new Date(dateInStr).getTime();
     const dateAtLoad = logView.getCurrentState(STATE_PROPS.DATE_AT_PAGE_LOAD)
-    const timeLoad = logView.getCurrentState(STATE_PROPS.DATE_AT_PAGE_LOAD)
 
     logView.updateState(
       STATE_PROPS.LOG_MIN_TIMESTAMP_DISPLAYED,

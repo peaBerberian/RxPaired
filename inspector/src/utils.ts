@@ -146,3 +146,23 @@ export function displayError(
 export function getDefaultModuleOrder(): string[] {
   return modules.map(({ moduleId }) => moduleId);
 }
+
+/**
+ * Similar to Date.toISOString(), but without the timezone offset part
+ * and using the local time.
+ * '2024-02-01T14:58:36.051Z' => '2024-02-01T14:58:36.051'
+ * '2024-02-01T14:58:36.051+05:00' => '2024-02-01T14:58:36.051'
+ * @param date the date to convert
+ * @returns the date converted to ISO string
+ */
+export function convertDateToLocalISOString(date: Date): string {
+  let ISOstring = "";
+  ISOstring += String(date.getFullYear()) + "-"
+  ISOstring += String(date.getMonth() + 1).padStart(2, "0") + "-"
+  ISOstring += String(date.getDate()).padStart(2, "0") + "T"
+  ISOstring += String(date.getHours()).padStart(2, "0") + ":"
+  ISOstring += String(date.getMinutes()).padStart(2, "0") + ":"
+  ISOstring += String(date.getSeconds()).padStart(2, "0") + "."
+  ISOstring += String(date.getMilliseconds()).padStart(3, "0")
+  return ISOstring
+}
