@@ -307,8 +307,17 @@ deviceSocket.on("connection", (ws, req) => {
     checkers.checkDeviceMessageLimit();
     /* eslint-disable-next-line @typescript-eslint/no-base-to-string */
     let messageStr = message.toString();
+
+    /** The log that is about to be written on the disk in the log file. */
     let storedMsg = "";
+
+    /** The log that is about to be sent to the inspector. */
     let inspectorMsg = "";
+
+    /** The log that is about to be added to the history.
+     * History is sent once an inspector connect on an already started
+     * session so it can have the logs before he actually connect.
+     */
     let historyMsg = "";
 
     if (messageStr.length > maxLogLength) {

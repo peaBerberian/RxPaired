@@ -101,7 +101,7 @@ export function createClearStoredConfigButton(
 
 export function createTimeRepresentationSwitch(
   configState: ObservableState<ConfigState>
-) {
+): HTMLElement {
   const isTimestamp =
     configState.getCurrentState(STATE_PROPS.TIME_REPRESENTATION) ===
     "timestamp";
@@ -126,13 +126,13 @@ export function createTimeRepresentationSwitch(
     configState.commitUpdates();
   }
   checkbox.onchange = onChange;
-  const wrapper = strHtml`<span></span>`;
+  const wrapper = strHtml`<span class="label-wrapper"></span>`;
   wrapper.appendChild(label);
   wrapper.appendChild(checkbox);
   return wrapper;
 }
 
-export function isInitLog(log: string) {
+export function isInitLog(log: string): boolean {
   if (log.startsWith("{")) {
     try {
       const signal = JSON.parse(log);
