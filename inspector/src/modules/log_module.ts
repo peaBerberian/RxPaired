@@ -13,6 +13,7 @@ const LOADING_LOGS_MSG = "Loading logs...";
 const NO_LOG_SELECTED_MSG =
   "No log selected (click on a log to time-travel to it).";
 const LOG_SELECTED_MSG = "A log has been time-travelled to.";
+const timeRegex = /^(\d+(?:.)?(?:\d+)?) (.*)$/;
 
 /**
  * @param {Object} args
@@ -873,7 +874,6 @@ export function createLogElement(
   configState: ObservableState<ConfigState>,
   ): HTMLElement {
   let namespace;
-  const timeRegex = /^(\d+(?:.)?(?:\d+)?) (.*)$/
   let match = logTxt.match(timeRegex)
   let formattedMsg;
   if(match !== null && configState.getCurrentState(STATE_PROPS.TIME_REPRESENTATION) === "date") {
