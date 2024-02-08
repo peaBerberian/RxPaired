@@ -874,13 +874,18 @@ export function createLogElement(
   configState: ObservableState<ConfigState>,
   ): HTMLElement {
   let namespace;
-  let match = logTxt.match(timeRegex)
   let formattedMsg;
-  if(match !== null && configState.getCurrentState(STATE_PROPS.TIME_REPRESENTATION) === "date") {
-    const dateAtPageLoad = logView.getCurrentState(STATE_PROPS.DATE_AT_PAGE_LOAD) ?? 0
-    const timestamp = Number(match[1]) + dateAtPageLoad;
-    const dateStr = convertDateToLocalISOString(new Date(timestamp));
-    formattedMsg = dateStr + match[2]
+
+  if (configState.getCurrentState(STATE_PROPS.TIME_REPRESENTATION) === "date") {
+    const match = logTxt.match(timeRegex)
+    if (match !== null) {
+      const dateAtPageLoad = logView.getCurrentState(STATE_PROPS.DATE_AT_PAGE_LOAD) ?? 0
+      const timestamp = Number(match[1]) + dateAtPageLoad;
+      const dateStr = convertDateToLocalISOString(new Date(timestamp));
+      formattedMsg = dateStr + match[2]
+    } else {
+      formattedMsg = logTxt;
+    }
   } else {
     formattedMsg = logTxt;
   }
