@@ -99,24 +99,29 @@ export function createClearStoredConfigButton(
   return buttonElt;
 }
 
-export function createTimeRepresentationSwitch(configState: ObservableState<ConfigState>) {
-  const isTimestamp = configState.getCurrentState(STATE_PROPS.TIME_REPRESENTATION) === "timestamp";
-  const timeLabel = "Display: 🕒 Time";
-  const dateLabel = "Display: 🗓️ Date";
-  const label = strHtml`<label for="timeRepresentation">${isTimestamp ? timeLabel : dateLabel}</label>`;
+export function createTimeRepresentationSwitch(
+  configState: ObservableState<ConfigState>
+) {
+  const isTimestamp =
+    configState.getCurrentState(STATE_PROPS.TIME_REPRESENTATION) ===
+    "timestamp";
+  const timeLabel = "Current time unit: 🕒 Time";
+  const dateLabel = "Current time unit: 🗓️ Date";
+  const label = strHtml`<label for="timeRepresentation">${
+    isTimestamp ? timeLabel : dateLabel
+  }</label>`;
   const checkbox = strHtml`<input
     type="checkbox"
     name="timeRepresentation"
     id="timeRepresentation"
-    value="${isTimestamp}"
-    checked="${isTimestamp}"
-  />` as HTMLInputElement
+  />` as HTMLInputElement;
+  checkbox.checked = isTimestamp;
   function onChange(): void {
-    label.innerText = checkbox.checked ? timeLabel: dateLabel;
+    label.innerText = checkbox.checked ? timeLabel : dateLabel;
     configState.updateState(
       STATE_PROPS.TIME_REPRESENTATION,
       UPDATE_TYPE.REPLACE,
-      checkbox.checked ? "timestamp": "date",
+      checkbox.checked ? "timestamp" : "date"
     );
     configState.commitUpdates();
   }
