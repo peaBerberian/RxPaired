@@ -339,7 +339,7 @@ deviceSocket.on("connection", (ws, req) => {
           value: { timestamp, dateMs},
         });
       }
-    } else if (messageStr[0] !== "{") {
+    } else if (messageStr[0] === "{") {
       try {
         /* eslint-disable */ // In a try so anything goes :p
         const parsed = JSON.parse(messageStr);
