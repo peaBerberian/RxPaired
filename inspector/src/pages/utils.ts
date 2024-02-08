@@ -144,7 +144,9 @@ export function isInitLog(log: string): boolean {
   return false;
 }
 
-export function parseAndGenerateInitLog(log: string) {
+export function parseAndGenerateInitLog(log: string): {
+  log: string;
+  dateAtPageLoad: number } {
   const defaultLog = {
     log: "",
     dateAtPageLoad: 0,

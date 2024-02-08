@@ -112,7 +112,7 @@ export enum STATE_PROPS {
   MANIFEST_PARSING_TIME_HISTORY = "manifestParsingTimeHistory",
 }
 
-type TimeRepresentation = "date" | "timestamp";
+export type TimeRepresentation = "date" | "timestamp";
 /**
  * State properties listen by the inspector modules, related to either the
  * situation at the time of the last log or at the time of the selected log,
