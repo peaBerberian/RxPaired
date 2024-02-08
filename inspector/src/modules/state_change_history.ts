@@ -70,22 +70,6 @@ export default function StateChangeInformationModule({
         innerText = `${stateInfo.timestamp}`
       }
       const timestampElt = strHtml`<td>${innerText}</td>`;
-      timestampElt.style.cursor = "pointer";
-      timestampElt.style.textDecoration = "underline";
-      timestampElt.onclick = () => {
-        logView.updateState(
-          STATE_PROPS.LOG_MIN_TIMESTAMP_DISPLAYED,
-          UPDATE_TYPE.REPLACE,
-          0
-        );
-        logView.updateState(
-          STATE_PROPS.LOG_MAX_TIMESTAMP_DISPLAYED,
-          UPDATE_TYPE.REPLACE,
-          stateInfo.timestamp
-        );
-        logView.commitUpdates();
-      };
-
       tableElt.appendChild(
         strHtml`<tr>
           <td>${stateInfo.state}</td>
