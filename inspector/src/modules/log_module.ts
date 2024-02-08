@@ -873,7 +873,6 @@ export function createLogElement(
   configState: ObservableState<ConfigState>,
   ): HTMLElement {
   let namespace;
-  // let formattedMsg = logTxt;
   const timeRegex = /^(\d+(?:.)?(?:\d+)?) (.*)$/
   let match = logTxt.match(timeRegex)
   let formattedMsg;
