@@ -232,8 +232,8 @@ deviceSocket.on("connection", (ws, req) => {
   let logFileNameSuffix = tokenId;
   let existingToken: TokenMetadata;
   let existingTokenIndex: number;
-  if (!disableNoToken && tokenId.startsWith("!notoken/")) {
-    if (usePassword && password !== null) {
+  if (!disableNoToken && tokenId.startsWith("!notoken")) {
+    if (usePassword && password !== null && tokenId.startsWith("!notoken/")) {
       const pw = tokenId.substring("!notoken/".length);
       if (pw !== password) {
         writeLog("warn", "Received inspector request with invalid password: " +
