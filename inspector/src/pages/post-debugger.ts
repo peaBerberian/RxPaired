@@ -13,6 +13,8 @@ import {
   createClearStoredConfigButton,
   createDarkLightModeButton,
   createTimeRepresentationSwitch,
+  isInitLog,
+  parseAndGenerateInitLog,
 } from "./utils";
 
 const START_LOG_LINE_REGEXP = /^[0-9]+\.[0-9]{2} \[/;
@@ -148,11 +150,11 @@ function createImportFileButton(
           indexOfEnd = indexOfBrk + offset;
         }
         let logLine = remaininStrConsidered.substring(0, indexOfEnd);
-  
-        if(isInitLog(logLine)) {
-          let init = parseAndGenerateInitLog(logLine)
-          logLine = init.log
-          dateAtPageLoad = init.dateAtPageLoad
+
+        if (isInitLog(logLine)) {
+          const init = parseAndGenerateInitLog(logLine);
+          logLine = init.log;
+          dateAtPageLoad = init.dateAtPageLoad;
         }
         logs.push([logLine, id++]);
         remaininStrConsidered = remaininStrConsidered.substring(indexOfEnd + 1);
@@ -168,7 +170,7 @@ function createImportFileButton(
         STATE_PROPS.DATE_AT_PAGE_LOAD,
         UPDATE_TYPE.REPLACE,
         dateAtPageLoad ?? Date.now()
-      )
+      );
 
       updateStatesFromLogGroup(inspectorState, logs);
       inspectorState.commitUpdates();
@@ -206,46 +208,9 @@ function createPostDebuggerHeaderElement(
       </span>
     </div>
     <div class="header-item">${[
-      createClearStoredConfigButton(configState),
       createTimeRepresentationSwitch(configState),
+      createClearStoredConfigButton(configState),
       createDarkLightModeButton(configState),
     ]}</div>
   </div>`;
-}
-
-
-function isInitLog(log: string) {
-  if(log.startsWith("{")) {
-    try {
-      const signal = JSON.parse(log);
-      return signal.type === "Init"    
-    } catch {
-      return false
-    }
-  }
-  return false;
-}
-
-function parseAndGenerateInitLog(log: string) {
-  const defaultLog = {
-    log: "",
-    dateAtPageLoad: 0
-  }
-  try {
-    const signal = JSON.parse(log);
-    if (signal.type === "Init") {
-      const initTimestamp = signal.value?.timestamp;
-      const dateMs = signal.value?.dateMs
-
-      if (typeof initTimestamp === "number" && typeof dateMs === "number") {
-        return {
-          log: `${initTimestamp.toFixed(2)} [Init] Local-Date:${dateMs}`,
-          dateAtPageLoad: dateMs - initTimestamp,
-        };
-      }
-    }
-    return defaultLog
-  } catch {
-    return defaultLog
-  }
 }

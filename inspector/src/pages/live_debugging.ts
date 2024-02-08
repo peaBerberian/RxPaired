@@ -17,6 +17,7 @@ import {
   createDarkLightModeButton,
   createTimeRepresentationSwitch,
 } from "./utils";
+import { isInitLog, parseAndGenerateInitLog } from "./utils";
 
 /**
  * Some minor features are detected to be only present on chromium-based
@@ -181,41 +182,38 @@ export default function generateLiveDebuggingPage(
     }
     if (event.data[0] === "{") {
       try {
-        // TODO better type all this mess.
-        /* eslint-disable @typescript-eslint/no-unsafe-assignment */
-        /* eslint-disable @typescript-eslint/no-unsafe-member-access */
-        /* eslint-disable @typescript-eslint/restrict-template-expressions */
         const signal = JSON.parse(event.data);
-        if (signal.type === "Init") {
-          // This is always the first message sent by a given device.
-          // If this is not the first message from a WebSocket, then another
-          // device just took the token.
+
+        if (isInitLog(event.data)) {
+          const init = parseAndGenerateInitLog(event.data);
+          const initLog = init.log;
+          const dateAtPageLoad = init.dateAtPageLoad;
           clearInspectorState(inspectorState, logViewState);
-          const initTimestamp = signal.value?.timestamp;
-          if (typeof initTimestamp === "number") {
-            const initLog = `${initTimestamp.toFixed(2)} [Init] Local-Date:${
-              signal.value.dateMs
-            }`;
-            let updates: Array<[string, number]> = [[initLog, nextLogId++]];
-            if (signal.value?.history?.length > 0) {
-              updates = updates.concat(
-                (signal.value.history as string[]).map((str) => [
-                  str,
-                  nextLogId++,
-                ])
-              );
-            }
-            logViewState.updateState(
-              STATE_PROPS.LOGS_HISTORY,
-              UPDATE_TYPE.PUSH,
-              updates
+          let updates: Array<[string, number]> = [[initLog, nextLogId++]];
+          if (signal.value?.history?.length > 0) {
+            updates = updates.concat(
+              (signal.value.history as string[]).map((str) => [
+                str,
+                nextLogId++,
+              ])
             );
-            if (!hasSelectedLog) {
-              updateStatesFromLogGroup(inspectorState, updates);
-            }
-            inspectorState.commitUpdates();
-            logViewState.commitUpdates();
           }
+          logViewState.updateState(
+            STATE_PROPS.LOGS_HISTORY,
+            UPDATE_TYPE.PUSH,
+            updates
+          );
+          logViewState.updateState(
+            STATE_PROPS.DATE_AT_PAGE_LOAD,
+            UPDATE_TYPE.REPLACE,
+            dateAtPageLoad ?? Date.now()
+          );
+
+          if (!hasSelectedLog) {
+            updateStatesFromLogGroup(inspectorState, updates);
+          }
+          inspectorState.commitUpdates();
+          logViewState.commitUpdates();
         } else if (signal.type === "eval-result") {
           const { value } = signal;
           if (typeof value.id === "string") {
@@ -316,11 +314,11 @@ function createLiveDebuggerHeaderElement(
       ]}</span>
     </div>
     <div class="header-item">${[
+      createTimeRepresentationSwitch(configState),
       createExportLogsButton(logViewState),
       createCloseConnectionButton(currentSocket),
       createClearAllButton(inspectorState, logViewState),
       createClearStoredConfigButton(configState),
-      createTimeRepresentationSwitch(configState),
       createDarkLightModeButton(configState),
     ]}</div>
   </div>`;

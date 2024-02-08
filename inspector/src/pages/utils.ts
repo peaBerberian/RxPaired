@@ -131,3 +131,39 @@ export function createTimeRepresentationSwitch(
   wrapper.appendChild(checkbox);
   return wrapper;
 }
+
+export function isInitLog(log: string) {
+  if (log.startsWith("{")) {
+    try {
+      const signal = JSON.parse(log);
+      return signal.type === "Init";
+    } catch {
+      return false;
+    }
+  }
+  return false;
+}
+
+export function parseAndGenerateInitLog(log: string) {
+  const defaultLog = {
+    log: "",
+    dateAtPageLoad: 0,
+  };
+  try {
+    const signal = JSON.parse(log);
+    if (signal.type === "Init") {
+      const initTimestamp = signal.value?.timestamp;
+      const dateMs = signal.value?.dateMs;
+
+      if (typeof initTimestamp === "number" && typeof dateMs === "number") {
+        return {
+          log: `${initTimestamp.toFixed(2)} [Init] Local-Date:${dateMs}`,
+          dateAtPageLoad: dateMs - initTimestamp,
+        };
+      }
+    }
+    return defaultLog;
+  } catch {
+    return defaultLog;
+  }
+}
