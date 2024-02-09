@@ -252,7 +252,7 @@ deviceSocket.on("connection", (ws, req) => {
       if (lastDotIdx > 0) {
         logFileNameSuffix = address.substring(0, lastDotIdx);
       } else {
-        const lastColonIdx = address.lastIndexOf(".");
+        const lastColonIdx = address.lastIndexOf(":");
         if (lastColonIdx > 0) {
           logFileNameSuffix = address.substring(0, lastColonIdx);
         }
@@ -283,6 +283,7 @@ deviceSocket.on("connection", (ws, req) => {
     }
     existingToken = token;
   }
+  const logFileName = getLogFileName(logFileNameSuffix);
 
   checkers.checkNewDeviceLimit();
 
@@ -367,7 +368,7 @@ deviceSocket.on("connection", (ws, req) => {
       existingToken?.addLogToHistory(historyMsg);
     }
     if(storedMsg && shouldCreateLogFiles){
-        appendFile(getLogFileName(logFileNameSuffix), storedMsg + "\n", function() {
+        appendFile(logFileName, storedMsg + "\n", function() {
           // on finished. Do nothing for now.
         });
     }
@@ -623,11 +624,7 @@ function generatePassword() {
 }
 
 function getLogFileName(tokenId : string) : string {
-  return "logs-" + getISODate() + "-" + tokenId + ".txt";
-}
-
-function getISODate() : string {
-  return new Date().toISOString().split("T")[0];
+  return "logs-" + new Date().toISOString() + "-" + tokenId + ".txt";
 }
 
 interface EvalMessage {
