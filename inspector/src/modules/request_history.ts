@@ -7,8 +7,8 @@ import {
   STATE_PROPS,
 } from "../constants";
 import ObservableState, { UPDATE_TYPE } from "../observable_state";
-import { ModuleFunction } from ".";
 import { convertDateToLocalISOString } from "../utils";
+import { ModuleFunction } from ".";
 
 const MAX_REQ_ELEMENTS = 50;
 
