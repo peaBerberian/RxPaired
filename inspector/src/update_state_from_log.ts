@@ -13,7 +13,7 @@ import ObservableState, { UPDATE_TYPE } from "./observable_state";
 export default function updateStateFromLog(
   state: ObservableState<InspectorState>,
   newLog: string,
-  newLogId: number
+  newLogId: number,
 ): void {
   for (const proc of LogProcessors) {
     if (proc.filter(newLog)) {
@@ -22,7 +22,7 @@ export default function updateStateFromLog(
         state.updateState(
           update.property,
           update.updateType,
-          update.updateValue
+          update.updateValue,
         );
       }
     }
@@ -38,7 +38,7 @@ export default function updateStateFromLog(
  */
 export function updateStatesFromLogGroup(
   state: ObservableState<InspectorState>,
-  logs: Array<[string, number]>
+  logs: Array<[string, number]>,
 ): void {
   const pendingUpdates: Array<StateUpdate<keyof InspectorState>> = [];
 

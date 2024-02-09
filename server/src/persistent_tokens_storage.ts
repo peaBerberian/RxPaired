@@ -107,7 +107,7 @@ export default class PersistentTokensStorage {
                 f.tokenId,
                 f.history.maxHistorySize,
                 f.expirationDate - date,
-                f.date
+                f.date,
               );
               md.setDeviceInitData(f.initData);
               f.history.history.forEach((h) => {
@@ -131,7 +131,9 @@ export default class PersistentTokensStorage {
           logger.warn("Could not open persistent token file: " + errToStr);
         }
         if (this._tokens.length > 0) {
-          logger.log("Found stored persistent tokens: " + String(this._tokens.length));
+          logger.log(
+            "Found stored persistent tokens: " + String(this._tokens.length),
+          );
         }
         res(this._tokens);
       });
@@ -150,7 +152,9 @@ export default class PersistentTokensStorage {
     const now = performance.now();
     const date = Date.now();
     const tokens = this._tokens.filter((t) => {
-      return t.getExpirationDelay(now) > 0 && t.tokenId !== tokenMetadata.tokenId;
+      return (
+        t.getExpirationDelay(now) > 0 && t.tokenId !== tokenMetadata.tokenId
+      );
     });
     tokens.push(tokenMetadata);
 

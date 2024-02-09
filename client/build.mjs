@@ -3,25 +3,31 @@
 import path from "path";
 import process from "process";
 import esbuild from "esbuild";
-import { fileURLToPath } from 'url';
+import { fileURLToPath } from "url";
 
 const currentDirName = getCurrentDirectoryName();
 
 if (typeof process.env.npm_config_device_debugger_url !== "string") {
-  console.error("Error: Invalid environment variable(s)." + "\n" +
-    "Please make sure that you:\n"+
-    `  1. Declared an ".npmrc" file in the "${currentDirName}" directory based on ` +
-    "the content of the following file: " +
+  console.error(
+    "Error: Invalid environment variable(s)." +
+      "\n" +
+      "Please make sure that you:\n" +
+      `  1. Declared an ".npmrc" file in the "${currentDirName}" directory based on ` +
+      "the content of the following file: " +
       path.join(currentDirName, ".npmrc.sample") +
-    ".\n" +
-    "  2. Called this script through an npm script command (e.g. npm run *script*).");
+      ".\n" +
+      "  2. Called this script through an npm script command (e.g. npm run *script*).",
+  );
   process.exit(1);
 }
 
 let deviceDebuggerUrl = process.env.npm_config_device_debugger_url;
 if (!/^(http|ws)s?:\/\//.test(deviceDebuggerUrl)) {
-  console.error("Error: Invalid device_debugger_url." + "\n" +
-    "Please make sure that this url uses either the http, https, ws or wss.");
+  console.error(
+    "Error: Invalid device_debugger_url." +
+      "\n" +
+      "Please make sure that this url uses either the http, https, ws or wss.",
+  );
   process.exit(1);
 }
 if (deviceDebuggerUrl.startsWith("http")) {
@@ -40,19 +46,24 @@ const consolePlugin = {
   name: "onEnd",
   setup(build) {
     build.onStart(() => {
-      console.log(`\x1b[33m[${getHumanReadableHours()}]\x1b[0m ` +
-        "New client build started");
-    })
-    build.onEnd(result => {
+      console.log(
+        `\x1b[33m[${getHumanReadableHours()}]\x1b[0m ` +
+          "New client build started",
+      );
+    });
+    build.onEnd((result) => {
       if (result.errors.length > 0 || result.warnings.length > 0) {
         const { errors, warnings } = result;
-        console.log(`\x1b[33m[${getHumanReadableHours()}]\x1b[0m ` +
-          `client re-built with ${errors.length} error(s) and ` +
-          ` ${warnings.length} warning(s) `);
+        console.log(
+          `\x1b[33m[${getHumanReadableHours()}]\x1b[0m ` +
+            `client re-built with ${errors.length} error(s) and ` +
+            ` ${warnings.length} warning(s) `,
+        );
         return;
       }
-      console.log(`\x1b[32m[${getHumanReadableHours()}]\x1b[0m ` +
-        "client built!");
+      console.log(
+        `\x1b[32m[${getHumanReadableHours()}]\x1b[0m ` + "client built!",
+      );
     });
   },
 };
@@ -78,16 +89,18 @@ function buildClient(options) {
     plugins: [consolePlugin],
     define: {
       _DEVICE_DEBUGGER_URL_: JSON.stringify(deviceDebuggerUrl),
-    }
+    },
   };
-  let prom = watch ?
-    esbuild.context(esbuildOpts).then(context => {
-      context.watch();
-    }) :
-    esbuild.build(esbuildOpts);
+  let prom = watch
+    ? esbuild.context(esbuildOpts).then((context) => {
+        context.watch();
+      })
+    : esbuild.build(esbuildOpts);
   prom.catch((err) => {
-    console.error(`\x1b[31m[${getHumanReadableHours()}]\x1b[0m Client build failed:`,
-                  err);
+    console.error(
+      `\x1b[31m[${getHumanReadableHours()}]\x1b[0m Client build failed:`,
+      err,
+    );
     process.exit(1);
   });
 }
@@ -98,11 +111,16 @@ function buildClient(options) {
  */
 function getHumanReadableHours() {
   const date = new Date();
-  return String(date.getHours()).padStart(2, "0") + ":" +
-    String(date.getMinutes()).padStart(2, "0") + ":" +
-    String(date.getSeconds()).padStart(2, "0") + "." +
-    String(date.getMilliseconds()).padStart(4, "0");
-};
+  return (
+    String(date.getHours()).padStart(2, "0") +
+    ":" +
+    String(date.getMinutes()).padStart(2, "0") +
+    ":" +
+    String(date.getSeconds()).padStart(2, "0") +
+    "." +
+    String(date.getMilliseconds()).padStart(4, "0")
+  );
+}
 
 /**
  * Display through `console.log` an helping message relative to how to run this
@@ -110,13 +128,13 @@ function getHumanReadableHours() {
  */
 function displayHelp() {
   console.log(
-  /* eslint-disable indent */
-`Usage: node build.mjs [options]
+    /* eslint-disable indent */
+    `Usage: node build.mjs [options]
 Options:
   -h, --help             Display this help
   -m, --minify           Minify the built demo
   -w, --watch            Re-build each time either the demo or library files change`,
-  /* eslint-enable indent */
+    /* eslint-enable indent */
   );
 }
 

@@ -5,10 +5,10 @@ RxPaired tool.
 
 Its role is to listen and emit on two WebSocket ports:
 
--   one for communication with the tested device
+- one for communication with the tested device
 
--   the other for communication to the web inspector, the webpage allowing to
-    inspect what's going on on the device.
+- the other for communication to the web inspector, the webpage allowing to
+  inspect what's going on on the device.
 
 To be able to match devices to the right web inspectors, a system of "tokens" is
 in place. Tokens are strings which identify logs coming from a specific device,
@@ -122,15 +122,15 @@ Note that calling the following routes should already be implemented by the
 RxPaired-Inspector and RxPaired-Client implementations. As such you don't need
 to read this chapter unless either:
 
--   You want to update either the RxPaired-Inspector or RxPaired-Client and that
-    implies understanding the current API.
+- You want to update either the RxPaired-Inspector or RxPaired-Client and that
+  implies understanding the current API.
 
--   You want to update the RxPaired-server's code.
+- You want to update the RxPaired-server's code.
 
--   You want to re-implement any of the bricks of RxPaired, yet not all as them,
-    and as such you want to understand its API.
+- You want to re-implement any of the bricks of RxPaired, yet not all as them,
+  and as such you want to understand its API.
 
--   You're curious about how it works.
+- You're curious about how it works.
 
 ### Through the inspector port
 
@@ -159,44 +159,44 @@ request has been performed.
 
 The data sent is an UTF-8-encoded JSON with the following keys:
 
--   `isNoTokenEnabled` (boolean): If `true`, the `/!notoken` route can be used
-    by devices (see devices API) as this feature has been enabled on the server.
+- `isNoTokenEnabled` (boolean): If `true`, the `/!notoken` route can be used
+  by devices (see devices API) as this feature has been enabled on the server.
 
--   `tokenList` (Array.Object): Array of objects each having the following
-    properties:
+- `tokenList` (Array.Object): Array of objects each having the following
+  properties:
 
-    -   `tokenId` (string): The token identifier itself, which can be used on
-        the inspector (and which can be used in stored logs) to inspect the
-        corresponding logs.
+  - `tokenId` (string): The token identifier itself, which can be used on
+    the inspector (and which can be used in stored logs) to inspect the
+    corresponding logs.
 
-    -   `date` (number): Unix timestamp on the server at the time the token has
-        been created.
+  - `date` (number): Unix timestamp on the server at the time the token has
+    been created.
 
-    -   `isPersistent` (boolean): If `true` this token will only expire once
-        its expiration date (see `msUntilExpiration` property) has been
-        reached.
+  - `isPersistent` (boolean): If `true` this token will only expire once
+    its expiration date (see `msUntilExpiration` property) has been
+    reached.
 
-        If `false`, the token will expire either when its expiration date has
-        been reached **OR** when both no inspector and no device are connected,
-        through this RxPaired-server, to that token anymore.
+    If `false`, the token will expire either when its expiration date has
+    been reached **OR** when both no inspector and no device are connected,
+    through this RxPaired-server, to that token anymore.
 
-    -   `msUntilExpiration` (number): amount of milliseconds until the token
-        expires and becomes thus invalid.
-        After that delay, the token has to be either re-created, or a new manual
-        expiration has to be set on it through the right API.
+  - `msUntilExpiration` (number): amount of milliseconds until the token
+    expires and becomes thus invalid.
+    After that delay, the token has to be either re-created, or a new manual
+    expiration has to be set on it through the right API.
 
 #### `/<TOKEN_ID>/<EXPIRATION_TIME_MS>`
 
 Where:
 
--   `<TOKEN_ID>` is a string composed only of alphanumeric characters.
+- `<TOKEN_ID>` is a string composed only of alphanumeric characters.
 
--   `<EXPIRATION_TIME_MS>` is a time in milliseconds.
+- `<EXPIRATION_TIME_MS>` is a time in milliseconds.
 
-    Note that that part is completely optional (description of the semantics
-    and syntax of not setting it in the next route's description).
-    **Not setting an expiration time is probably what you want to do in most
-    cases**. This API is only listed first as it is a more general case.
+  Note that that part is completely optional (description of the semantics
+  and syntax of not setting it in the next route's description).
+  **Not setting an expiration time is probably what you want to do in most
+  cases**. This API is only listed first as it is a more general case.
 
 ##### Behavior
 
@@ -206,13 +206,13 @@ the server.
 
 Non-persistent tokens will remain available until either (whichever comes first):
 
--   its expiration time is reached, which is provided by `<EXPIRATION_TIME_MS>`
-    (which is the remaining availability time of that token from the point this
-    request is received, in milliseconds).
+- its expiration time is reached, which is provided by `<EXPIRATION_TIME_MS>`
+  (which is the remaining availability time of that token from the point this
+  request is received, in milliseconds).
 
--   all WebSocket connections linked to that token (including this one, the
-    device's and maybe other RxPaired-inspectors listening to it) are all
-    disconnected from the server.
+- all WebSocket connections linked to that token (including this one, the
+  device's and maybe other RxPaired-inspectors listening to it) are all
+  disconnected from the server.
 
 If you want a token to stay alive until its expiration date, even when no
 WebSocket connection linked to it are alive, you may want to create a
@@ -231,204 +231,204 @@ The inspector may also send information through this WebSocket (see below).
 
 Various messages may be sent by the server through that WebSocket connection:
 
--   **ack**: ack messages are just an UTF-8-encoded `ack` string sent by the
-    server as soon as it receives the connection and considers it valid (for
-    example: the right password has been set). In cases where the request is
-    invalid, the server will close the WebSocket instead.
+- **ack**: ack messages are just an UTF-8-encoded `ack` string sent by the
+  server as soon as it receives the connection and considers it valid (for
+  example: the right password has been set). In cases where the request is
+  invalid, the server will close the WebSocket instead.
 
-    It is always the first message sent, and is sent only once.
+  It is always the first message sent, and is sent only once.
 
-    There is no response to this message, it is just here to indicate that
-    the connection has been well received.
+  There is no response to this message, it is just here to indicate that
+  the connection has been well received.
 
--   **Initial Device Message**: Message sent by the server which describes the
-    first log(s) sent by the device. It should be sent before any logs messages
-    originating from the device.
+- **Initial Device Message**: Message sent by the server which describes the
+  first log(s) sent by the device. It should be sent before any logs messages
+  originating from the device.
 
-    The content of this message is an UTF-8 encoded JSON, with the following
-    keys:
+  The content of this message is an UTF-8 encoded JSON, with the following
+  keys:
 
-    -   `type` (string): Always set to `"Init"`. This allows you to identify
-        that this is an `Init` message.
+  - `type` (string): Always set to `"Init"`. This allows you to identify
+    that this is an `Init` message.
 
-    -   `value` (object): Object with the following keys:
+  - `value` (object): Object with the following keys:
 
-        -   `timestamp` (number): The monotically-increasing timestamp in
-            milliseconds choosen by the device when its first message was sent.
+    - `timestamp` (number): The monotically-increasing timestamp in
+      milliseconds choosen by the device when its first message was sent.
 
-            It is intended to be compared with `dateMs` so other messages
-            originating from the device may be easily dated.
+      It is intended to be compared with `dateMs` so other messages
+      originating from the device may be easily dated.
 
-        -   `dateMs` (number): Unix timestamp in milliseconds generated by the
-            device at the same moment that the `timestamp` property was produced.
+    - `dateMs` (number): Unix timestamp in milliseconds generated by the
+      device at the same moment that the `timestamp` property was produced.
 
-        -   `history` (Array.string): The last `N` "logs" sent by the device in
-            chronological order, with `N` ranging from `0` to the `maxHistorySize`
-            value communicated in this same object.
+    - `history` (Array.string): The last `N` "logs" sent by the device in
+      chronological order, with `N` ranging from `0` to the `maxHistorySize`
+      value communicated in this same object.
 
-            History is only enabled if you explicitely enabled it through the
-            right server flag. In other cases, this array is empty.
+      History is only enabled if you explicitely enabled it through the
+      right server flag. In other cases, this array is empty.
 
-            Note that only device messages that are actually passed through to
-            inspectors (as opposed to messages only meant for the server) are
-            stored in this history (more details below).
+      Note that only device messages that are actually passed through to
+      inspectors (as opposed to messages only meant for the server) are
+      stored in this history (more details below).
 
-        -   `maxHistorySize` (number): The maximum number of elements the
-            `history` array (communicated through this same object) can contain.
+    - `maxHistorySize` (number): The maximum number of elements the
+      `history` array (communicated through this same object) can contain.
 
-            If `history` has the same length, then it may be that older logs
-            have been removed from it to respect that limit.
+      If `history` has the same length, then it may be that older logs
+      have been removed from it to respect that limit.
 
--   **Evaluation results**: An inspector can send JavaScript code to be executed
-    on the device, those are called "evaluations" by the RxPaired-server.
+- **Evaluation results**: An inspector can send JavaScript code to be executed
+  on the device, those are called "evaluations" by the RxPaired-server.
 
-    When and if a device executes such instructions and if it executes with
-    success, it will return the result of executing it in an "Evaluation result"
-    message which is described here.
+  When and if a device executes such instructions and if it executes with
+  success, it will return the result of executing it in an "Evaluation result"
+  message which is described here.
 
-    Note that ALL inspector listening to a given device (through its token),
-    even those that did not send the original JavaScript code, will receive the
-    corresponding evaluation result if sent by the device.
+  Note that ALL inspector listening to a given device (through its token),
+  even those that did not send the original JavaScript code, will receive the
+  corresponding evaluation result if sent by the device.
 
-    Evaluation results messages are UTF-8 encoded JSON with the following
-    keys:
+  Evaluation results messages are UTF-8 encoded JSON with the following
+  keys:
 
-    -   `type` (string): Always set to `"eval-result"`. This allows you to
-        identify that this is an Evaluation result message.
+  - `type` (string): Always set to `"eval-result"`. This allows you to
+    identify that this is an Evaluation result message.
 
-    -   `value` (object): Object with the following keys:
+  - `value` (object): Object with the following keys:
 
-        -   `id` (string): The same identifier that was sent alongside the
-            corresponding original evaluation message sent by the inspector.
+    - `id` (string): The same identifier that was sent alongside the
+      corresponding original evaluation message sent by the inspector.
 
-            Can be used if multiple evaluation messages were sent to know
-            which result is about which evaluation.
+      Can be used if multiple evaluation messages were sent to know
+      which result is about which evaluation.
 
-        -   `data` (string|undefined): The optional result itself, transformed
-            to a string format by the RxPaired-client.
+    - `data` (string|undefined): The optional result itself, transformed
+      to a string format by the RxPaired-client.
 
--   **Evaluation errors**: An inspector can send JavaScript code to be executed
-    on the device, those are called "evaluations" by the RxPaired-server.
+- **Evaluation errors**: An inspector can send JavaScript code to be executed
+  on the device, those are called "evaluations" by the RxPaired-server.
 
-    When and if a device executes such instructions and if the corresponding
-    code throws on the device, the RxPaired-client will return the error
-    obtained when executing it in an "Evaluation error" message which is
-    described here.
+  When and if a device executes such instructions and if the corresponding
+  code throws on the device, the RxPaired-client will return the error
+  obtained when executing it in an "Evaluation error" message which is
+  described here.
 
-    Note that ALL inspector listening to a given device (through its token),
-    even those that did not send the original JavaScript code, will receive the
-    corresponding evaluation error if sent by the device.
+  Note that ALL inspector listening to a given device (through its token),
+  even those that did not send the original JavaScript code, will receive the
+  corresponding evaluation error if sent by the device.
 
-    Evaluation errors messages are UTF-8 encoded JSON with the following
-    keys:
+  Evaluation errors messages are UTF-8 encoded JSON with the following
+  keys:
 
-    -   `type` (string): Always set to `"eval-error"`. This allows you to
-        identify that this is an Evaluation error message.
+  - `type` (string): Always set to `"eval-error"`. This allows you to
+    identify that this is an Evaluation error message.
 
-    -   `value` (object): Object with the following keys:
+  - `value` (object): Object with the following keys:
 
-        -   `id` (string): The same identifier that was sent alongside the
-            corresponding original evaluation message sent by the inspector.
+    - `id` (string): The same identifier that was sent alongside the
+      corresponding original evaluation message sent by the inspector.
 
-            Can be used if multiple evaluation messages were sent to know
-            which error is about which evaluation message.
+      Can be used if multiple evaluation messages were sent to know
+      which error is about which evaluation message.
 
-        -   `error` (object): Object with the following keys:
+    - `error` (object): Object with the following keys:
 
-            -   `name` (string | undefined): Optional `name` property on the
-                corresponding error JavaScript object thrown.
+      - `name` (string | undefined): Optional `name` property on the
+        corresponding error JavaScript object thrown.
 
-            -   `message` (string | undefined): Optional `message` property on
-                the corresponding error JavaScript object thrown.
+      - `message` (string | undefined): Optional `message` property on
+        the corresponding error JavaScript object thrown.
 
--   **ping**: Ping messages are just an UTF-8-encoded `ping` string, which the
-    other side of the connection (the inspector) is supposed to respond
-    by `pong`.
+- **ping**: Ping messages are just an UTF-8-encoded `ping` string, which the
+  other side of the connection (the inspector) is supposed to respond
+  by `pong`.
 
-    The idea behind this message is to ensure that the connection stays open
-    even when no message has been received in a long time, as some applications
-    (such as servers) might automatically decide to close the connection
-    otherwise.
+  The idea behind this message is to ensure that the connection stays open
+  even when no message has been received in a long time, as some applications
+  (such as servers) might automatically decide to close the connection
+  otherwise.
 
--   **logs**: Other messages that do not correspond to either of the preceding
-    conditions are "logs" directly originating from the device, the server just
-    passing them through through the inspector(s)'s WebSocket directly as they
-    are received.
+- **logs**: Other messages that do not correspond to either of the preceding
+  conditions are "logs" directly originating from the device, the server just
+  passing them through through the inspector(s)'s WebSocket directly as they
+  are received.
 
-    They should be encoded as an UTF-8 string with the following format:
-    `<TIMESTAMP> [<LOG_NAMESPACE>] <LOG_MESSAGE>`
+  They should be encoded as an UTF-8 string with the following format:
+  `<TIMESTAMP> [<LOG_NAMESPACE>] <LOG_MESSAGE>`
 
-    Where:
+  Where:
 
-    -   `<TIMESTAMP>` is the monotically-increasing timestamp in milliseconds
-        produced by the same method than the "Initial Device Message" sent by
-        the device.
+  - `<TIMESTAMP>` is the monotically-increasing timestamp in milliseconds
+    produced by the same method than the "Initial Device Message" sent by
+    the device.
 
-    -   `<LOG_NAMESPACE>` is an identifier for the type of log. It is generally
-        correlated to the level of the logs (e.g. `error`, `debug` etc.)
-        but may also be used to identify another category of log (e.g. `Network`
-        for Network-related log).
+  - `<LOG_NAMESPACE>` is an identifier for the type of log. It is generally
+    correlated to the level of the logs (e.g. `error`, `debug` etc.)
+    but may also be used to identify another category of log (e.g. `Network`
+    for Network-related log).
 
-    -   `<LOG_MESSAGE>` is the logged message itself.
+  - `<LOG_MESSAGE>` is the logged message itself.
 
-        The message may be truncated (compared to what has been sent by the
-        device) if it was originally longer than the maximum length configured
-        by the RxPaired-server (see server flags), which is expressed in UTF-16
-        code units (JavaScript!).
+    The message may be truncated (compared to what has been sent by the
+    device) if it was originally longer than the maximum length configured
+    by the RxPaired-server (see server flags), which is expressed in UTF-16
+    code units (JavaScript!).
 
 ##### Messages sent TO the server
 
 As a websocket connection, exchanges are bi-directional. An inspector can send
 through that route the following types of messages:
 
--   **pong**: Pong messages are just an UTF-8-encoded `pong` string, which is
-    the message an inspector should send after receiving a `ping` message
-    through that same connection.
+- **pong**: Pong messages are just an UTF-8-encoded `pong` string, which is
+  the message an inspector should send after receiving a `ping` message
+  through that same connection.
 
--   **Evaluation**: Those messages allow an inspector to ask the device to
-    execute some JavaScript code present in this message.
+- **Evaluation**: Those messages allow an inspector to ask the device to
+  execute some JavaScript code present in this message.
 
-    After executing the corresponding code, the device will either send an
-    "Evaluation result" message if it executed with success or an
-    "Evaluation error" message if it threw. Both of those messages are
-    communicated by the server and are documented in this API documentation.
+  After executing the corresponding code, the device will either send an
+  "Evaluation result" message if it executed with success or an
+  "Evaluation error" message if it threw. Both of those messages are
+  communicated by the server and are documented in this API documentation.
 
-    Evaluation messages are UTF-8 encoded JSON with the following keys:
+  Evaluation messages are UTF-8 encoded JSON with the following keys:
 
-    -   `type` (string): Always set to `"eval"`. This allows the server and
-        device to identify that this is an Evaluation message.
+  - `type` (string): Always set to `"eval"`. This allows the server and
+    device to identify that this is an Evaluation message.
 
-    -   `value` (object): Object with the following keys:
+  - `value` (object): Object with the following keys:
 
-        -   `id` (string): Identifier that will be repeated by the device on
-            the corresponding result (either an "Evaluation result" if it
-            executed with success or an "Evaluation error" if it threw).
+    - `id` (string): Identifier that will be repeated by the device on
+      the corresponding result (either an "Evaluation result" if it
+      executed with success or an "Evaluation error" if it threw).
 
-        -   `instruction` (string): The JavaScript code to execute on the
-            device. Note that the `return` JS keywork can be used to return
-            data alongside the corresponding "Evaluation result" message, just
-            as if returning that data as the last instruction of a JS function.
+    - `instruction` (string): The JavaScript code to execute on the
+      device. Note that the `return` JS keywork can be used to return
+      data alongside the corresponding "Evaluation result" message, just
+      as if returning that data as the last instruction of a JS function.
 
 #### `/<TOKEN_ID>`
 
 Like for `/<TOKEN_ID>/<EXPIRATION_TIME_MS>`, but:
 
--   if no token with that name was created, we will rely on the default
-    expiration time configured on the server instead (see `-h` server flag).
+- if no token with that name was created, we will rely on the default
+  expiration time configured on the server instead (see `-h` server flag).
 
--   if a token with that name was already created, its original expiration date
-    will remain unchanged.
+- if a token with that name was already created, its original expiration date
+  will remain unchanged.
 
 #### `/!persist/<TOKEN_ID>/<EXPIRATION_TIME_MS>`
 
 Where:
 
--   `<TOKEN_ID>` is a string composed only of alphanumeric characters.
+- `<TOKEN_ID>` is a string composed only of alphanumeric characters.
 
--   `<EXPIRATION_TIME_MS>` is a time in milliseconds.
+- `<EXPIRATION_TIME_MS>` is a time in milliseconds.
 
-    Note that that part is completely optional (description of the semantics
-    and syntax of not setting it in the next route's description).
+  Note that that part is completely optional (description of the semantics
+  and syntax of not setting it in the next route's description).
 
 ##### Behavior
 
@@ -473,11 +473,11 @@ the new set `<EXPIRATION_TIME_MS>`.
 
 Like for `/!persist/<TOKEN_ID>/<EXPIRATION_TIME_MS>`, but:
 
--   if no token with that name was created, we will rely on the default
-    expiration time configured on the server instead (see `-h`server flag).
+- if no token with that name was created, we will rely on the default
+  expiration time configured on the server instead (see `-h`server flag).
 
--   if a token with that name was already created, it will be made persistent if
-    it wasn't already but its original expiration date will remain unchanged.
+- if a token with that name was already created, it will be made persistent if
+  it wasn't already but its original expiration date will remain unchanged.
 
 ### Through the device port
 
@@ -495,11 +495,11 @@ RxPaired-server through the device port.
 
 Where:
 
--   `<TOKEN_ID>` is a string composed only of alphanumeric characters.
+- `<TOKEN_ID>` is a string composed only of alphanumeric characters.
 
-    That has been previously explicitely created by an RxPaired-inspector
-    **AND** that is still considered "active" (see routes exposed by the
-    inspector ports for more information on what this implies).
+  That has been previously explicitely created by an RxPaired-inspector
+  **AND** that is still considered "active" (see routes exposed by the
+  inspector ports for more information on what this implies).
 
 ##### Behavior
 
@@ -517,145 +517,145 @@ through the inspector port and through the device ports, will be closed.
 
 Messages may be sent by the server through that WebSocket connection:
 
--   **ack**: ack messages are just an UTF-8-encoded `ack` string sent by the
-    server as soon as it receives the connection and considers it valid (for
-    example: the wanted token exists). In cases where the request is invalid,
-    the server will close the WebSocket instead.
+- **ack**: ack messages are just an UTF-8-encoded `ack` string sent by the
+  server as soon as it receives the connection and considers it valid (for
+  example: the wanted token exists). In cases where the request is invalid,
+  the server will close the WebSocket instead.
 
-    It is always the first message sent, and is sent only once.
+  It is always the first message sent, and is sent only once.
 
-    There is no response to this message, it is just here to indicate that
-    the connection has been well received.
+  There is no response to this message, it is just here to indicate that
+  the connection has been well received.
 
--   **ping**: Ping messages are just an UTF-8-encoded `ping` string, which the
-    other side of the connection (the RxPaired-client) is supposed to respond
-    by `pong`.
+- **ping**: Ping messages are just an UTF-8-encoded `ping` string, which the
+  other side of the connection (the RxPaired-client) is supposed to respond
+  by `pong`.
 
-    The idea behind this message is to ensure that the connection stays open
-    even when no message has been received in a long time, as some applications
-    (such as servers) might automatically decide to close the connection
-    otherwise.
+  The idea behind this message is to ensure that the connection stays open
+  even when no message has been received in a long time, as some applications
+  (such as servers) might automatically decide to close the connection
+  otherwise.
 
--   **Evaluation**: Those messages originates from an RxPaired-inspector and
-    allows it to execute some JavaScript code present in this message.
+- **Evaluation**: Those messages originates from an RxPaired-inspector and
+  allows it to execute some JavaScript code present in this message.
 
-    After executing the corresponding code, the device should either send an
-    "Evaluation result" message if it executed with success or an
-    "Evaluation error" message if it threw. Both of those messages are at
-    destinations of RxPaired-inspectors.
+  After executing the corresponding code, the device should either send an
+  "Evaluation result" message if it executed with success or an
+  "Evaluation error" message if it threw. Both of those messages are at
+  destinations of RxPaired-inspectors.
 
-    Evaluation messages are UTF-8 encoded JSON with the following keys:
+  Evaluation messages are UTF-8 encoded JSON with the following keys:
 
-    -   `type` (string): Always set to `"eval"`. This allows you to identify
-        that this is an Evaluation message.
+  - `type` (string): Always set to `"eval"`. This allows you to identify
+    that this is an Evaluation message.
 
-    -   `value` (object): Object with the following keys:
+  - `value` (object): Object with the following keys:
 
-        -   `id` (string): Identifier that should be repeated by on the
-            corresponding result (either an "Evaluation result" if it
-            executed with success or an "Evaluation error" if it threw).
+    - `id` (string): Identifier that should be repeated by on the
+      corresponding result (either an "Evaluation result" if it
+      executed with success or an "Evaluation error" if it threw).
 
-        -   `instruction` (string): The JavaScript code to execute.
-            Note that the `return` JS keywork indicates that the returned
-            data should be sent alongside the corresponding "Evaluation result"
-            message, just as if returning that data as the last instruction of a
-            JS function.
+    - `instruction` (string): The JavaScript code to execute.
+      Note that the `return` JS keywork indicates that the returned
+      data should be sent alongside the corresponding "Evaluation result"
+      message, just as if returning that data as the last instruction of a
+      JS function.
 
 ##### Messages sent TO the server
 
--   **Initial Message**: This should be the initial message send by the
-    device, describing information on the device.
+- **Initial Message**: This should be the initial message send by the
+  device, describing information on the device.
 
-    The content of this message is an UTF-8 encoded string, with the following
-    format:
-    `Init v1 <TIMESTAMP> <CURRENT_DATE>`
+  The content of this message is an UTF-8 encoded string, with the following
+  format:
+  `Init v1 <TIMESTAMP> <CURRENT_DATE>`
 
-    Where:
+  Where:
 
-    -   `<TIMESTAMP> is a monotically-increasing timestamp in milliseconds
-        choosen by the device when its first message was sent.
+  - `<TIMESTAMP> is a monotically-increasing timestamp in milliseconds
+    choosen by the device when its first message was sent.
 
-        It is intended to be compared with `<CURRENT_DATE>` so other messages
-        originating from the device may be easily dated.
+    It is intended to be compared with `<CURRENT_DATE>` so other messages
+    originating from the device may be easily dated.
 
-    -   <CURRENT_DATE> is a unix timestamp in milliseconds generated by the
-        device at the same moment that the `<TIMESTAMP>` property was produced.
+  - <CURRENT_DATE> is a unix timestamp in milliseconds generated by the
+    device at the same moment that the `<TIMESTAMP>` property was produced.
 
--   **pong**: Pong messages are just an UTF-8-encoded `pong` string, which is
-    the message an inspector should send after receiving a `ping` message
-    through that same connection.
+- **pong**: Pong messages are just an UTF-8-encoded `pong` string, which is
+  the message an inspector should send after receiving a `ping` message
+  through that same connection.
 
--   **Evaluation results**: When an instruction, through an Evaluation message
-    of that same WebSocket connection, executes with success, the device should
-    send back a corresponding "Evaluation result" message described here.
+- **Evaluation results**: When an instruction, through an Evaluation message
+  of that same WebSocket connection, executes with success, the device should
+  send back a corresponding "Evaluation result" message described here.
 
-    Evaluation results messages should be UTF-8 encoded JSON with the following
-    keys:
+  Evaluation results messages should be UTF-8 encoded JSON with the following
+  keys:
 
-    -   `type` (string): Always set to `"eval-result"`. This allows the server
-        and inspectors to identify that this is an Evaluation result message.
+  - `type` (string): Always set to `"eval-result"`. This allows the server
+    and inspectors to identify that this is an Evaluation result message.
 
-    -   `value` (object): Object with the following keys:
+  - `value` (object): Object with the following keys:
 
-        -   `id` (string): The same identifier that was sent alongside the
-            corresponding original Evaluation message.
+    - `id` (string): The same identifier that was sent alongside the
+      corresponding original Evaluation message.
 
-            Can be used if multiple evaluation messages were sent to know
-            which result is about which evaluation.
+      Can be used if multiple evaluation messages were sent to know
+      which result is about which evaluation.
 
-        -   `data` (string|undefined): The optional result itself, transformed
-            to a string format by a method of the RxPaired-client choosing.
+    - `data` (string|undefined): The optional result itself, transformed
+      to a string format by a method of the RxPaired-client choosing.
 
--   **Evaluation errors**: When an instruction, through an Evaluation message
-    of that same WebSocket connection, throws while executing, the device should
-    send back a corresponding "Evaluation error" message described here.
+- **Evaluation errors**: When an instruction, through an Evaluation message
+  of that same WebSocket connection, throws while executing, the device should
+  send back a corresponding "Evaluation error" message described here.
 
-    Evaluation errors messages should be UTF-8 encoded JSON with the following
-    keys:
+  Evaluation errors messages should be UTF-8 encoded JSON with the following
+  keys:
 
-    -   `type` (string): Always set to `"eval-error"`. This allows the server
-        and inspectors to identify that this is an Evaluation error message.
+  - `type` (string): Always set to `"eval-error"`. This allows the server
+    and inspectors to identify that this is an Evaluation error message.
 
-    -   `value` (object): Object with the following keys:
+  - `value` (object): Object with the following keys:
 
-        -   `id` (string): The same identifier that was sent alongside the
-            corresponding original Evaluation message.
+    - `id` (string): The same identifier that was sent alongside the
+      corresponding original Evaluation message.
 
-            Can be used if multiple evaluation messages were sent to know
-            which error is about which evaluation message.
+      Can be used if multiple evaluation messages were sent to know
+      which error is about which evaluation message.
 
-        -   `error` (object): Object with the following keys:
+    - `error` (object): Object with the following keys:
 
-            -   `name` (string | undefined): Optional `name` property on the
-                corresponding error JavaScript object thrown.
+      - `name` (string | undefined): Optional `name` property on the
+        corresponding error JavaScript object thrown.
 
-            -   `message` (string | undefined): Optional `message` property on
-                the corresponding error JavaScript object thrown.
+      - `message` (string | undefined): Optional `message` property on
+        the corresponding error JavaScript object thrown.
 
--   **logs**: Other messages that do not correspond to either of the preceding
-    conditions are all considered "logs".
+- **logs**: Other messages that do not correspond to either of the preceding
+  conditions are all considered "logs".
 
-    They should be encoded as an UTF-8 string with the following format:
-    `<TIMESTAMP> [<LOG_NAMESPACE>] <LOG_MESSAGE>`
+  They should be encoded as an UTF-8 string with the following format:
+  `<TIMESTAMP> [<LOG_NAMESPACE>] <LOG_MESSAGE>`
 
-    Where:
+  Where:
 
-    -   `<TIMESTAMP>` is the monotically-increasing timestamp in milliseconds
-        produced by the same method than the "Initial Message" sent by the
-        device.
+  - `<TIMESTAMP>` is the monotically-increasing timestamp in milliseconds
+    produced by the same method than the "Initial Message" sent by the
+    device.
 
-    -   `<LOG_NAMESPACE>` is an identifier for the type of log. It is generally
-        correlated to the level of the logs (e.g. `error`, `debug` etc.)
-        but may also be used to identify another category of log (e.g. `Network`
-        for Network-related log).
+  - `<LOG_NAMESPACE>` is an identifier for the type of log. It is generally
+    correlated to the level of the logs (e.g. `error`, `debug` etc.)
+    but may also be used to identify another category of log (e.g. `Network`
+    for Network-related log).
 
-    -   `<LOG_MESSAGE>` is the logged message itself.
+  - `<LOG_MESSAGE>` is the logged message itself.
 
-        The message should not be longer than the maximum length configured by
-        the RxPaired-server (see server flags), which is expressed in UTF-16
-        code units (JavaScript!). If the message is actually longer, it will be
-        truncated when received by the server and inspectors - which may render
-        it unusable.
+    The message should not be longer than the maximum length configured by
+    the RxPaired-server (see server flags), which is expressed in UTF-16
+    code units (JavaScript!). If the message is actually longer, it will be
+    truncated when received by the server and inspectors - which may render
+    it unusable.
 
 #### `/!notoken/<SERVER_PASSWORD>`
 
@@ -663,8 +663,8 @@ Messages may be sent by the server through that WebSocket connection:
 
 Where:
 
--   `<SERVER_PASSWORD>` is the server's password if configured (see server
-    flags).
+- `<SERVER_PASSWORD>` is the server's password if configured (see server
+  flags).
 
 **NOTE**: This route could have been disabled depending on the flags associated
 to the RxPaired-server.
@@ -677,8 +677,8 @@ port (see corresponding route).
 
 This token wont be communicated to the device, but:
 
--   If the right flags have been set, it will be present in the name of the
-    corresponding log file generated on disk by the server.
+- If the right flags have been set, it will be present in the name of the
+  corresponding log file generated on disk by the server.
 
--   The `/!list` route, exposed on the inspector port, will list that token,
-    allowing RxPaired-inspectors to listen to it.
+- The `/!list` route, exposed on the inspector port, will list that token,
+  allowing RxPaired-inspectors to listen to it.

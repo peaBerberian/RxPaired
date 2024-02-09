@@ -98,3 +98,75 @@ export function createClearStoredConfigButton(
   }
   return buttonElt;
 }
+
+export function createTimeRepresentationSwitch(
+  configState: ObservableState<ConfigState>,
+): HTMLElement {
+  const isTimestamp =
+    configState.getCurrentState(STATE_PROPS.TIME_REPRESENTATION) ===
+    "timestamp";
+  const timeLabel = "Current time unit: 🕒 Time";
+  const dateLabel = "Current time unit: 🗓️ Date";
+  const label = strHtml`<label for="timeRepresentation">${
+    isTimestamp ? timeLabel : dateLabel
+  }</label>`;
+  const checkbox = strHtml`<input
+    type="checkbox"
+    name="timeRepresentation"
+    id="timeRepresentation"
+  />` as HTMLInputElement;
+  checkbox.checked = isTimestamp;
+  function onChange(): void {
+    label.innerText = checkbox.checked ? timeLabel : dateLabel;
+    configState.updateState(
+      STATE_PROPS.TIME_REPRESENTATION,
+      UPDATE_TYPE.REPLACE,
+      checkbox.checked ? "timestamp" : "date",
+    );
+    configState.commitUpdates();
+  }
+  checkbox.onchange = onChange;
+  const wrapper = strHtml`<span class="label-wrapper"></span>`;
+  wrapper.appendChild(label);
+  wrapper.appendChild(checkbox);
+  return wrapper;
+}
+
+export function isInitLog(log: string): boolean {
+  if (log.startsWith("{")) {
+    try {
+      const signal = JSON.parse(log);
+      return signal.type === "Init";
+    } catch {
+      return false;
+    }
+  }
+  return false;
+}
+
+export function parseAndGenerateInitLog(log: string): {
+  log: string;
+  dateAtPageLoad: number;
+} {
+  const defaultLog = {
+    log: "",
+    dateAtPageLoad: 0,
+  };
+  try {
+    const signal = JSON.parse(log);
+    if (signal.type === "Init") {
+      const initTimestamp = signal.value?.timestamp;
+      const dateMs = signal.value?.dateMs;
+
+      if (typeof initTimestamp === "number" && typeof dateMs === "number") {
+        return {
+          log: `${initTimestamp.toFixed(2)} [Init] Local-Date:${dateMs}`,
+          dateAtPageLoad: dateMs - initTimestamp,
+        };
+      }
+    }
+    return defaultLog;
+  } catch {
+    return defaultLog;
+  }
+}

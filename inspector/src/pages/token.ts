@@ -9,10 +9,8 @@ import { displayError, isTokenValid, generatePageUrl } from "../utils";
  * @returns {Function} - Perform clean-up if the page is exited.
  */
 export default function generateTokenPage(password: string): () => void {
-  const persistentTokensListElt =
-    strHtml`<pre class="persistent-tokens-list">Loading... </pre>`;
-  const temporaryTokensListElt =
-    strHtml`<pre class="temporary-tokens-list">Loading...</pre>`;
+  const persistentTokensListElt = strHtml`<pre class="persistent-tokens-list">Loading... </pre>`;
+  const temporaryTokensListElt = strHtml`<pre class="temporary-tokens-list">Loading...</pre>`;
   const errorContainerElt = strHtml`<div></div>`;
   const pageBodyElt = strHtml`<div>
     ${errorContainerElt}
@@ -96,7 +94,7 @@ export default function generateTokenPage(password: string): () => void {
       data.tokenList,
       password,
       temporaryTokensListElt,
-      persistentTokensListElt
+      persistentTokensListElt,
     );
 
     if (!hasAddedNoTokenTutorial) {
@@ -123,7 +121,7 @@ export default function generateTokenPage(password: string): () => void {
  * @returns {HTMLElement}
  */
 function createGenerateTokenButton(
-  errorContainerElt: HTMLElement
+  errorContainerElt: HTMLElement,
 ): HTMLElement {
   const generateTokenButtonElt = strHtml`<button class="btn-generate-token">
     Generate Token
@@ -161,7 +159,7 @@ function createPostDebuggingButtonElt(): HTMLElement {
  */
 function createTokenInputElement(
   password: string,
-  errorContainerElt: HTMLElement
+  errorContainerElt: HTMLElement,
 ): HTMLElement {
   const tokenInputElt =
     strHtml`<input placeholder="Enter the wanted token">` as HTMLInputElement;
@@ -170,7 +168,7 @@ function createTokenInputElement(
       if (
         !checkTokenValidityAndDisplayErrorIfNot(
           tokenInputElt.value,
-          errorContainerElt
+          errorContainerElt,
         )
       ) {
         return;
@@ -185,7 +183,7 @@ function createTokenInputElement(
     if (
       !checkTokenValidityAndDisplayErrorIfNot(
         tokenInputElt.value,
-        errorContainerElt
+        errorContainerElt,
       )
     ) {
       return;
@@ -220,7 +218,7 @@ function createTokenInputElement(
       if (
         !checkTokenValidityAndDisplayErrorIfNot(
           tokenInputElt.value,
-          errorContainerElt
+          errorContainerElt,
         )
       ) {
         return;
@@ -263,7 +261,7 @@ function createTokenInputElement(
       displayError(
         errorContainerElt,
         new Error("Invalid expiration number"),
-        true
+        true,
       );
       return;
     }
@@ -271,7 +269,7 @@ function createTokenInputElement(
     if (
       !checkTokenValidityAndDisplayErrorIfNot(
         tokenInputElt.value,
-        errorContainerElt
+        errorContainerElt,
       )
     ) {
       return;
@@ -321,7 +319,7 @@ function createNoTokenTutorialElement(hasPassword: boolean): HTMLElement {
     <span class="emphasized">
       ${`<script src="${CLIENT_SCRIPT_URL.replace(
         /"/g,
-        '\\"'
+        '\\"',
       )}#${fakeTokenStr}"></script>`}
     </span>
   </li>`;
@@ -450,7 +448,7 @@ function onActiveTokenListUpdate(
   activeTokensList: ParsedTokenListServerMessage["tokenList"],
   password: string,
   temporaryTokensListElt: HTMLElement,
-  persistentTokensListElt: HTMLElement
+  persistentTokensListElt: HTMLElement,
 ): void {
   activeTokensList.sort((a, b) => b.date - a.date);
   const persistentTokenElements: HTMLElement[] = [];
@@ -488,14 +486,14 @@ function onActiveTokenListUpdate(
       linkElt.appendChild(document.createTextNode(" "));
       linkElt.appendChild(
         strHtml`<span>(expires in ${millisecondsToTimeString(
-          d.msUntilExpiration
-        )})</span>`
+          d.msUntilExpiration,
+        )})</span>`,
       );
       const listElt = strHtml`<li class="button-input-right">${linkElt}</li>`;
       acc.appendChild(listElt);
       return acc;
     },
-    strHtml`<ul class="temporary-token-list" />`
+    strHtml`<ul class="temporary-token-list" />`,
   );
   if (!hasActiveTemporaryToken) {
     temporaryTokensListElt.innerHTML = "No active token";
@@ -553,14 +551,14 @@ function millisecondsToTimeString(timeMs: number): string {
 function createPersistentToken(
   password: string,
   tokenId: string,
-  expirationDelayMs: number
+  expirationDelayMs: number,
 ): void {
   const wsUrl =
     password === ""
       ? `${SERVER_URL}/!persist/${tokenId}/${expirationDelayMs}`
       : `${SERVER_URL}/${password}/!persist/${tokenId}/${expirationDelayMs}`;
   const ws = new WebSocket(wsUrl);
-  ws.onmessage = function(evt) {
+  ws.onmessage = function (evt) {
     if (evt?.data === "ack") {
       ws.close();
     }
@@ -580,7 +578,7 @@ interface ParsedTokenListServerMessage {
 
 function checkTokenValidityAndDisplayErrorIfNot(
   tokenValue: string,
-  errorContainerElt: HTMLElement
+  errorContainerElt: HTMLElement,
 ): boolean {
   if (tokenValue === "") {
     displayError(errorContainerElt, new Error("No token inputed"), true);
@@ -588,7 +586,7 @@ function checkTokenValidityAndDisplayErrorIfNot(
   }
   if (!isTokenValid(tokenValue)) {
     const error = new Error(
-      "Error: A token must only contain alphanumeric characters"
+      "Error: A token must only contain alphanumeric characters",
     );
     displayError(errorContainerElt, error, true);
     return false;

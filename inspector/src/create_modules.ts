@@ -57,7 +57,7 @@ export default function createModules({
     configState.updateState(
       STATE_PROPS.MODULES_ORDER,
       UPDATE_TYPE.REPLACE,
-      storedModulesOrder
+      storedModulesOrder,
     );
     configState.commitUpdates();
   }
@@ -65,12 +65,12 @@ export default function createModules({
   let someModuleWasMissing = false;
   const modulesInOrder = [];
   const leftModulesToIterateOn = modules.filter(({ contexts }) =>
-    contexts.includes(context)
+    contexts.includes(context),
   );
   const activeModuleIds = leftModulesToIterateOn.map((m) => m.moduleId);
   for (const storedModuleId of storedModulesOrder) {
     const index = leftModulesToIterateOn.findIndex(
-      ({ moduleId }) => moduleId === storedModuleId
+      ({ moduleId }) => moduleId === storedModuleId,
     );
     if (index !== -1) {
       modulesInOrder.push(leftModulesToIterateOn[index]);
@@ -91,7 +91,7 @@ export default function createModules({
     configState.updateState(
       STATE_PROPS.MODULES_ORDER,
       UPDATE_TYPE.REPLACE,
-      newOrder
+      newOrder,
     );
   }
   configState.commitUpdates();
@@ -100,7 +100,7 @@ export default function createModules({
   const onDestroyCbs: Array<() => void> = [];
 
   const resizeObserver = new ResizeObserver(() =>
-    reSyncModulesPlacement(containerElt)
+    reSyncModulesPlacement(containerElt),
   );
   onDestroyCbs.push(() => resizeObserver.disconnect());
   for (const moduleInfo of modulesInOrder) {
@@ -115,7 +115,7 @@ export default function createModules({
 
   configState.subscribe(STATE_PROPS.MODULES_ORDER, onModulesOrderChange);
   onDestroyCbs.push(() =>
-    configState.unsubscribe(STATE_PROPS.MODULES_ORDER, onModulesOrderChange)
+    configState.unsubscribe(STATE_PROPS.MODULES_ORDER, onModulesOrderChange),
   );
 
   /** clean-up */
@@ -185,7 +185,7 @@ export default function createModules({
           }
           if (expectedElement === undefined) {
             const moduleInfo = modules.find(
-              ({ moduleId: modId }) => modId === expectedModuleId
+              ({ moduleId: modId }) => modId === expectedModuleId,
             );
             if (moduleInfo === undefined) {
               console.error(`Module "${expectedModuleId}" unfound`);
@@ -196,7 +196,7 @@ export default function createModules({
                 newWrapperElt.dataset.moduleId = moduleInfo.moduleId;
                 containerElt.insertBefore(
                   newWrapperElt,
-                  moduleWrapperElts[modWrapIdx]
+                  moduleWrapperElts[modWrapIdx],
                 );
                 resizeObserver.observe(newWrapperElt);
                 moduleWrapperElts =
@@ -206,7 +206,7 @@ export default function createModules({
           } else {
             containerElt.insertBefore(
               expectedElement,
-              moduleWrapperElts[modWrapIdx]
+              moduleWrapperElts[modWrapIdx],
             );
             resizeObserver.observe(expectedElement);
             moduleWrapperElts =
@@ -223,7 +223,7 @@ export default function createModules({
     ) {
       const moduleId = newModuleIdOrder[newModIdx];
       const moduleInfo = modules.find(
-        ({ moduleId: modId }) => modId === moduleId
+        ({ moduleId: modId }) => modId === moduleId,
       );
       if (moduleInfo === undefined) {
         console.error(`Module "${moduleId}" unfound`);
@@ -317,7 +317,7 @@ export default function createModules({
           className: "module-title-buttons",
         }),
       ],
-      { className: "module-title" }
+      { className: "module-title" },
     );
     moduleWrapperElt.appendChild(moduleTitleElt);
     moduleWrapperElt.appendChild(body);
@@ -328,7 +328,7 @@ export default function createModules({
     configState.subscribe(
       STATE_PROPS.MINIMIZED_MODULES,
       onMinimizedModule,
-      true
+      true,
     );
     configState.subscribe(STATE_PROPS.WIDTH_RATIOS, onWidthRatioChange, true);
     configState.subscribe(STATE_PROPS.MODULES_ORDER, onModuleOrderChange, true);
@@ -364,7 +364,7 @@ export default function createModules({
         resizeWidthButtonElt.title = "Take full width";
         resizeWidthButtonElt.onclick = () => {
           const lastWidthRatios = configState.getCurrentState(
-            STATE_PROPS.WIDTH_RATIOS
+            STATE_PROPS.WIDTH_RATIOS,
           );
           if (lastWidthRatios !== undefined) {
             lastWidthRatios[moduleId] = 1;
@@ -372,7 +372,7 @@ export default function createModules({
           configState.updateState(
             STATE_PROPS.WIDTH_RATIOS,
             UPDATE_TYPE.REPLACE,
-            lastWidthRatios
+            lastWidthRatios,
           );
           configState.commitUpdates();
         };
@@ -383,7 +383,7 @@ export default function createModules({
         resizeWidthButtonElt.title = "Take half width";
         resizeWidthButtonElt.onclick = () => {
           const lastWidthRatios = configState.getCurrentState(
-            STATE_PROPS.WIDTH_RATIOS
+            STATE_PROPS.WIDTH_RATIOS,
           );
           if (lastWidthRatios !== undefined) {
             lastWidthRatios[moduleId] = 2;
@@ -391,7 +391,7 @@ export default function createModules({
           configState.updateState(
             STATE_PROPS.WIDTH_RATIOS,
             UPDATE_TYPE.REPLACE,
-            lastWidthRatios
+            lastWidthRatios,
           );
           configState.commitUpdates();
         };
@@ -414,7 +414,7 @@ export default function createModules({
           removeModuleIdFromState(
             configState,
             moduleId,
-            STATE_PROPS.MINIMIZED_MODULES
+            STATE_PROPS.MINIMIZED_MODULES,
           );
           configState.commitUpdates();
         };
@@ -427,7 +427,7 @@ export default function createModules({
           addModuleIdToState(
             configState,
             moduleId,
-            STATE_PROPS.MINIMIZED_MODULES
+            STATE_PROPS.MINIMIZED_MODULES,
           );
           configState.commitUpdates();
         };
@@ -436,7 +436,7 @@ export default function createModules({
 
     function onModuleClosing(
       _updateType: UPDATE_TYPE,
-      value: string[] | undefined
+      value: string[] | undefined,
     ): void {
       if (value === undefined || !value.includes(moduleId)) {
         return;
@@ -469,7 +469,7 @@ export default function createModules({
         destroy();
       } else if (destroy !== undefined) {
         console.error(
-          "Module: `destroy` should either be a function or undefined"
+          "Module: `destroy` should either be a function or undefined",
         );
       }
     }
@@ -479,7 +479,7 @@ export default function createModules({
         configState.getCurrentState(STATE_PROPS.MODULES_ORDER) ?? [];
       const indexOfModuleId = modulesOrder.indexOf(moduleId);
       const skippedModuleIds = modulesOrder.filter(
-        (id) => !activeModuleIds.includes(id)
+        (id) => !activeModuleIds.includes(id),
       );
 
       let prevIndex = indexOfModuleId - 1;
@@ -501,7 +501,7 @@ export default function createModules({
       configState.updateState(
         STATE_PROPS.MODULES_ORDER,
         UPDATE_TYPE.REPLACE,
-        modulesOrder
+        modulesOrder,
       );
       configState.commitUpdates();
     }
@@ -511,7 +511,7 @@ export default function createModules({
         configState.getCurrentState(STATE_PROPS.MODULES_ORDER) ?? [];
       const indexOfModuleId = modulesOrder.indexOf(moduleId);
       const skippedModuleIds = modulesOrder.filter(
-        (id) => !activeModuleIds.includes(id)
+        (id) => !activeModuleIds.includes(id),
       );
 
       let nextModule = indexOfModuleId + 1;
@@ -533,7 +533,7 @@ export default function createModules({
       configState.updateState(
         STATE_PROPS.MODULES_ORDER,
         UPDATE_TYPE.REPLACE,
-        modulesOrder
+        modulesOrder,
       );
       configState.commitUpdates();
     }
@@ -547,7 +547,7 @@ export default function createModules({
           removeModuleIdFromState(
             configState,
             moduleId,
-            STATE_PROPS.MODULES_ORDER
+            STATE_PROPS.MODULES_ORDER,
           );
           configState.commitUpdates();
         },
@@ -567,7 +567,7 @@ export default function createModules({
               className: "closed-modules-title",
             }),
           ],
-          { className: "closed-modules" }
+          { className: "closed-modules" },
         );
         containerElt.appendChild(closedElements);
       }
@@ -589,7 +589,7 @@ export default function createModules({
             return;
           }
           reOpenClosedModule();
-        }
+        },
       );
       onDestroyCbs.push(unsub);
 
@@ -597,7 +597,7 @@ export default function createModules({
         removeModuleIdFromState(
           configState,
           moduleId,
-          STATE_PROPS.CLOSED_MODULES
+          STATE_PROPS.CLOSED_MODULES,
         );
         reOpenClosedModule();
       };
@@ -607,7 +607,7 @@ export default function createModules({
       removeModuleIdFromState(
         configState,
         moduleId,
-        STATE_PROPS.MINIMIZED_MODULES
+        STATE_PROPS.MINIMIZED_MODULES,
       );
       removeModuleIdFromState(configState, moduleId, STATE_PROPS.MODULES_ORDER);
       configState.commitUpdates();
@@ -766,7 +766,7 @@ function removeModuleIdFromState(
   stateName:
     | STATE_PROPS.MODULES_ORDER
     | STATE_PROPS.CLOSED_MODULES
-    | STATE_PROPS.MINIMIZED_MODULES
+    | STATE_PROPS.MINIMIZED_MODULES,
 ) {
   const arr = configState.getCurrentState(stateName);
   if (arr === undefined) {
@@ -790,7 +790,7 @@ function addModuleIdToState(
   stateName:
     | STATE_PROPS.MODULES_ORDER
     | STATE_PROPS.CLOSED_MODULES
-    | STATE_PROPS.MINIMIZED_MODULES
+    | STATE_PROPS.MINIMIZED_MODULES,
 ) {
   const arr = configState.getCurrentState(stateName) ?? [];
   if (!arr.includes(moduleId)) {

@@ -155,17 +155,31 @@
         white-space: nowrap;
       }
 
-      .header-item button {
+      .header-item button,
+      .header-item .label-wrapper {
         cursor: pointer;
         border-radius: 2px;
         margin: 0px 3px;
+        font-size: 13px;
+        padding: 3px 8px;
       }
-      .dark .header-item button {
+
+      .header-item .label-wrapper {
+        display: inline-block;
+      }
+
+      .header-item input[type="checkbox"] {
+        display: none;
+      }
+
+      .dark .header-item button,
+      .dark .header-item .label-wrapper {
         background-color: #111;
         border: 1px dotted #ccc;
         color: #ddd;
       }
-      .light .header-item button {
+      .light .header-item button,
+      .light .header-item .label-wrapper {
         background-color: #eee;
         border: 1px dotted #444;
         color: #111;

@@ -11,38 +11,38 @@ applications relying on the RxPlayer.
 
 Its key features are:
 
- - Minimal influence on the device's CPU and memory resources when compared with
-   Chrome's inspector and tools like weinre.
+- Minimal influence on the device's CPU and memory resources when compared with
+  Chrome's inspector and tools like weinre.
 
-   _This debugger can run for multiple hours without a noticeable performance
-   impact, whereas chrome remote debugger lasted only a few minutes on the more
-   constrained devices._
+  _This debugger can run for multiple hours without a noticeable performance
+  impact, whereas chrome remote debugger lasted only a few minutes on the more
+  constrained devices._
 
- - Ability to see in real time logs and useful playback indicators: which audio and
-   video qualities are buffered at which position, information on network requests,
-   evolution of the buffer's health etc.
+- Ability to see in real time logs and useful playback indicators: which audio and
+  video qualities are buffered at which position, information on network requests,
+  evolution of the buffer's health etc.
 
- - Possibility to send any JavaScript instruction to the device.
+- Possibility to send any JavaScript instruction to the device.
 
- - "Time travel": Possibility to see the known playback conditions and its related
-   indicators at the time a log was sent.
+- "Time travel": Possibility to see the known playback conditions and its related
+  indicators at the time a log was sent.
 
- - Possibility to store and export logs to either import them later or open them
-   in your own editor.
+- Possibility to store and export logs to either import them later or open them
+  in your own editor.
 
- - It can be started even on production on any device and can be triggered
-   during runtime.
-
+- It can be started even on production on any device and can be triggered
+  during runtime.
 
 ## Table Of Contents
 
-  - [Quick start](#quick-start)
-  - [What is it?](#what-is-it)
-  - [How does it work?](#how-it-works)
-  - [How to run it?](#how-to-run-it)
-  - [Why creating this tool?](#why-creating-this-tool)
+- [Quick start](#quick-start)
+- [What is it?](#what-is-it)
+- [How does it work?](#how-it-works)
+- [How to run it?](#how-to-run-it)
+- [Why creating this tool?](#why-creating-this-tool)
 
 <a class="anchor" href="#quick-start"></a>
+
 ## Quick start
 
 RxPaired rely on three components: a script called the "client" running on the
@@ -52,76 +52,81 @@ and a "server" managing connections between those two.
 To quickly check if this tool can help you, you can start all three of them
 locally through our scripts. For that, you can do the following:
 
-  1. Clone this repository by running in a terminal:
-     ```sh
-     git clone https://github.com/peaBerberian/RxPaired.git --depth=1
-     cd RxPaired
-     ```
+1. Clone this repository by running in a terminal:
 
-  2. In a first terminal, you'll run the RxPaired server by running those commands at
-     the root of the RxPaired repository:
-     ```sh
-     cd ./server
-     npm install # install the RxPaired-server's dependencies
-     npm run build # build the server
-     node ./RxPaired-server --no-password # run it (no need of password for now)
-     ```
+   ```sh
+   git clone https://github.com/peaBerberian/RxPaired.git --depth=1
+   cd RxPaired
+   ```
 
-  3. In a second terminal build both the client and inspector and serve them by
-     running those commands also at the root of the RxPaired repository:
-     ```sh
-     cd client
-     npm install # install the RxPaired-client's dependencies
-     cp .npmrc.sample .npmrc # set default config
-     npm run build # build it
-     cd ../inspector # Go back to the RxPaired-inspector now
-     npm install # install the RxPaired-inspector's dependencies
-     cp .npmrc.sample .npmrc # set default config
-     npm run build # build it
-     cd .. # Go back to the repository's root
-     # Now serve them
-     node utils/static_http_server.mjs --include-inspector-files --include-client-file
-     ```
+2. In a first terminal, you'll run the RxPaired server by running those commands at
+   the root of the RxPaired repository:
 
-  4. In a web browser, go to the inspector page which now should be at
-     [http://127.0.0.1:8695](http://127.0.0.1:8695) and validate an empty password
-     if the page asks for one.
+   ```sh
+   cd ./server
+   npm install # install the RxPaired-server's dependencies
+   npm run build # build the server
+   node ./RxPaired-server --no-password # run it (no need of password for now)
+   ```
 
-  5. For our test, we will use the `example` token. Define it in the corresponding
-     input and click on the `Use now` button to enable it. You will be redirected
-     to a debugging page for that token.
+3. In a second terminal build both the client and inspector and serve them by
+   running those commands also at the root of the RxPaired repository:
 
-  6. In another browser tab, go to [the RxPlayer demo
-     page](https://developers.canal-plus.com/rx-player/) (any page with the
-     RxPlayer will do, but the `RxPlayer` JavaScript class - **not an
-     instance** - needs to be accessible, see the script below).
+   ```sh
+   cd client
+   npm install # install the RxPaired-client's dependencies
+   cp .npmrc.sample .npmrc # set default config
+   npm run build # build it
+   cd ../inspector # Go back to the RxPaired-inspector now
+   npm install # install the RxPaired-inspector's dependencies
+   cp .npmrc.sample .npmrc # set default config
+   npm run build # build it
+   cd .. # Go back to the repository's root
+   # Now serve them
+   node utils/static_http_server.mjs --include-inspector-files --include-client-file
+   ```
 
-     Open your browser's JavaScript console on that page and enter this code to
-     dynamically link the inspector:
-     ```js
-     import("http://127.0.0.1:8695/client.js#example")
-       .then(() => {
-         window.__RX_INSPECTOR_RUN__({
-           url: "http://127.0.0.1:8695/client.js#example",
-           playerClass: RxPlayer, // For other pages: the RxPlayer class needs
-                                  // to be accessible and communicated here
-         });
-         console.info("Inspector initialized with success!");
-       })
-       .catch((error) =>
-         console.error("Failed to dynamically import inspector:", error)
-       );
-     ```
+4. In a web browser, go to the inspector page which now should be at
+   [http://127.0.0.1:8695](http://127.0.0.1:8695) and validate an empty password
+   if the page asks for one.
 
-  7. Play a content in that page.
+5. For our test, we will use the `example` token. Define it in the corresponding
+   input and click on the `Use now` button to enable it. You will be redirected
+   to a debugging page for that token.
 
-  8. Go back to the inspector page. You should now see logs and graphs about
-     playback!
+6. In another browser tab, go to [the RxPlayer demo
+   page](https://developers.canal-plus.com/rx-player/) (any page with the
+   RxPlayer will do, but the `RxPlayer` JavaScript class - **not an
+   instance** - needs to be accessible, see the script below).
+
+   Open your browser's JavaScript console on that page and enter this code to
+   dynamically link the inspector:
+
+   ```js
+   import("http://127.0.0.1:8695/client.js#example")
+     .then(() => {
+       window.__RX_INSPECTOR_RUN__({
+         url: "http://127.0.0.1:8695/client.js#example",
+         playerClass: RxPlayer, // For other pages: the RxPlayer class needs
+         // to be accessible and communicated here
+       });
+       console.info("Inspector initialized with success!");
+     })
+     .catch((error) =>
+       console.error("Failed to dynamically import inspector:", error),
+     );
+   ```
+
+7. Play a content in that page.
+
+8. Go back to the inspector page. You should now see logs and graphs about
+   playback!
 
 If you want to understand how it all works and how to use this in more complex
 cases, keep reading below.
 
 <a class="anchor" href="#what-is-it"></a>
+
 ## What is it?
 
 RxPaired was first and foremost created to improve debugging and manual testing
@@ -141,64 +146,66 @@ Yet, this tool was also written with modularity in mind. It should thus be very
 easy to remove the RxPlayer "modules" from the web inspector of RxPaired, and replace
 them by another logic, even for other usages than for media streaming.
 
-
 <a class="anchor" href="#how-it-works"></a>
+
 ## How does it work?
 
 RxPaired comes in three parts:
 
-  1. The inspector web application, found in the `./inspector` directory.
+1. The inspector web application, found in the `./inspector` directory.
 
-     This is the page that will be used to inspect what's going on on the device remotely
-     from a browser.
-     This page can also send instructions directly to the device (only through the page's
-     console for now, as the user interface for this is not yet developped).
+   This is the page that will be used to inspect what's going on on the device remotely
+   from a browser.
+   This page can also send instructions directly to the device (only through the page's
+   console for now, as the user interface for this is not yet developped).
 
-     Under the hood, this inspector relies on a [WebSocket](https://en.wikipedia.org/wiki/WebSocket)
-     connection with the  RxPaired's server to receive the device's source information
-     (logs, requests etc.) and it contains some logic to construct graphical "modules"
-     based on those logs: charts, curated information about playback etc.
+   Under the hood, this inspector relies on a [WebSocket](https://en.wikipedia.org/wiki/WebSocket)
+   connection with the RxPaired's server to receive the device's source information
+   (logs, requests etc.) and it contains some logic to construct graphical "modules"
+   based on those logs: charts, curated information about playback etc.
 
-     Note that multiple inspector pages can be created at the same time for multiple
-     devices and multiple inspector pages can also be linked if they want to the same
-     device. This is done through a system of "tokens", as explained in the inspector's
-     main web page.
+   Note that multiple inspector pages can be created at the same time for multiple
+   devices and multiple inspector pages can also be linked if they want to the same
+   device. This is done through a system of "tokens", as explained in the inspector's
+   main web page.
 
-  2. A client-side script to deploy on the device, found in the `./client` directory.
+2. A client-side script to deploy on the device, found in the `./client` directory.
 
-     This script mostly [monkey-patches](https://en.wikipedia.org/wiki/Monkey_patch) console
-     and request-related functions so any interaction with those is communicated with
-     the RxPaired's server through a WebSocket connection.
+   This script mostly [monkey-patches](https://en.wikipedia.org/wiki/Monkey_patch) console
+   and request-related functions so any interaction with those is communicated with
+   the RxPaired's server through a WebSocket connection.
 
-     This script is also able to execute commands sent from the Inspector web-application
-     (which goes through the exact same WebSocket connection).
+   This script is also able to execute commands sent from the Inspector web-application
+   (which goes through the exact same WebSocket connection).
 
-     The client-side script has a minimal amount of processing logic to communicate those
-     information, so we can limit the influence on the device's performance. A single
-     long-lived WebSocket connection is also used instead of multiple HTTP calls for those
-     same considerations.
+   The client-side script has a minimal amount of processing logic to communicate those
+   information, so we can limit the influence on the device's performance. A single
+   long-lived WebSocket connection is also used instead of multiple HTTP calls for those
+   same considerations.
 
-  3. The server, written in the `./server` directory, on which the two precedent parts
-     rely.
+3. The server, written in the `./server` directory, on which the two precedent parts
+   rely.
 
-     The server listens on two ports for WebSocket connections: one for the inspector and
-     the other for the client-side script.
+   The server listens on two ports for WebSocket connections: one for the inspector and
+   the other for the client-side script.
 
-     The server is very configurable: it can for example set-up a password to protect its
-     access, shutdown when abnormal behavior is detected (like too many device or
-     inspector connections, too many wrong password, too many WebSocket messages sent),
-     create and keep log files for each inspected devices, give a maximum lifetime for
-     each token, change the ports it listens to etc.
+   The server is very configurable: it can for example set-up a password to protect its
+   access, shutdown when abnormal behavior is detected (like too many device or
+   inspector connections, too many wrong password, too many WebSocket messages sent),
+   create and keep log files for each inspected devices, give a maximum lifetime for
+   each token, change the ports it listens to etc.
 
 <a class="anchor" href="#how-to-run-it"></a>
+
 ## How to run it?
 
 To run RxPaired you have to:
-  1. start RxPaired-server in `./server` with the wanted options
-  2. build and optionally serve the RxPaired-client script that will be put on the device
-     (instructions and files in `./client`)
-  3. build and serve the RxPaired-inspector web page (instructions and files in
-     `./inspector`).
+
+1. start RxPaired-server in `./server` with the wanted options
+2. build and optionally serve the RxPaired-client script that will be put on the device
+   (instructions and files in `./client`)
+3. build and serve the RxPaired-inspector web page (instructions and files in
+   `./inspector`).
 
 You can look at how to do just that by looking at the `README.md` file of each of those
 subdirectories.
@@ -209,8 +216,8 @@ to perform HTTPS tunnelling to that server. This can either be performed through
 like Apache or Nginx through configuration or by using a tunnelling tool like
 [`ngrok`](https://ngrok.com/).
 
-
 <a class="anchor" href="#why-creating-this-tool"></a>
+
 ## Why creating this tool?
 
 The RxPlayer is an advanced media player which is used to play contents on a large panel

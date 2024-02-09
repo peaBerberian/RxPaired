@@ -12,6 +12,9 @@ import { generatePageUrl } from "../utils";
 import {
   createClearStoredConfigButton,
   createDarkLightModeButton,
+  createTimeRepresentationSwitch,
+  isInitLog,
+  parseAndGenerateInitLog,
 } from "./utils";
 
 const START_LOG_LINE_REGEXP = /^[0-9]+\.[0-9]{2} \[/;
@@ -22,7 +25,7 @@ const START_LOG_LINE_REGEXP = /^[0-9]+\.[0-9]{2} \[/;
  * by this page. Should be called when the page is disposed.
  */
 export default function generatePostDebuggerPage(
-  configState: ObservableState<ConfigState>
+  configState: ObservableState<ConfigState>,
 ): () => void {
   const inspectorState = new ObservableState<InspectorState>();
   const logViewState = new ObservableState<LogViewState>();
@@ -46,7 +49,7 @@ export default function generatePostDebuggerPage(
     (Object.keys(stateProps) as unknown as Array<keyof InspectorState>).forEach(
       (stateProp: keyof InspectorState) => {
         inspectorState.updateState(stateProp, UPDATE_TYPE.REPLACE, undefined);
-      }
+      },
     );
     if (selectedLogId === undefined) {
       updateStatesFromLogGroup(inspectorState, history);
@@ -54,7 +57,7 @@ export default function generatePostDebuggerPage(
       return;
     } else {
       const selectedLogIdx = history.findIndex(
-        ([_msg, id]) => id === selectedLogId
+        ([_msg, id]) => id === selectedLogId,
       );
       if (selectedLogIdx < 0) {
         updateStatesFromLogGroup(inspectorState, history);
@@ -84,7 +87,7 @@ export default function generatePostDebuggerPage(
 
 function createImportFileButton(
   inspectorState: ObservableState<InspectorState>,
-  logViewState: ObservableState<LogViewState>
+  logViewState: ObservableState<LogViewState>,
 ): HTMLInputElement {
   const fileInputEl =
     strHtml`<input name="file" type="file">` as HTMLInputElement;
@@ -117,6 +120,7 @@ function createImportFileButton(
       }
       const dataStr = loadTarget.result;
       const logs: Array<[string, number]> = [];
+      let dateAtPageLoad;
       let remaininStrConsidered = dataStr;
       let id = 0;
       while (remaininStrConsidered.length > 0) {
@@ -125,7 +129,7 @@ function createImportFileButton(
         let indexOfBrk = remaininStrConsidered.indexOf("\n");
         while (indexOfBrk >= 0) {
           const strAfterBrk = remaininStrConsidered.substring(
-            indexOfBrk + 1 + offset
+            indexOfBrk + 1 + offset,
           );
           const nextCharCode = strAfterBrk.charCodeAt(0);
           if (
@@ -145,7 +149,13 @@ function createImportFileButton(
         } else {
           indexOfEnd = indexOfBrk + offset;
         }
-        const logLine = remaininStrConsidered.substring(0, indexOfEnd);
+        let logLine = remaininStrConsidered.substring(0, indexOfEnd);
+
+        if (isInitLog(logLine)) {
+          const init = parseAndGenerateInitLog(logLine);
+          logLine = init.log;
+          dateAtPageLoad = init.dateAtPageLoad;
+        }
         logs.push([logLine, id++]);
         remaininStrConsidered = remaininStrConsidered.substring(indexOfEnd + 1);
       }
@@ -153,8 +163,15 @@ function createImportFileButton(
       logViewState.updateState(
         STATE_PROPS.LOGS_HISTORY,
         UPDATE_TYPE.REPLACE,
-        logs
+        logs,
       );
+
+      logViewState.updateState(
+        STATE_PROPS.DATE_AT_PAGE_LOAD,
+        UPDATE_TYPE.REPLACE,
+        dateAtPageLoad ?? Date.now(),
+      );
+
       updateStatesFromLogGroup(inspectorState, logs);
       inspectorState.commitUpdates();
       logViewState.commitUpdates();
@@ -171,7 +188,7 @@ function createImportFileButton(
  * @returns {HTMLElement}
  */
 function createPostDebuggerHeaderElement(
-  configState: ObservableState<ConfigState>
+  configState: ObservableState<ConfigState>,
 ): HTMLElement {
   return strHtml`<div class="header">
     <div class="token-title">
@@ -191,6 +208,7 @@ function createPostDebuggerHeaderElement(
       </span>
     </div>
     <div class="header-item">${[
+      createTimeRepresentationSwitch(configState),
       createClearStoredConfigButton(configState),
       createDarkLightModeButton(configState),
     ]}</div>

@@ -15,7 +15,9 @@ import { displayError, generatePageUrl } from "../utils";
 import {
   createClearStoredConfigButton,
   createDarkLightModeButton,
+  createTimeRepresentationSwitch,
 } from "./utils";
+import { isInitLog, parseAndGenerateInitLog } from "./utils";
 
 /**
  * Some minor features are detected to be only present on chromium-based
@@ -42,7 +44,7 @@ const isChromiumBasedBrowser = (window as any).chrome != null;
 export default function generateLiveDebuggingPage(
   password: string,
   tokenId: string,
-  configState: ObservableState<ConfigState>
+  configState: ObservableState<ConfigState>,
 ): () => void {
   /** Define sendInstruction` globally, to send JS instructions to the device. */
   (window as unknown as Record<string, unknown>).sendInstruction =
@@ -73,7 +75,7 @@ export default function generateLiveDebuggingPage(
     currentSocket,
     configState,
     logViewState,
-    inspectorState
+    inspectorState,
   );
   const modulesContainerElt = strHtml`<div/>`;
   const liveDebuggingBodyElt = strHtml`<div>
@@ -93,7 +95,7 @@ export default function generateLiveDebuggingPage(
       (stateProp: keyof InspectorState) => {
         // TODO special separate ObservableState object for those?
         inspectorState.updateState(stateProp, UPDATE_TYPE.REPLACE, undefined);
-      }
+      },
     );
     if (selectedLogId === undefined) {
       updateStatesFromLogGroup(inspectorState, history);
@@ -101,7 +103,7 @@ export default function generateLiveDebuggingPage(
       return;
     } else {
       const selectedLogIdx = history.findIndex(
-        ([_msg, id]) => id === selectedLogId
+        ([_msg, id]) => id === selectedLogId,
       );
       if (selectedLogIdx < 0) {
         updateStatesFromLogGroup(inspectorState, history);
@@ -146,12 +148,12 @@ export default function generateLiveDebuggingPage(
           "a firewall policy, " +
           "an issue with the RxPaired server and/or " +
           "a wrong server password (on that last point, you may enter a " +
-          'different one by clicking on the "Password" link).'
+          'different one by clicking on the "Password" link).',
       );
     } else {
       displayError(
         errorContainerElt,
-        "WebSocket connection closed unexpectedly."
+        "WebSocket connection closed unexpectedly.",
       );
     }
   }
@@ -180,47 +182,44 @@ export default function generateLiveDebuggingPage(
     }
     if (event.data[0] === "{") {
       try {
-        // TODO better type all this mess.
-        /* eslint-disable @typescript-eslint/no-unsafe-assignment */
-        /* eslint-disable @typescript-eslint/no-unsafe-member-access */
-        /* eslint-disable @typescript-eslint/restrict-template-expressions */
         const signal = JSON.parse(event.data);
-        if (signal.type === "Init") {
-          // This is always the first message sent by a given device.
-          // If this is not the first message from a WebSocket, then another
-          // device just took the token.
+
+        if (isInitLog(event.data)) {
+          const init = parseAndGenerateInitLog(event.data);
+          const initLog = init.log;
+          const dateAtPageLoad = init.dateAtPageLoad;
           clearInspectorState(inspectorState, logViewState);
-          const initTimestamp = signal.value?.timestamp;
-          if (typeof initTimestamp === "number") {
-            const initLog = `${initTimestamp.toFixed(2)} [Init] Local-Date:${
-              signal.value.dateMs
-            }`;
-            let updates: Array<[string, number]> = [[initLog, nextLogId++]];
-            if (signal.value?.history?.length > 0) {
-              updates = updates.concat(
-                (signal.value.history as string[]).map((str) => [
-                  str,
-                  nextLogId++,
-                ])
-              );
-            }
-            logViewState.updateState(
-              STATE_PROPS.LOGS_HISTORY,
-              UPDATE_TYPE.PUSH,
-              updates
+          let updates: Array<[string, number]> = [[initLog, nextLogId++]];
+          if (signal.value?.history?.length > 0) {
+            updates = updates.concat(
+              (signal.value.history as string[]).map((str) => [
+                str,
+                nextLogId++,
+              ]),
             );
-            if (!hasSelectedLog) {
-              updateStatesFromLogGroup(inspectorState, updates);
-            }
-            inspectorState.commitUpdates();
-            logViewState.commitUpdates();
           }
+          logViewState.updateState(
+            STATE_PROPS.LOGS_HISTORY,
+            UPDATE_TYPE.PUSH,
+            updates,
+          );
+          logViewState.updateState(
+            STATE_PROPS.DATE_AT_PAGE_LOAD,
+            UPDATE_TYPE.REPLACE,
+            dateAtPageLoad ?? Date.now(),
+          );
+
+          if (!hasSelectedLog) {
+            updateStatesFromLogGroup(inspectorState, updates);
+          }
+          inspectorState.commitUpdates();
+          logViewState.commitUpdates();
         } else if (signal.type === "eval-result") {
           const { value } = signal;
           if (typeof value.id === "string") {
             const emphasizedId = emphasizeForConsole(value.id as string);
             console.log(
-              `---> Result of instruction ${emphasizedId}: ${value.data}`
+              `---> Result of instruction ${emphasizedId}: ${value.data}`,
             );
           }
         } else if (signal.type === "eval-error") {
@@ -235,7 +234,7 @@ export default function generateLiveDebuggingPage(
             }
             const emphasizedId = emphasizeForConsole(value.id as string);
             console.log(
-              `---> Failure of instruction ${emphasizedId}: ${errorString}`
+              `---> Failure of instruction ${emphasizedId}: ${errorString}`,
             );
           }
         }
@@ -246,7 +245,7 @@ export default function generateLiveDebuggingPage(
         console.error("Could not parse signalling message", err);
         displayError(
           errorContainerElt,
-          "Invalid signaling message format received"
+          "Invalid signaling message format received",
         );
         return;
       }
@@ -272,7 +271,7 @@ export default function generateLiveDebuggingPage(
           id,
           instruction,
         },
-      })
+      }),
     );
     const emphasizedId = emphasizeForConsole(id);
     console.log(`<--- Instruction ${emphasizedId} sent`);
@@ -292,7 +291,7 @@ function createLiveDebuggerHeaderElement(
   currentSocket: WebSocket,
   configState: ObservableState<ConfigState>,
   logViewState: ObservableState<LogViewState>,
-  inspectorState: ObservableState<InspectorState>
+  inspectorState: ObservableState<InspectorState>,
 ): HTMLElement {
   return strHtml`<div class="header">
     <div class="token-title">
@@ -315,6 +314,7 @@ function createLiveDebuggerHeaderElement(
       ]}</span>
     </div>
     <div class="header-item">${[
+      createTimeRepresentationSwitch(configState),
       createExportLogsButton(logViewState),
       createCloseConnectionButton(currentSocket),
       createClearAllButton(inspectorState, logViewState),
@@ -347,7 +347,7 @@ function createCloseConnectionButton(currentSocket: WebSocket): HTMLElement {
  * @returns {HTMLButtonElement}
  */
 function createExportLogsButton(
-  logViewState: ObservableState<LogViewState>
+  logViewState: ObservableState<LogViewState>,
 ): HTMLButtonElement {
   const buttonElt =
     strHtml`<button>${"💾 Export"}</button>` as HTMLButtonElement;
@@ -363,7 +363,7 @@ function createExportLogsButton(
  */
 function createClearAllButton(
   inspectorState: ObservableState<InspectorState>,
-  logViewState: ObservableState<LogViewState>
+  logViewState: ObservableState<LogViewState>,
 ): HTMLButtonElement {
   const buttonElt =
     strHtml`<button>${"🧹 Clear all logs"}</button>` as HTMLButtonElement;
@@ -378,7 +378,7 @@ function createClearAllButton(
  */
 function clearInspectorState(
   inspectorState: ObservableState<InspectorState>,
-  logViewState: ObservableState<LogViewState>
+  logViewState: ObservableState<LogViewState>,
 ): void {
   {
     const stateProps = Object.keys(inspectorState.getCurrentState()) as Array<
@@ -429,7 +429,7 @@ function exportLogs(logViewState: ObservableState<LogViewState>): void {
  */
 function startWebsocketConnection(
   password: string,
-  tokenId: string
+  tokenId: string,
 ): WebSocket {
   const wsUrl =
     password === ""

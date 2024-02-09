@@ -92,6 +92,10 @@ export enum STATE_PROPS {
    * Set to the identifier in the `LOGS_HISTORY` array.
    */
   SELECTED_LOG_ID = "selectedLogIndex",
+  /** Configure if time is representated with timestamp or date in the UI */
+  TIME_REPRESENTATION = "timeRepresentation",
+  /** Date at which the client has loaded and sent the init */
+  DATE_AT_PAGE_LOAD = "dateAtPageLoad",
   /** Timestamp of the first displayed log in the log module. */
   LOG_MIN_TIMESTAMP_DISPLAYED = "logMinTimeStampDisplayed",
   /** Timestamp of the last displayed log in the log module. */
@@ -108,6 +112,7 @@ export enum STATE_PROPS {
   MANIFEST_PARSING_TIME_HISTORY = "manifestParsingTimeHistory",
 }
 
+export type TimeRepresentation = "date" | "timestamp";
 /**
  * State properties listen by the inspector modules, related to either the
  * situation at the time of the last log or at the time of the selected log,
@@ -146,6 +151,7 @@ export interface LogViewState {
   [STATE_PROPS.SELECTED_LOG_ID]?: number | undefined;
   [STATE_PROPS.LOG_MIN_TIMESTAMP_DISPLAYED]?: number;
   [STATE_PROPS.LOG_MAX_TIMESTAMP_DISPLAYED]?: number;
+  [STATE_PROPS.DATE_AT_PAGE_LOAD]?: number;
 }
 
 /** State linked to the Inspector page layout and configuration. */
@@ -155,6 +161,7 @@ export interface ConfigState {
   [STATE_PROPS.WIDTH_RATIOS]?: Partial<Record<string, number>>;
   [STATE_PROPS.MINIMIZED_MODULES]?: string[];
   [STATE_PROPS.MODULES_ORDER]?: string[];
+  [STATE_PROPS.TIME_REPRESENTATION]?: TimeRepresentation;
 }
 
 /**
