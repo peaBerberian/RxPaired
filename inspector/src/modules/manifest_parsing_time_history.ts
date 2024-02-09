@@ -1,5 +1,10 @@
 import strHtml from "str-html";
-import { ConfigState, InspectorState, LogViewState, STATE_PROPS } from "../constants";
+import {
+  ConfigState,
+  InspectorState,
+  LogViewState,
+  STATE_PROPS,
+} from "../constants";
 import ObservableState, { UPDATE_TYPE } from "../observable_state";
 import { convertDateToLocalISOString } from "../utils";
 
@@ -23,7 +28,7 @@ export default function ManifestParsingTimeHistoryModule({
 
     // TODO more optimized: rely on push
     const manifestParsingTimeHistory = state.getCurrentState(
-      STATE_PROPS.MANIFEST_PARSING_TIME_HISTORY
+      STATE_PROPS.MANIFEST_PARSING_TIME_HISTORY,
     );
 
     if (manifestParsingTimeHistory === undefined) {
@@ -41,11 +46,16 @@ export default function ManifestParsingTimeHistoryModule({
     for (let i = manifestParsingTimeHistory.length - 1; i >= 0; i--) {
       const info = manifestParsingTimeHistory[i];
       let innerText: string;
-      if (configState.getCurrentState(STATE_PROPS.TIME_REPRESENTATION) === "date") {
-        const dateAtPageLoad = logView.getCurrentState(STATE_PROPS.DATE_AT_PAGE_LOAD) ?? 0
-        innerText = convertDateToLocalISOString(new Date(info.timestamp + dateAtPageLoad));
+      if (
+        configState.getCurrentState(STATE_PROPS.TIME_REPRESENTATION) === "date"
+      ) {
+        const dateAtPageLoad =
+          logView.getCurrentState(STATE_PROPS.DATE_AT_PAGE_LOAD) ?? 0;
+        innerText = convertDateToLocalISOString(
+          new Date(info.timestamp + dateAtPageLoad),
+        );
       } else {
-        innerText = `${info.timestamp}`
+        innerText = `${info.timestamp}`;
       }
 
       const timestampElt = strHtml`<td>${innerText}</td>`;
@@ -55,12 +65,12 @@ export default function ManifestParsingTimeHistoryModule({
         logView.updateState(
           STATE_PROPS.LOG_MIN_TIMESTAMP_DISPLAYED,
           UPDATE_TYPE.REPLACE,
-          0
+          0,
         );
-        logView.updateState(  
+        logView.updateState(
           STATE_PROPS.LOG_MAX_TIMESTAMP_DISPLAYED,
           UPDATE_TYPE.REPLACE,
-          info.timestamp
+          info.timestamp,
         );
         logView.commitUpdates();
       };
@@ -75,12 +85,11 @@ export default function ManifestParsingTimeHistoryModule({
               i === 0
                 ? "-"
                 : (
-                    info.timestamp -
-                    manifestParsingTimeHistory[i - 1].timestamp
+                    info.timestamp - manifestParsingTimeHistory[i - 1].timestamp
                   ).toFixed(2)
             }
           </td>
-        </tr>`
+        </tr>`,
       );
       if (tableElt.childNodes.length >= MAX_ELEMENTS - 1) {
         manifestParsingHistoryElt.appendChild(tableElt);
@@ -94,17 +103,17 @@ export default function ManifestParsingTimeHistoryModule({
     }
     manifestParsingHistoryElt.appendChild(tableElt);
     moduleBodyElt.classList.remove("empty");
-  }
+  };
   const unsubscribeHistory = state.subscribe(
     STATE_PROPS.MANIFEST_PARSING_TIME_HISTORY,
     renderParsingTimeHistory,
-    true
+    true,
   );
 
   const unsubscribeTimeRepresentation = configState.subscribe(
     STATE_PROPS.TIME_REPRESENTATION,
     renderParsingTimeHistory,
-    true
+    true,
   );
   return {
     body: moduleBodyElt,

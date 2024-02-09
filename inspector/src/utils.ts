@@ -34,9 +34,11 @@ export function generatePageUrl(options: {
   const currPageInfo = getPageInfo();
   originalUrl.hash = "";
   let url = originalUrl.toString() + "#";
-  const wantPostDebugger = isPostDebugger === true ||
+  const wantPostDebugger =
+    isPostDebugger === true ||
     (isPostDebugger === undefined && currPageInfo.isPostDebugger);
-  const wantPassReset = forcePassReset === true ||
+  const wantPassReset =
+    forcePassReset === true ||
     (forcePassReset === undefined && currPageInfo.forcePassReset);
   if (wantPostDebugger) {
     url += "!post";
@@ -74,7 +76,7 @@ export function getPageInfo(): {
   const isPostDebugger = initialHashValues.some((val) => val === "post");
   const forcePassReset = initialHashValues.some((val) => val === "passreset");
   const tokenStr = initialHashValues.filter((val) =>
-    val.startsWith("token=")
+    val.startsWith("token="),
   )[0];
   if (tokenStr !== undefined) {
     tokenId = tokenStr.substring("token=".length);
@@ -101,7 +103,7 @@ export function isTokenValid(tokenId: string): boolean {
 export function displayError(
   errorWrapperElt: HTMLElement,
   err?: unknown,
-  fadeOut?: boolean
+  fadeOut?: boolean,
 ): void {
   let message;
   if (err != null) {
@@ -157,12 +159,12 @@ export function getDefaultModuleOrder(): string[] {
  */
 export function convertDateToLocalISOString(date: Date): string {
   let ISOstring = "";
-  ISOstring += String(date.getFullYear()) + "-"
-  ISOstring += String(date.getMonth() + 1).padStart(2, "0") + "-"
-  ISOstring += String(date.getDate()).padStart(2, "0") + "T"
-  ISOstring += String(date.getHours()).padStart(2, "0") + ":"
-  ISOstring += String(date.getMinutes()).padStart(2, "0") + ":"
-  ISOstring += String(date.getSeconds()).padStart(2, "0") + "."
-  ISOstring += String(date.getMilliseconds()).padStart(3, "0")
-  return ISOstring
+  ISOstring += String(date.getFullYear()) + "-";
+  ISOstring += String(date.getMonth() + 1).padStart(2, "0") + "-";
+  ISOstring += String(date.getDate()).padStart(2, "0") + "T";
+  ISOstring += String(date.getHours()).padStart(2, "0") + ":";
+  ISOstring += String(date.getMinutes()).padStart(2, "0") + ":";
+  ISOstring += String(date.getSeconds()).padStart(2, "0") + ".";
+  ISOstring += String(date.getMilliseconds()).padStart(3, "0");
+  return ISOstring;
 }

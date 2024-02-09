@@ -13,20 +13,18 @@ export default function PlayerGeneralInfoModule({
   const stateData = strHtml`<span class="emphasized">${
     state.getCurrentState(STATE_PROPS.PLAYER_STATE) ?? "Unknown"
   }</span>`;
-  const positionData = strHtml`<span class="emphasized">${
-    getCurrentPositionTextContent(state)
-  }</span>`;
-  const bufferGapData = strHtml`<span class="emphasized">${
-    getCurrentBufferGapTextContent(state)
-  }</span>`;
-  const durationData = strHtml`<span class="emphasized">${
-    getCurrentDurationTextContent(state)
-  }</span>`;
-  const initialLoadingTimeDataElt = strHtml`<span class="emphasized">${
-    getInitialLoadingTimeStr(
-      state.getCurrentState(STATE_PROPS.STATE_CHANGE_HISTORY) ?? []
-    )
-  }</span>`;
+  const positionData = strHtml`<span class="emphasized">${getCurrentPositionTextContent(
+    state,
+  )}</span>`;
+  const bufferGapData = strHtml`<span class="emphasized">${getCurrentBufferGapTextContent(
+    state,
+  )}</span>`;
+  const durationData = strHtml`<span class="emphasized">${getCurrentDurationTextContent(
+    state,
+  )}</span>`;
+  const initialLoadingTimeDataElt = strHtml`<span class="emphasized">${getInitialLoadingTimeStr(
+    state.getCurrentState(STATE_PROPS.STATE_CHANGE_HISTORY) ?? [],
+  )}</span>`;
 
   const generalInfoBodyElt = strHtml`<div class="gen-info-body module-body">${[
     strHtml`<span>Current state: </span>`,
@@ -61,27 +59,21 @@ export default function PlayerGeneralInfoModule({
       bufferGapData.textContent = getCurrentBufferGapTextContent(state);
     }),
 
-    state.subscribe(
-      STATE_PROPS.CONTENT_DURATION,
-      () => {
-        durationData.textContent = getCurrentDurationTextContent(state);
-      },
-    ),
+    state.subscribe(STATE_PROPS.CONTENT_DURATION, () => {
+      durationData.textContent = getCurrentDurationTextContent(state);
+    }),
 
-    state.subscribe(
-      STATE_PROPS.STATE_CHANGE_HISTORY,
-      () => {
-        initialLoadingTimeDataElt.textContent = getInitialLoadingTimeStr(
-          state.getCurrentState(STATE_PROPS.STATE_CHANGE_HISTORY) ?? [],
-        );
-      },
-    ),
+    state.subscribe(STATE_PROPS.STATE_CHANGE_HISTORY, () => {
+      initialLoadingTimeDataElt.textContent = getInitialLoadingTimeStr(
+        state.getCurrentState(STATE_PROPS.STATE_CHANGE_HISTORY) ?? [],
+      );
+    }),
   ];
 
   return {
     body: generalInfoBodyElt,
     destroy() {
-      unsubscribeFns.forEach(fn => fn());
+      unsubscribeFns.forEach((fn) => fn());
     },
   };
 }

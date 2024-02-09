@@ -100,7 +100,7 @@ export function createClearStoredConfigButton(
 }
 
 export function createTimeRepresentationSwitch(
-  configState: ObservableState<ConfigState>
+  configState: ObservableState<ConfigState>,
 ): HTMLElement {
   const isTimestamp =
     configState.getCurrentState(STATE_PROPS.TIME_REPRESENTATION) ===
@@ -121,7 +121,7 @@ export function createTimeRepresentationSwitch(
     configState.updateState(
       STATE_PROPS.TIME_REPRESENTATION,
       UPDATE_TYPE.REPLACE,
-      checkbox.checked ? "timestamp" : "date"
+      checkbox.checked ? "timestamp" : "date",
     );
     configState.commitUpdates();
   }
@@ -146,7 +146,8 @@ export function isInitLog(log: string): boolean {
 
 export function parseAndGenerateInitLog(log: string): {
   log: string;
-  dateAtPageLoad: number } {
+  dateAtPageLoad: number;
+} {
   const defaultLog = {
     log: "",
     dateAtPageLoad: 0,

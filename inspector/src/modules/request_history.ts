@@ -13,7 +13,7 @@ import { convertDateToLocalISOString } from "../utils";
 const MAX_REQ_ELEMENTS = 50;
 
 export default function generateRequestHistoryModule(
-  mediaType: "audio" | "video" | "text"
+  mediaType: "audio" | "video" | "text",
 ): ModuleFunction {
   return function RequestInformationModule({
     state,
@@ -32,8 +32,8 @@ export default function generateRequestHistoryModule(
       mediaType === "audio"
         ? STATE_PROPS.AUDIO_REQUEST_HISTORY
         : mediaType === "video"
-        ? STATE_PROPS.VIDEO_REQUEST_HISTORY
-        : STATE_PROPS.TEXT_REQUEST_HISTORY;
+          ? STATE_PROPS.VIDEO_REQUEST_HISTORY
+          : STATE_PROPS.TEXT_REQUEST_HISTORY;
 
     let pendingRequestInfo: {
       element: HTMLElement;
@@ -42,11 +42,11 @@ export default function generateRequestHistoryModule(
 
     const unsubscribeLogHistory = logView.subscribe(
       STATE_PROPS.LOGS_HISTORY,
-      updatePendingTimeElt
+      updatePendingTimeElt,
     );
     const unsubscribeSelected = logView.subscribe(
       STATE_PROPS.SELECTED_LOG_ID,
-      updatePendingTimeElt
+      updatePendingTimeElt,
     );
 
     const renderRequestHistory = () => {
@@ -76,11 +76,17 @@ export default function generateRequestHistoryModule(
         const req = requestInfo[i];
 
         let innerText: string;
-        if (configState.getCurrentState(STATE_PROPS.TIME_REPRESENTATION) === "date") {
-          const dateAtPageLoad = logView.getCurrentState(STATE_PROPS.DATE_AT_PAGE_LOAD) ?? 0
-          innerText = convertDateToLocalISOString(new Date(req.timestamp + dateAtPageLoad));
+        if (
+          configState.getCurrentState(STATE_PROPS.TIME_REPRESENTATION) ===
+          "date"
+        ) {
+          const dateAtPageLoad =
+            logView.getCurrentState(STATE_PROPS.DATE_AT_PAGE_LOAD) ?? 0;
+          innerText = convertDateToLocalISOString(
+            new Date(req.timestamp + dateAtPageLoad),
+          );
         } else {
-          innerText = `${req.timestamp}`
+          innerText = `${req.timestamp}`;
         }
         const timestampElt = strHtml`<td>${innerText}</td>`;
         timestampElt.style.cursor = "pointer";
@@ -89,12 +95,12 @@ export default function generateRequestHistoryModule(
           logView.updateState(
             STATE_PROPS.LOG_MIN_TIMESTAMP_DISPLAYED,
             UPDATE_TYPE.REPLACE,
-            0
+            0,
           );
           logView.updateState(
             STATE_PROPS.LOG_MAX_TIMESTAMP_DISPLAYED,
             UPDATE_TYPE.REPLACE,
-            req.timestamp
+            req.timestamp,
           );
           logView.commitUpdates();
         };
@@ -115,11 +121,7 @@ export default function generateRequestHistoryModule(
             ${req.segmentStart === -1 ? "init" : req.segmentStart.toFixed(2)}
           </td>
           <td>
-            ${
-              req.segmentDuration === -1
-                ? "-"
-                : req.segmentDuration.toFixed(2)
-            }
+            ${req.segmentDuration === -1 ? "-" : req.segmentDuration.toFixed(2)}
           </td>
         </tr>`;
           tableElt.appendChild(newElt);
@@ -166,7 +168,7 @@ export default function generateRequestHistoryModule(
                 <td>
                   ${req.segmentDuration === -1 ? "-" : req.segmentDuration}
                 </td>
-              </tr>`
+              </tr>`,
               );
               if (tableElt.childNodes.length >= MAX_REQ_ELEMENTS - 1) {
                 requestDataElt.appendChild(tableElt);
@@ -184,17 +186,17 @@ export default function generateRequestHistoryModule(
       }
       requestDataElt.appendChild(tableElt);
       moduleBodyElt.classList.remove("empty");
-    }
+    };
     const unsubscribeHistory = state.subscribe(
       stateProp,
       renderRequestHistory,
-      true
+      true,
     );
 
     const unsubscribeTimeRepresentation = configState.subscribe(
       STATE_PROPS.TIME_REPRESENTATION,
       renderRequestHistory,
-      true
+      true,
     );
     return {
       body: moduleBodyElt,
@@ -218,7 +220,7 @@ export default function generateRequestHistoryModule(
       let lastKnownTimestamp: number | undefined;
       const logs = logView.getCurrentState(STATE_PROPS.LOGS_HISTORY) ?? [];
       const selectedLogId = logView.getCurrentState(
-        STATE_PROPS.SELECTED_LOG_ID
+        STATE_PROPS.SELECTED_LOG_ID,
       );
       if (selectedLogId === undefined) {
         if (logs.length > 0) {
@@ -243,7 +245,7 @@ export default function generateRequestHistoryModule(
 
 function isRequestingSameSegment(
   req1: RequestInformation,
-  req2: RequestInformation
+  req2: RequestInformation,
 ) {
   return (
     req1.periodId === req2.periodId &&

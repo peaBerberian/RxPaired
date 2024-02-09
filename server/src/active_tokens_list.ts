@@ -2,9 +2,8 @@ import { performance } from "perf_hooks";
 import WebSocket from "ws";
 
 export default class ActiveTokensList {
-
   /** List of token currently used. */
-  private _tokensList : TokenMetadata[];
+  private _tokensList: TokenMetadata[];
 
   constructor(initialList: TokenMetadata[]) {
     this._tokensList = initialList;
@@ -28,13 +27,13 @@ export default class ActiveTokensList {
     tokenType: TokenType,
     tokenId: string,
     historySize: number,
-    expirationDelay: number
-  ) : TokenMetadata {
+    expirationDelay: number,
+  ): TokenMetadata {
     const tokenMetadata = new TokenMetadata(
       tokenType,
       tokenId,
       historySize,
-      expirationDelay
+      expirationDelay,
     );
     this._tokensList.push(tokenMetadata);
     return tokenMetadata;
@@ -57,7 +56,7 @@ export default class ActiveTokensList {
    * @param {number} idx
    * @returns {Object|undefined}
    */
-  public getFromIndex(idx : number) : TokenMetadata | undefined {
+  public getFromIndex(idx: number): TokenMetadata | undefined {
     return this._tokensList[idx];
   }
 
@@ -70,7 +69,7 @@ export default class ActiveTokensList {
    * @param {number} idx
    * @returns {Object|undefined}
    */
-  public removeIndex(idx : number) : TokenMetadata | undefined {
+  public removeIndex(idx: number): TokenMetadata | undefined {
     return this._tokensList.splice(idx, 1)[0];
   }
 
@@ -81,7 +80,7 @@ export default class ActiveTokensList {
    * methods such as `getFromIndex` or `removeIndex`.
    * @returns {number}
    */
-  public size() : number {
+  public size(): number {
     return this._tokensList.length;
   }
 
@@ -92,7 +91,7 @@ export default class ActiveTokensList {
    * @param {string} tokenId
    * @returns {number}
    */
-  public findIndex(tokenId : string) : number {
+  public findIndex(tokenId: string): number {
     return this._tokensList.findIndex((t) => t.tokenId === tokenId);
   }
 
@@ -103,7 +102,7 @@ export default class ActiveTokensList {
    * @param {string} tokenId
    * @returns {Object|undefined}
    */
-  public find(tokenId : string) : TokenMetadata | undefined {
+  public find(tokenId: string): TokenMetadata | undefined {
     return this._tokensList.find((t) => t.tokenId === tokenId);
   }
 }
@@ -114,12 +113,12 @@ export interface DeviceInitData {
    * Monotically increasing timestamp at which this Initialization data was
    * generated on the device, in milliseconds.
    */
-  timestamp : number;
+  timestamp: number;
   /**
    * Unix timestamp on the device when this Initialization data was generated,
    * in milliseconds.
    */
-  dateMs : number;
+  dateMs: number;
 }
 
 /**
@@ -127,9 +126,9 @@ export interface DeviceInitData {
  */
 export interface LogHistoryData {
   /** Logs from the most ancient to the newest. */
-  history : string[];
+  history: string[];
   /** Maximum amount of logs that will be kept in this history. */
-  maxHistorySize : number;
+  maxHistorySize: number;
 }
 
 /**
@@ -142,36 +141,36 @@ export class TokenMetadata {
    * ID identifying this token.
    * Used by inspectors and devices connecting through it.
    */
-  public tokenId : string;
+  public tokenId: string;
 
   /** Value of `performance.now()` at the time the TokenMetadata was created. */
-  public timestamp : number;
+  public timestamp: number;
 
   /** The type of token created (@see TokenType) */
-  public tokenType : TokenType;
+  public tokenType: TokenType;
 
   /**
    * Value of `performance.now()` when the TokenMetadata should be removed.
    * If `undefined`, default rules apply.
    */
-  private _expirationMs : number;
+  private _expirationMs: number;
 
   /** Value of `date.now()` at the time the TokenMetadata was created. */
-  public date : number;
+  public date: number;
 
   /**
    * Information on each web "inspector" (remote debugger) connected with this
    * token.
    */
-  public inspectors : Array<{
+  public inspectors: Array<{
     /** Corresponding WebSocket on which logs are sent. */
-    webSocket : WebSocket.WebSocket;
+    webSocket: WebSocket.WebSocket;
     /**
      * Store Timer ID of the interval at which `"ping"` messages are sent to
      * ensure the connection isn't closed by some mechanism (for example a
      * server watcher closing down the connection when it seems to be unused).
      */
-    pingInterval : NodeJS.Timer;
+    pingInterval: NodeJS.Timer;
   }>;
 
   /**
@@ -180,25 +179,25 @@ export class TokenMetadata {
    *
    * There cannot be multiple devices connected with the same token.
    */
-  public device : WebSocket.WebSocket | null;
+  public device: WebSocket.WebSocket | null;
 
   /**
    * Store Timer ID of the interval at which `"ping"` messages are sent to the
    * device to ensure the connection isn't closed by some mechanism (for example
    * a server watcher closing down the connection when it seems to be unused).
    */
-  public pingInterval : NodeJS.Timer | null;
+  public pingInterval: NodeJS.Timer | null;
 
   /**
    * Initialization data received when the device connected with this
    * token.
    */
-  private _initData : DeviceInitData | null;
+  private _initData: DeviceInitData | null;
 
   /**
    * History of the most recent logs associated with this token.
    */
-  private _history : LogHistoryData;
+  private _history: LogHistoryData;
 
   /**
    * @param {string} tokenType
@@ -219,7 +218,7 @@ export class TokenMetadata {
     tokenId: string,
     historySize: number,
     expirationDelay: number,
-    originalDate?: number | undefined
+    originalDate?: number | undefined,
   ) {
     this.tokenType = tokenType;
     this.tokenId = tokenId;
@@ -230,7 +229,7 @@ export class TokenMetadata {
     } else {
       const now = performance.now();
       this.date = originalDate;
-      this.timestamp = (originalDate - Date.now()) + now;
+      this.timestamp = originalDate - Date.now() + now;
       this._expirationMs = now + expirationDelay;
     }
     this.inspectors = [];
@@ -262,7 +261,7 @@ export class TokenMetadata {
    * Update of reset the `DeviceInitData` associated with this `TokenMetadata`.
    * @param {Object|null} initData
    */
-  public setDeviceInitData(initData : DeviceInitData | null) : void {
+  public setDeviceInitData(initData: DeviceInitData | null): void {
     this._initData = initData;
     this._history.history = [];
   }
@@ -272,7 +271,7 @@ export class TokenMetadata {
    * Returns `null` if no `DeviceInitData` is associated.
    * @returns {Object|null}
    */
-  public getDeviceInitData() : DeviceInitData | null {
+  public getDeviceInitData(): DeviceInitData | null {
     return this._initData;
   }
 
@@ -282,7 +281,7 @@ export class TokenMetadata {
    * reached.
    * @param {string} log - The Log line to add to history
    */
-  public addLogToHistory(log : string) : void {
+  public addLogToHistory(log: string): void {
     if (this._history.maxHistorySize === 0) {
       return;
     }
@@ -296,7 +295,7 @@ export class TokenMetadata {
    * Returns the current log history associated with this token.
    * @returns {Object}
    */
-  public getCurrentHistory() : { history : string[]; maxHistorySize : number } {
+  public getCurrentHistory(): { history: string[]; maxHistorySize: number } {
     return this._history;
   }
 }

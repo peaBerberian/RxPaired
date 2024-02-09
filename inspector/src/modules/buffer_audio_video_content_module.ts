@@ -82,8 +82,7 @@ export default function generateAudioVideoBufferContentModule(
     hoveredRangeElt.style.marginTop = "5px";
 
     const hoveredRangeRepInfoTitle = strHtml`<span>Hovered Representation:</span>`;
-    const hoveredRangeRepInfoData =
-      strHtml`<span class="emphasized">Hover range to show</span>`;
+    const hoveredRangeRepInfoData = strHtml`<span class="emphasized">Hover range to show</span>`;
     const hoveredRangeRepInfoElt = strHtml`<div>${[
       hoveredRangeRepInfoTitle,
       hoveredRangeRepInfoData,
