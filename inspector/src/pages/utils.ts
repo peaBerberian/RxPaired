@@ -107,9 +107,9 @@ export function createTimeRepresentationSwitch(
     "timestamp";
   const timeLabel = "Current time unit: 🕒 Time";
   const dateLabel = "Current time unit: 🗓️ Date";
-  const label = strHtml`<label for="timeRepresentation">${
-    isTimestamp ? timeLabel : dateLabel
-  }</label>`;
+  const label = strHtml`<label for="timeRepresentation"></label>`;
+  const span = strHtml`<span></span>`;
+  span.innerText = isTimestamp ? timeLabel : dateLabel;
   const checkbox = strHtml`<input
     type="checkbox"
     name="timeRepresentation"
@@ -117,7 +117,7 @@ export function createTimeRepresentationSwitch(
   />` as HTMLInputElement;
   checkbox.checked = isTimestamp;
   function onChange(): void {
-    label.innerText = checkbox.checked ? timeLabel : dateLabel;
+    span.innerText = checkbox.checked ? timeLabel : dateLabel;
     configState.updateState(
       STATE_PROPS.TIME_REPRESENTATION,
       UPDATE_TYPE.REPLACE,
@@ -126,10 +126,9 @@ export function createTimeRepresentationSwitch(
     configState.commitUpdates();
   }
   checkbox.onchange = onChange;
-  const wrapper = strHtml`<span class="label-wrapper"></span>`;
-  wrapper.appendChild(label);
-  wrapper.appendChild(checkbox);
-  return wrapper;
+  label.appendChild(span);
+  label.appendChild(checkbox);
+  return label;
 }
 
 export function isInitLog(log: string): boolean {
