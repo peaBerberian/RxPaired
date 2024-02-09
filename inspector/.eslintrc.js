@@ -178,12 +178,6 @@ module.exports = {
     "jsdoc/check-alignment": "error",
     "jsdoc/no-types": "off",
     "max-classes-per-file": ["warn", 5],
-    "max-len": [
-      "warn",
-      {
-        code: 90,
-      },
-    ],
     "max-lines": ["off", 300],
     "newline-per-chained-call": "off",
     "no-bitwise": "off",
