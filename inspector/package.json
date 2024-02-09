@@ -9,6 +9,8 @@
     "build:watch": "./build.mjs -w",
     "build:watch:min": "./build.mjs -w -m",
     "check": "tsc --noEmit --project .",
+    "fmt": "prettier --write .",
+    "fmt:check": "prettier . --check",
     "lint": "eslint src -c .eslintrc.js",
     "serve": "node ../utils/static_http_server.mjs --include-inspector-files"
   },
