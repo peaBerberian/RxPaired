@@ -30,14 +30,7 @@ export interface ParsedOptions {
   disableNoToken: boolean;
 }
 
-interface OptionDescriptionForHelpMessage {
-  shortForm: string | null;
-  longForm: string;
-  argumentDescription: string | null;
-  description: string;
-}
-
-const optionsDescription: OptionDescriptionForHelpMessage[] = [
+const optionsDescription = [
   {
     shortForm: "cp",
     longForm: "inspector-port",
@@ -45,6 +38,7 @@ const optionsDescription: OptionDescriptionForHelpMessage[] = [
     description:
       "Port used for inspector-to-server communication.\n" +
       `Defaults to ${DEFAULT_INSPECTOR_PORT}.`,
+    outputVar: "inspectorPort",
   },
   {
     shortForm: "dp",
@@ -53,6 +47,7 @@ const optionsDescription: OptionDescriptionForHelpMessage[] = [
     description:
       "Port used for device-to-server communication.\n" +
       `Defaults to ${DEFAULT_DEVICE_PORT}.`,
+    outputVar: "devicePort",
   },
   {
     shortForm: "f",
@@ -61,6 +56,7 @@ const optionsDescription: OptionDescriptionForHelpMessage[] = [
     description:
       "If set, a log file will also be written for each token and for each day\n" +
       "(server time) this token is used, in the current directory.",
+    outputVar: "shouldCreateLogFiles",
   },
   {
     shortForm: null,
@@ -69,12 +65,14 @@ const optionsDescription: OptionDescriptionForHelpMessage[] = [
     description:
       "Force the password to be a given string" +
       " (must be alphanumeric, case-sentive)",
+    outputVar: "password",
   },
   {
     shortForm: null,
     longForm: "no-password",
     argumentDescription: null,
     description: "Disable the usage of a password.",
+    outputVar: "password",
   },
   {
     shortForm: null,
@@ -84,6 +82,7 @@ const optionsDescription: OptionDescriptionForHelpMessage[] = [
       "Number of logs kept in memory for each token in case of web inspectors\n(re-)" +
       "connecting after the device already emitted logs.\n" +
       `${DEFAULT_HISTORY_SIZE} by default.`,
+    outputVar: "historySize",
   },
   {
     shortForm: null,
@@ -92,6 +91,7 @@ const optionsDescription: OptionDescriptionForHelpMessage[] = [
     description:
       "Maximum number of seconds a new token is created for, in seconds.\n" +
       `Defaults to ${DEFAULT_MAX_TOKEN_DURATION}.`,
+    outputVar: "maxTokenDuration",
   },
   {
     shortForm: null,
@@ -101,6 +101,7 @@ const optionsDescription: OptionDescriptionForHelpMessage[] = [
       "Maximum length a log can have, in terms of UTF-16 code points.\n" +
       "Longer logs will be skipped.\n" +
       `${DEFAULT_MAX_LOG_LENGTH} by default.`,
+    outputVar: "maxLogLength",
   },
   {
     shortForm: null,
@@ -110,6 +111,7 @@ const optionsDescription: OptionDescriptionForHelpMessage[] = [
       "Maximum authorized number of bad passwords received in 24 hours.\n" +
       "Exceeding that limit will stop the server.\n" +
       `Defaults to ${DEFAULT_WRONG_PASSWORD_LIMIT}.`,
+    outputVar: "wrongPasswordLimit",
   },
   {
     shortForm: null,
@@ -119,6 +121,7 @@ const optionsDescription: OptionDescriptionForHelpMessage[] = [
       "Maximum authorized number of web inspector connection per 24 hours.\n" +
       "Exceeding that limit will stop the server.\n" +
       `Defaults to ${DEFAULT_INSPECTOR_CONNECTION_LIMIT}.`,
+    outputVar: "inspectorConnectionLimit",
   },
   {
     shortForm: null,
@@ -128,6 +131,7 @@ const optionsDescription: OptionDescriptionForHelpMessage[] = [
       "Maximum authorized number of device connection per 24 hours.\n" +
       "Exceeding that limit will stop the server.\n" +
       `Defaults to ${DEFAULT_DEVICE_CONNECTION_LIMIT}.`,
+    outputVar: "deviceConnectionLimit",
   },
   {
     shortForm: null,
@@ -138,6 +142,7 @@ const optionsDescription: OptionDescriptionForHelpMessage[] = [
       "per 24 hours.\n" +
       "Exceeding that limit will stop the server.\n" +
       `Defaults to ${DEFAULT_DEVICE_MESSAGE_LIMIT}.`,
+    outputVar: "deviceMessageLimit",
   },
   {
     shortForm: null,
@@ -148,6 +153,7 @@ const optionsDescription: OptionDescriptionForHelpMessage[] = [
       "hours.\n" +
       "Exceeding that limit will stop the server. " +
       `Defaults to ${DEFAULT_INSPECTOR_MESSAGE_LIMIT}.`,
+    outputVar: "inspectorMessageLimit",
   },
   {
     shortForm: null,
@@ -157,6 +163,7 @@ const optionsDescription: OptionDescriptionForHelpMessage[] = [
       "If set, the RxPaired-server will store information on persistent " +
       "tokens on disk\n" +
       "(at the given path) so they can be retrieved if the server reboots.",
+    outputVar: "persistentTokensFile",
   },
   {
     shortForm: null,
@@ -165,6 +172,7 @@ const optionsDescription: OptionDescriptionForHelpMessage[] = [
     description:
       "Path to the server's log file.\n" +
       `Defaults to ${DEFAULT_LOG_FILE_PATH}.`,
+    outputVar: "logFile",
   },
   {
     shortForm: null,
@@ -174,8 +182,9 @@ const optionsDescription: OptionDescriptionForHelpMessage[] = [
       'Disable "no-token" mode, where devices can send logs without having ' +
       "to create\n" +
       'a "token" first through the inspector. ',
+    outputVar: "disableNoToken",
   },
-];
+] as const;
 
 export default function parseOptions(args: string[]): ParsedOptions {
   if (args.includes("-h") || args.includes("--help")) {
@@ -203,122 +212,84 @@ export default function parseOptions(args: string[]): ParsedOptions {
   };
 
   for (let i = 0; i < args.length; i++) {
-    const arg = args[i];
-    switch (arg.trim()) {
-      case "-cp":
-      case "--inspector-port":
-        i++;
-        parsed.inspectorPort = checkNumberArg(arg, args[i]);
-        break;
+    const arg = args[i].trim();
+    let foundOpt = false;
+    for (const opt of optionsDescription) {
+      if (
+        (opt.shortForm !== null && arg === `-${opt.shortForm}`) ||
+        arg === `--${opt.longForm}`
+      ) {
+        foundOpt = true;
+        switch (opt.longForm) {
+          case "inspector-port":
+          case "device-port":
+          case "history-size":
+          case "max-token-duration":
+          case "max-log-length":
+          case "wrong-password-limit":
+          case "inspector-connection-limit":
+          case "device-connection-limit":
+          case "inspector-message-limit":
+          case "device-message-limit":
+            i++;
+            parsed[opt.outputVar] = checkNumberArg(arg, args[i]);
+            break;
 
-      case "-dp":
-      case "--device-port":
-        i++;
-        parsed.devicePort = checkNumberArg(arg, args[i]);
-        break;
+          case "create-log-files":
+          case "disable-no-token":
+            parsed[opt.outputVar] = true;
+            break;
 
-      case "-f":
-      case "--create-log-files":
-        parsed.shouldCreateLogFiles = true;
-        break;
+          case "persistent-tokens-storage":
+          case "log-file":
+            i++;
+            if (args[i] === undefined) {
+              console.error(`Missing argument for "${arg}" option.`);
+              process.exit(1);
+            }
+            parsed[opt.outputVar] = args[i];
+            break;
 
-      case "--force-password":
-        i++;
-        if (args[i] === undefined) {
-          console.error(
-            `Missing password argument for "--force-password" option.`
-          );
-          process.exit(1);
-        } else if (!/^[A-Za-z0-9]+$/.test(args[i])) {
-          console.error(
-            `Invalid password argument for "--force-password" option. ` +
-              `Must be only alphanumeric characters, got "${args[i]}"`
-          );
-          process.exit(1);
-        } else if (!shouldGeneratePassword) {
-          console.error(`Both setting and disabling a password. Exiting`);
-          process.exit(1);
+          case "force-password":
+            i++;
+            if (args[i] === undefined) {
+              console.error(
+                `Missing password argument for "--force-password" option.`
+              );
+              process.exit(1);
+            } else if (!/^[A-Za-z0-9]+$/.test(args[i])) {
+              console.error(
+                `Invalid password argument for "--force-password" option. ` +
+                  `Must be only alphanumeric characters, got "${args[i]}"`
+              );
+              process.exit(1);
+            } else if (!shouldGeneratePassword) {
+              console.error(`Both setting and disabling a password. Exiting`);
+              process.exit(1);
+            }
+            parsed[opt.outputVar] = args[i];
+            shouldGeneratePassword = false;
+            break;
+
+          case "no-password":
+            if (parsed[opt.outputVar] !== null) {
+              console.error(`Both setting and disabling a password. Exiting`);
+              process.exit(1);
+            }
+            parsed[opt.outputVar] = null;
+            shouldGeneratePassword = false;
+            break;
+
+          default:
+            console.error(`Unhandled option: "${arg}"`);
+            process.exit(1);
         }
-        parsed.password = args[i];
-        shouldGeneratePassword = false;
         break;
-
-      case "--no-password":
-        if (parsed.password !== null) {
-          console.error(`Both setting and disabling a password. Exiting`);
-          process.exit(1);
-        }
-        parsed.password = null;
-        shouldGeneratePassword = false;
-        break;
-
-      case "--history-size":
-        i++;
-        parsed.historySize = checkNumberArg(arg, args[i]);
-        break;
-
-      case "--max-token-duration":
-        i++;
-        parsed.maxTokenDuration = checkNumberArg(arg, args[i]);
-        break;
-
-      case "--max-log-length":
-        i++;
-        parsed.maxLogLength = checkNumberArg(arg, args[i]);
-        break;
-
-      case "--wrong-password-limit":
-        i++;
-        parsed.wrongPasswordLimit = checkNumberArg(arg, args[i]);
-        break;
-
-      case "--inspector-connection-limit":
-        i++;
-        parsed.inspectorConnectionLimit = checkNumberArg(arg, args[i]);
-        break;
-
-      case "--device-connection-limit":
-        i++;
-        parsed.deviceConnectionLimit = checkNumberArg(arg, args[i]);
-        break;
-
-      case "--inspector-message-limit":
-        i++;
-        parsed.inspectorMessageLimit = checkNumberArg(arg, args[i]);
-        break;
-
-      case "--device-message-limit":
-        i++;
-        parsed.deviceMessageLimit = checkNumberArg(arg, args[i]);
-        break;
-
-      case "--persistent-tokens-storage":
-        i++;
-        if (args[i] === undefined) {
-          console.error(
-            `Missing password argument for "--persistent-tokens-storage" option.`
-          );
-          process.exit(1);
-        }
-        parsed.persistentTokensFile = args[i];
-        break;
-
-      case "--log-file":
-        i++;
-        if (args[i] === undefined) {
-          console.error(`Missing password argument for "--log-file" option.`);
-          process.exit(1);
-        }
-        parsed.logFile = args[i];
-        break;
-
-      case "--disable-no-token":
-        parsed.disableNoToken = true;
-        break;
-
-      default:
-        console.error(`Unknown option: "${arg}"`);
-        process.exit(1);
+      }
+    }
+    if (!foundOpt) {
+      console.error(`Unknown option: "${arg}"`);
+      process.exit(1);
     }
   }
 
@@ -354,12 +325,15 @@ function displayHelp() {
   const lines = ["Usage: node RxPaired-inspector.mjs [options]", "Options:"];
   const SPACES_AFTER_OPTIONS = 3;
 
-  const fullOptions = optionsDescription.concat({
-    shortForm: "h",
-    longForm: "help",
-    description: "Display this help information",
-    argumentDescription: null,
-  });
+  const fullOptions = [
+    ...optionsDescription,
+    {
+      shortForm: "h",
+      longForm: "help",
+      description: "Display this help information",
+      argumentDescription: null,
+    },
+  ];
   for (const option of fullOptions) {
     let str = "";
     if (option.shortForm !== null) {
