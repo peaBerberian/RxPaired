@@ -7,8 +7,8 @@ import {
   STATE_PROPS,
 } from "../constants";
 import ObservableState, { UPDATE_TYPE } from "../observable_state";
-import { ModuleFunction } from ".";
 import { convertDateToLocalISOString } from "../utils";
+import { ModuleFunction } from ".";
 
 const MAX_REQ_ELEMENTS = 50;
 
@@ -32,8 +32,8 @@ export default function generateRequestHistoryModule(
       mediaType === "audio"
         ? STATE_PROPS.AUDIO_REQUEST_HISTORY
         : mediaType === "video"
-          ? STATE_PROPS.VIDEO_REQUEST_HISTORY
-          : STATE_PROPS.TEXT_REQUEST_HISTORY;
+        ? STATE_PROPS.VIDEO_REQUEST_HISTORY
+        : STATE_PROPS.TEXT_REQUEST_HISTORY;
 
     let pendingRequestInfo: {
       element: HTMLElement;

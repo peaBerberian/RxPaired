@@ -6,8 +6,8 @@ import {
   STATE_PROPS,
 } from "../constants";
 import ObservableState, { UPDATE_TYPE } from "../observable_state";
-import { ModuleObject, ModuleFunctionArguments } from "./index";
 import { convertDateToLocalISOString } from "../utils";
+import { ModuleObject, ModuleFunctionArguments } from "./index";
 
 const LOADING_LOGS_MSG = "Loading logs...";
 const NO_LOG_SELECTED_MSG =
@@ -754,9 +754,9 @@ export default function LogModule({
   function onMinimumDateChange() {
     const newMin =
       logView.getCurrentState(STATE_PROPS.LOG_MIN_TIMESTAMP_DISPLAYED) ?? 0;
-    const dateAtLoad =
+    const lastDateAtLoad =
       logView.getCurrentState(STATE_PROPS.DATE_AT_PAGE_LOAD) ?? 0;
-    const minDateInMs = dateAtLoad + newMin;
+    const minDateInMs = lastDateAtLoad + newMin;
     const value = convertDateToLocalISOString(new Date(minDateInMs));
     minimumDateInputElt.value = value;
     refreshFilters();
@@ -766,9 +766,9 @@ export default function LogModule({
     const newMax =
       logView.getCurrentState(STATE_PROPS.LOG_MAX_TIMESTAMP_DISPLAYED) ??
       Infinity;
-    const dateAtLoad =
+    const lastDateAtLoad =
       logView.getCurrentState(STATE_PROPS.DATE_AT_PAGE_LOAD) ?? 0;
-    const maxDateInMs = dateAtLoad + newMax;
+    const maxDateInMs = lastDateAtLoad + newMax;
     let value: string;
     if (maxDateInMs === Infinity) {
       value = "";
@@ -1112,14 +1112,16 @@ function createMinimumDateInputElement(
   />` as HTMLInputElement;
 
   function onMinimumTimeInputChange(): void {
-    let dateInStr: string = element.value;
+    const dateInStr: string = element.value;
     const dateInMs = new Date(dateInStr).getTime();
-    const dateAtLoad = logView.getCurrentState(STATE_PROPS.DATE_AT_PAGE_LOAD);
+    const lastDateAtLoad = logView.getCurrentState(
+      STATE_PROPS.DATE_AT_PAGE_LOAD,
+    );
 
     logView.updateState(
       STATE_PROPS.LOG_MIN_TIMESTAMP_DISPLAYED,
       UPDATE_TYPE.REPLACE,
-      dateInMs - (dateAtLoad ?? 0),
+      dateInMs - (lastDateAtLoad ?? 0),
     );
     logView.commitUpdates();
   }
@@ -1131,12 +1133,12 @@ function createMinimumDateInputElement(
 function createMaximumDateInputElement(
   logView: ObservableState<LogViewState>,
 ): HTMLInputElement {
-  const dateAtLoad =
+  const lastDateAtLoad =
     logView.getCurrentState(STATE_PROPS.DATE_AT_PAGE_LOAD) ?? 0;
   const maxTimeStamp =
     logView.getCurrentState(STATE_PROPS.LOG_MAX_TIMESTAMP_DISPLAYED) ??
     Infinity;
-  const maxDateInMs = dateAtLoad + maxTimeStamp;
+  const maxDateInMs = lastDateAtLoad + maxTimeStamp;
   let value: string;
   if (maxDateInMs === Infinity) {
     value = "";
@@ -1152,7 +1154,7 @@ function createMaximumDateInputElement(
   />` as HTMLInputElement;
 
   function onMaximumTimeInputChange(): void {
-    let dateInStr: string = element.value;
+    const dateInStr: string = element.value;
     let dateInMs: number;
     if (dateInStr === "") {
       dateInMs = Infinity;

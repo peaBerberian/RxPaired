@@ -16,8 +16,9 @@ import {
   createClearStoredConfigButton,
   createDarkLightModeButton,
   createTimeRepresentationSwitch,
+  isInitLog,
+  parseAndGenerateInitLog,
 } from "./utils";
-import { isInitLog, parseAndGenerateInitLog } from "./utils";
 
 /**
  * Some minor features are detected to be only present on chromium-based
@@ -180,6 +181,10 @@ export default function generateLiveDebuggingPage(
       wasAckReceived = true;
       return;
     }
+
+    /* eslint-disable @typescript-eslint/restrict-template-expressions */
+    /* eslint-disable @typescript-eslint/no-unsafe-assignment */
+    /* eslint-disable @typescript-eslint/no-unsafe-member-access */
     if (event.data[0] === "{") {
       try {
         const signal = JSON.parse(event.data);

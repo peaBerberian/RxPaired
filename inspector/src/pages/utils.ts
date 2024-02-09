@@ -133,10 +133,16 @@ export function createTimeRepresentationSwitch(
 
 export function isInitLog(log: string): boolean {
   if (log.startsWith("{")) {
+    /* eslint-disable @typescript-eslint/restrict-template-expressions */
+    /* eslint-disable @typescript-eslint/no-unsafe-assignment */
+    /* eslint-disable @typescript-eslint/no-unsafe-member-access */
     try {
       const signal = JSON.parse(log);
       return signal.type === "Init";
     } catch {
+      /* eslint-enable @typescript-eslint/restrict-template-expressions */
+      /* eslint-enable @typescript-eslint/no-unsafe-assignment */
+      /* eslint-enable @typescript-eslint/no-unsafe-member-access */
       return false;
     }
   }
@@ -152,6 +158,9 @@ export function parseAndGenerateInitLog(log: string): {
     dateAtPageLoad: 0,
   };
   try {
+    /* eslint-disable @typescript-eslint/restrict-template-expressions */
+    /* eslint-disable @typescript-eslint/no-unsafe-assignment */
+    /* eslint-disable @typescript-eslint/no-unsafe-member-access */
     const signal = JSON.parse(log);
     if (signal.type === "Init") {
       const initTimestamp = signal.value?.timestamp;
@@ -166,6 +175,9 @@ export function parseAndGenerateInitLog(log: string): {
     }
     return defaultLog;
   } catch {
+    /* eslint-enable @typescript-eslint/restrict-template-expressions */
+    /* eslint-enable @typescript-eslint/no-unsafe-assignment */
+    /* eslint-enable @typescript-eslint/no-unsafe-member-access */
     return defaultLog;
   }
 }
