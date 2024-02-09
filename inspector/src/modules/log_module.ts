@@ -13,7 +13,7 @@ const LOADING_LOGS_MSG = "Loading logs...";
 const NO_LOG_SELECTED_MSG =
   "No log selected (click on a log to time-travel to it).";
 const LOG_SELECTED_MSG = "A log has been time-travelled to.";
-const timeRegex = /^(\d+(?:.)?(?:\d+)?) (.*)$/;
+const timeRegex = /^(\d+(?:.)?(?:\d+)?) (.*)$/s;
 
 /**
  * @param {Object} args
@@ -884,7 +884,7 @@ export function createLogElement(
         logView.getCurrentState(STATE_PROPS.DATE_AT_PAGE_LOAD) ?? 0;
       const timestamp = Number(match[1]) + dateAtPageLoad;
       const dateStr = convertDateToLocalISOString(new Date(timestamp));
-      formattedMsg = dateStr + match[2];
+      formattedMsg = dateStr + " " + match[2];
     } else {
       formattedMsg = logTxt;
     }
