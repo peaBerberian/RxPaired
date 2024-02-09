@@ -32,8 +32,8 @@ export default function generateRequestHistoryModule(
       mediaType === "audio"
         ? STATE_PROPS.AUDIO_REQUEST_HISTORY
         : mediaType === "video"
-          ? STATE_PROPS.VIDEO_REQUEST_HISTORY
-          : STATE_PROPS.TEXT_REQUEST_HISTORY;
+        ? STATE_PROPS.VIDEO_REQUEST_HISTORY
+        : STATE_PROPS.TEXT_REQUEST_HISTORY;
 
     let pendingRequestInfo: {
       element: HTMLElement;
