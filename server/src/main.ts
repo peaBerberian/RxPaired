@@ -1,15 +1,16 @@
 import { appendFile } from "fs";
 import { IncomingMessage } from "http";
 import process from "process";
-import * as commander from "commander";
 import WebSocket, { WebSocketServer } from "ws";
 import ActiveTokensList, {
   TokenMetadata,
   TokenType,
 } from "./active_tokens_list.js";
 import logger from "./logger.js";
+import parseOptions from "./option_parsing.js";
 import PersistentTokensStorage from "./persistent_tokens_storage.js";
 import createCheckers from "./safe_checks.js";
+import { generatePassword } from "./utils.js";
 
 /**
  * Regular expression to extract timestamp and date from the initial "Init" log
@@ -19,246 +20,35 @@ import createCheckers from "./safe_checks.js";
  */
 const INIT_REGEX = /^Init v1 ([0-9]+(?:\.[0-9]+)?) ([0-9]+(?:\.[0-9]+)?)$/;
 
-const DEFAULT_INSPECTOR_PORT = 22625;
-const DEFAULT_DEVICE_PORT = 22626;
-const DEFAULT_HISTORY_SIZE = 0;
-const DEFAULT_MAX_TOKEN_DURATION = 4 * 60 * 60;
-const DEFAULT_MAX_LOG_LENGTH = 3000;
-const DEFAULT_WRONG_PASSWORD_LIMIT = 50;
-const DEFAULT_DEVICE_CONNECTION_LIMIT = 500;
-const DEFAULT_INSPECTOR_CONNECTION_LIMIT = 500;
-const DEFAULT_DEVICE_MESSAGE_LIMIT = 1e6;
-const DEFAULT_INSPECTOR_MESSAGE_LIMIT = 1000;
-const DEFAULT_LOG_FILE_PATH = "server_logs.txt";
-
-const { program } = commander;
-
-program
-  .description("RxPaired - RxPlayer's Light Remote Inspector")
-  .option(
-    "-cp, --inspector-port <port>",
-    "Port used for inspector-to-server communication. " +
-      `Defaults to ${DEFAULT_INSPECTOR_PORT}.`
-  )
-  .option(
-    "-dp, --device-port <port>",
-    "Port used for device-to-server communication. " +
-      `Defaults to ${DEFAULT_DEVICE_PORT}.`
-  )
-  .option(
-    "-f, --create-log-files",
-    "If set, a log file will also be written for each token and for each " +
-      "day (server time) this token is used, in the current directory."
-  )
-  .option(
-    "--force-password <password>",
-    "Force the password to be a given string" +
-      " (must be alphanumeric, case-sentive)"
-  )
-  .option("--no-password", "Disable the usage of a password.")
-  .option(
-    "--history-size <size>",
-    "Number of logs kept in memory for each token in case of web inspectors (re-)" +
-      "connecting after the device already emitted logs." +
-      ` ${DEFAULT_HISTORY_SIZE} by default.`
-  )
-  .option(
-    "--max-token-duration <duration>",
-    "Maximum number of seconds a new token is created for, in seconds. " +
-      `Defaults to ${DEFAULT_MAX_TOKEN_DURATION}.`
-  )
-  .option(
-    "--max-log-length <length>",
-    "Maximum length a log can have, in terms of UTF-16 code points. " +
-      "Longer logs will be skipped. 500 by default."
-  )
-  .option(
-    "--wrong-password-limit <number>",
-    "Maximum authorized number of bad passwords received in 24 hours. " +
-      "Exceeding that limit will stop the server. " +
-      `Defaults to ${DEFAULT_WRONG_PASSWORD_LIMIT}.`
-  )
-  .option(
-    "--inspector-connection-limit <number>",
-    "Maximum authorized number of web inspector connection per 24 hours. " +
-      "Exceeding that limit will stop the server. " +
-      ` Defaults to ${DEFAULT_INSPECTOR_CONNECTION_LIMIT}.`
-  )
-  .option(
-    "--device-connection-limit <number>",
-    "Maximum authorized number of device connection per 24 hours. " +
-      "Exceeding that limit will stop the server. " +
-      ` Defaults to ${DEFAULT_DEVICE_CONNECTION_LIMIT}.`
-  )
-  .option(
-    "--device-message-limit <number>",
-    "Maximum authorized number of message any device (e.g. logs) can send " +
-      "per 24 hours. " +
-      "Exceeding that limit will stop the server. " +
-      ` Defaults to ${DEFAULT_DEVICE_MESSAGE_LIMIT}.`
-  )
-  .option(
-    "--inspector-message-limit <number>",
-    "Maximum authorized number of message any web inspector can send per 24 " +
-      "hours. Exceeding that limit will stop the server. " +
-      ` Defaults to ${DEFAULT_INSPECTOR_MESSAGE_LIMIT}.`
-  )
-  .option(
-    "--persistent-tokens-storage <path>",
-    "If set, the RxPaired-server will store information on persistent " +
-      "tokens on disk (at the given path) so they can be retrieved if the " +
-      "server reboots."
-  )
-  .option(
-    "--log-file <path>",
-    "Path to the server's log file. " + ` Defaults to ${DEFAULT_LOG_FILE_PATH}.`
-  )
-  .option(
-    "--disable-no-token",
-    'Disable "no-token" mode, where devices can send logs without having ' +
-      'to create a "token" first through the inspector. '
-  );
-
-program.parse(process.argv);
-const options = program.opts();
-
-const inspectorPort =
-  options.inspectorPort === undefined
-    ? DEFAULT_INSPECTOR_PORT
-    : +options.inspectorPort;
-const devicePort =
-  options.devicePort === undefined ? DEFAULT_DEVICE_PORT : +options.devicePort;
-const usePassword = Boolean(options.password);
-const forcePassword =
-  typeof options.forcePassword === "string" ? options.forcePassword : undefined;
-const shouldCreateLogFiles = Boolean(options.createLogFiles);
-
-const persistentTokensFile =
-  typeof options.persistentTokensStorage === "string"
-    ? options.persistentTokensStorage
-    : undefined;
-
-/** Maximum duration a Token can be used for, in seconds. */
-const maxTokenDuration =
-  options.maxTokenDuration === undefined
-    ? DEFAULT_MAX_TOKEN_DURATION * 1000
-    : +options.maxTokenDuration * 1000;
-
-const maxLogLength =
-  options.maxLogLength === undefined
-    ? DEFAULT_MAX_LOG_LENGTH
-    : +options.maxLogLength;
-
-const historySize =
-  options.historySize === undefined
-    ? DEFAULT_HISTORY_SIZE
-    : +options.historySize;
-
-/**
- * Maximum bad password that should at maximum be received, per 24 hours rolling.
- * it.
- * If that limit is exceeded, the server will stop.
- */
-const wrongPasswordLimit =
-  options.wrongPasswordLimit === undefined
-    ? DEFAULT_WRONG_PASSWORD_LIMIT
-    : +options.wrongPasswordLimit;
-
-/**
- * Maximum new web inspectors that should at connect per 24 hours rolling.
- * it.
- * If that limit is exceeded, the server will stop.
- */
-const inspectorConnectionLimit =
-  options.inspectorConnectionLimit === undefined
-    ? DEFAULT_INSPECTOR_CONNECTION_LIMIT
-    : +options.inspectorConnectionLimit;
-
-/**
- * Maximum new devices that should at connect per 24 hours rolling.
- * it.
- * If that limit is exceeded, the server will stop.
- */
-const deviceConnectionLimit =
-  options.deviceConnectionLimit === undefined
-    ? DEFAULT_DEVICE_CONNECTION_LIMIT
-    : +options.deviceConnectionLimit;
-
-const deviceMessageLimit =
-  options.deviceMessageLimit === undefined
-    ? DEFAULT_DEVICE_MESSAGE_LIMIT
-    : +options.deviceMessageLimit;
-
-const inspectorMessageLimit =
-  options.inspectorMessageLimit === undefined
-    ? DEFAULT_INSPECTOR_MESSAGE_LIMIT
-    : +options.inspectorMessageLimit;
-
-const logFile =
-  typeof options.logFile === "string" ? options.logFile : undefined;
-
-const disableNoToken = options.disableNoToken === true;
-
-logger.setLogFile(logFile ?? DEFAULT_LOG_FILE_PATH);
-
-[
-  [inspectorPort, "--inspector-port"],
-  [devicePort, "--device-port"],
-  [maxTokenDuration, "--max-token-duration"],
-  [maxLogLength, "--max-log-length"],
-  [historySize, "--history-size"],
-  [deviceMessageLimit, "--device-message-limit"],
-  [wrongPasswordLimit, "--wrong-password-limit"],
-  [inspectorConnectionLimit, "--inspector-connection-limit"],
-  [deviceConnectionLimit, "--device-connection-limit"],
-  [inspectorMessageLimit, "--inspector-message-limit"],
-].forEach((opt) => {
-  if (isNaN(+opt[0])) {
-    console.error(`Invalid "${opt[1]}" option, not a number.`);
-    process.exit(1);
-  }
-});
-
-let password: string | null = null;
-if (usePassword) {
-  if (forcePassword !== undefined) {
-    if (!isAlphaNumeric(forcePassword)) {
-      console.error(
-        "Invalid password. It can only contains A-Z, a-z, " +
-          " and 0-9 set of latin letters and numbers"
-      );
-      process.exit(1);
-    }
-    password = forcePassword;
-  } else {
-    password = generatePassword();
-  }
-  console.log("Generated password:", password);
-}
+const options = parseOptions(process.argv.slice(2));
+logger.setLogFile(options.logFile);
 
 const persistentTokensStorage = new PersistentTokensStorage();
 
 let activeTokensList: ActiveTokensList;
-if (persistentTokensFile !== undefined) {
-  const stored =
-    persistentTokensStorage.initializeWithPath(persistentTokensFile);
+if (options.persistentTokensFile !== null) {
+  const stored = await persistentTokensStorage.initializeWithPath(
+    options.persistentTokensFile
+  );
   activeTokensList = new ActiveTokensList(stored);
 } else {
   activeTokensList = new ActiveTokensList([]);
 }
 
-const deviceSocket = new WebSocketServer({ port: devicePort });
-const htmlInspectorSocket = new WebSocketServer({ port: inspectorPort });
+const deviceSocket = new WebSocketServer({ port: options.devicePort });
+const htmlInspectorSocket = new WebSocketServer({
+  port: options.inspectorPort,
+});
 
 const checkers = createCheckers(activeTokensList, {
   deviceSocket,
   htmlInspectorSocket,
-  maxTokenDuration,
-  inspectorMessageLimit,
-  deviceMessageLimit,
-  wrongPasswordLimit,
-  inspectorConnectionLimit,
-  deviceConnectionLimit,
+  maxTokenDuration: options.maxTokenDuration,
+  inspectorMessageLimit: options.inspectorMessageLimit,
+  deviceMessageLimit: options.deviceMessageLimit,
+  wrongPasswordLimit: options.wrongPasswordLimit,
+  inspectorConnectionLimit: options.inspectorConnectionLimit,
+  deviceConnectionLimit: options.deviceConnectionLimit,
 });
 
 deviceSocket.on("connection", (ws, req) => {
@@ -271,10 +61,10 @@ deviceSocket.on("connection", (ws, req) => {
   let logFileNameSuffix = tokenId;
   let existingToken: TokenMetadata;
   let existingTokenIndex: number;
-  if (!disableNoToken && tokenId.startsWith("!notoken")) {
-    if (usePassword && password !== null) {
+  if (!options.disableNoToken && tokenId.startsWith("!notoken")) {
+    if (options.password !== null) {
       const pw = tokenId.substring("!notoken/".length);
-      if (pw !== password) {
+      if (pw !== options.password) {
         writeLog(
           "warn",
           "Received inspector request with invalid password: " + pw,
@@ -304,8 +94,8 @@ deviceSocket.on("connection", (ws, req) => {
     existingToken = activeTokensList.create(
       TokenType.FromDevice,
       tokenId,
-      historySize,
-      maxTokenDuration
+      options.historySize,
+      options.maxTokenDuration
     );
     existingTokenIndex = activeTokensList.findIndex(tokenId);
   } else {
@@ -355,7 +145,7 @@ deviceSocket.on("connection", (ws, req) => {
   ws.on("message", (message) => {
     checkers.checkDeviceMessageLimit();
     /* eslint-disable-next-line @typescript-eslint/no-base-to-string */
-    let messageStr = message.toString();
+    const messageStr = message.toString();
 
     /** The log that is about to be written on the disk in the log file. */
     let storedMsg = "";
@@ -369,7 +159,7 @@ deviceSocket.on("connection", (ws, req) => {
      */
     let historyMsg = "";
 
-    if (messageStr.length > maxLogLength) {
+    if (messageStr.length > options.maxLogLength) {
       return;
     }
     if (messageStr === "pong") {
@@ -420,7 +210,7 @@ deviceSocket.on("connection", (ws, req) => {
     if (historyMsg) {
       existingToken?.addLogToHistory(historyMsg);
     }
-    if (storedMsg && shouldCreateLogFiles) {
+    if (storedMsg && options.shouldCreateLogFiles) {
       appendFile(logFileName, storedMsg + "\n", function () {
         // on finished. Do nothing for now.
       });
@@ -470,7 +260,7 @@ htmlInspectorSocket.on("connection", (ws, req) => {
   }
   const urlParts = parseInspectorUrl(req.url);
   const receivedPassword = urlParts.password ?? "";
-  if (receivedPassword !== (password ?? "")) {
+  if (receivedPassword !== (options.password ?? "")) {
     writeLog(
       "warn",
       "Received inspector request with invalid password: " + receivedPassword,
@@ -497,7 +287,7 @@ htmlInspectorSocket.on("connection", (ws, req) => {
       const now = performance.now();
       ws.send(
         JSON.stringify({
-          isNoTokenEnabled: !disableNoToken,
+          isNoTokenEnabled: !options.disableNoToken,
           tokenList: activeTokensList.getList().map((t) => {
             return {
               tokenId: t.tokenId,
@@ -555,8 +345,8 @@ htmlInspectorSocket.on("connection", (ws, req) => {
         ? TokenType.Persistent
         : TokenType.FromInspector,
       tokenId,
-      historySize,
-      urlParts.expirationDelay ?? maxTokenDuration
+      options.historySize,
+      urlParts.expirationDelay ?? options.maxTokenDuration
     );
   } else {
     if (isPersistentTokenCreation) {
@@ -680,8 +470,8 @@ htmlInspectorSocket.on("connection", (ws, req) => {
     }
   });
 });
-logger.log(`Emitting to web inspectors at ws://127.0.0.1:${inspectorPort}`);
-logger.log(`Listening for device logs at ws://127.0.0.1:${devicePort}`);
+logger.log(`Emitting to web inspectors at ws://127.0.0.1:${options.inspectorPort}`);
+logger.log(`Listening for device logs at ws://127.0.0.1:${options.devicePort}`);
 
 function sendMessageToInspector(
   message: string,
@@ -696,13 +486,6 @@ function sendMessageToInspector(
       address: req.socket?.remoteAddress ?? undefined,
       tokenId,
     });
-  }
-}
-
-function generatePassword() {
-  return generateHalfToken() + generateHalfToken();
-  function generateHalfToken() {
-    return Math.random().toString(36).substring(2); // remove `0.`
   }
 }
 
@@ -762,27 +545,6 @@ function writeLog(
   logger[level](...args);
 }
 
-/**
- * Returns `true` if the given string is only composed of alphanumeric
- * characters (upper-case A-Z letters, lower-case a-z letters, numbers).
- * @param {string} str
- * @returns {Boolean}
- */
-function isAlphaNumeric(str: string): boolean {
-  for (let i = 0, len = str.length; i < len; i++) {
-    const code = str.charCodeAt(i);
-    if (
-      !(code > 47 && code < 58) && // numeric (0-9)
-      !(code > 64 && code < 91) && // upper alpha (A-Z)
-      !(code > 96 && code < 123)
-    ) {
-      // lower alpha (a-z)
-      return false;
-    }
-  }
-  return true;
-}
-
 function parseInspectorUrl(url: string): {
   password: string | undefined;
   command: string | undefined;
@@ -794,7 +556,7 @@ function parseInspectorUrl(url: string): {
   let command;
   let tokenId;
   let expirationMsStr;
-  if (usePassword && password !== null) {
+  if (options.password !== null) {
     pass = parts[0];
     if (parts.length >= 2 && parts[1].startsWith("!")) {
       command = parts[1].substring(1);

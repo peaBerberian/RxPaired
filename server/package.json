@@ -6,7 +6,7 @@
   "type": "module",
   "scripts": {
     "build": "tsc --project .",
-    "bundle": "npm run build && esbuild --bundle --platform=node ./RxPaired-server --outfile=RxPaired-server.bundle.cjs",
+    "bundle": "npm run build && esbuild --bundle --platform=node --format=esm ./RxPaired-server --outfile=RxPaired-server.bundle.mjs",
     "run": "node ./build/main.js",
     "start": "npm run build && npm run run",
     "check": "tsc --noEmit --project .",
@@ -15,7 +15,6 @@
   "author": "peaberberian",
   "license": "MIT",
   "dependencies": {
-    "commander": "11.0.0",
     "ws": "8.13.0"
   },
   "devDependencies": {
