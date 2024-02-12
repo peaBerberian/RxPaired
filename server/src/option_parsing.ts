@@ -304,7 +304,7 @@ export default function parseOptions(args: string[]): ParsedOptions {
     const toInt = val === undefined ? NaN : parseInt(val, 10);
     if (isNaN(toInt)) {
       if (val === undefined || val.startsWith("-")) {
-        console.error(`Missing port argument for "${arg}" option.`);
+        console.error(`Missing argument for "${arg}" option.`);
       } else {
         console.error(
           `Invalid "${arg}" argument. Expected a number, ` + `ot "${val}".`

@@ -27,13 +27,13 @@ export default class ActiveTokensList {
     tokenType: TokenType,
     tokenId: string,
     historySize: number,
-    expirationDelay: number,
+    expirationDelay: number
   ): TokenMetadata {
     const tokenMetadata = new TokenMetadata(
       tokenType,
       tokenId,
       historySize,
-      expirationDelay,
+      expirationDelay
     );
     this._tokensList.push(tokenMetadata);
     return tokenMetadata;
@@ -218,7 +218,7 @@ export class TokenMetadata {
     tokenId: string,
     historySize: number,
     expirationDelay: number,
-    originalDate?: number | undefined,
+    originalDate?: number | undefined
   ) {
     this.tokenType = tokenType;
     this.tokenId = tokenId;
