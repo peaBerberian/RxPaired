@@ -162,7 +162,6 @@ module.exports = {
       },
     ],
     "@typescript-eslint/no-shadow": ["error"],
-    "@typescript-eslint/quotes": ["error", "double", { avoidEscape: true }],
     "@typescript-eslint/restrict-plus-operands": "error",
     "@typescript-eslint/semi": ["error", "always"],
     "@typescript-eslint/strict-boolean-expressions": "error",
@@ -228,12 +227,6 @@ module.exports = {
     "jsdoc/no-types": "off",
     "linebreak-style": ["error", "unix"],
     "max-classes-per-file": ["warn", 5],
-    "max-len": [
-      "warn",
-      {
-        code: 90,
-      },
-    ],
     "max-lines": ["off", 300],
     "new-parens": "error",
     "newline-per-chained-call": "off",
