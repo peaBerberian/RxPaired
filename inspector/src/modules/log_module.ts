@@ -8,6 +8,7 @@ import {
 import ObservableState, { UPDATE_TYPE } from "../observable_state";
 import { convertDateToLocalISOString } from "../utils";
 import { ModuleObject, ModuleFunctionArguments } from "./index";
+import { isInitLog, parseAndGenerateInitLog } from "../pages/utils";
 
 const LOADING_LOGS_MSG = "Loading logs...";
 const NO_LOG_SELECTED_MSG =
@@ -877,8 +878,12 @@ export function createLogElement(
   let namespace;
   let formattedMsg;
 
+  let logToProcess = logTxt;
+  if (isInitLog(logTxt)) {
+    logToProcess = parseAndGenerateInitLog(logTxt).log;
+  }
   if (configState.getCurrentState(STATE_PROPS.TIME_REPRESENTATION) === "date") {
-    const match = logTxt.match(timeRegex);
+    const match = logToProcess.match(timeRegex);
     if (match !== null) {
       const dateAtPageLoad =
         logView.getCurrentState(STATE_PROPS.DATE_AT_PAGE_LOAD) ?? 0;
@@ -886,10 +891,10 @@ export function createLogElement(
       const dateStr = convertDateToLocalISOString(new Date(timestamp));
       formattedMsg = dateStr + " " + match[2];
     } else {
-      formattedMsg = logTxt;
+      formattedMsg = logToProcess;
     }
   } else {
-    formattedMsg = logTxt;
+    formattedMsg = logToProcess;
   }
   const indexOfNamespaceStart = formattedMsg.indexOf("[");
   if (indexOfNamespaceStart >= 0) {
