@@ -149,12 +149,10 @@ function createImportFileButton(
         } else {
           indexOfEnd = indexOfBrk + offset;
         }
-        let logLine = remaininStrConsidered.substring(0, indexOfEnd);
+        const logLine = remaininStrConsidered.substring(0, indexOfEnd);
 
         if (isInitLog(logLine)) {
-          const init = parseAndGenerateInitLog(logLine);
-          logLine = init.log;
-          dateAtPageLoad = init.dateAtPageLoad;
+          dateAtPageLoad = parseAndGenerateInitLog(logLine).dateAtPageLoad;
         }
         logs.push([logLine, id++]);
         remaininStrConsidered = remaininStrConsidered.substring(indexOfEnd + 1);
