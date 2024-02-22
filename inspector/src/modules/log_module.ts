@@ -6,9 +6,9 @@ import {
   STATE_PROPS,
 } from "../constants";
 import ObservableState, { UPDATE_TYPE } from "../observable_state";
+import { isInitLog, parseAndGenerateInitLog } from "../pages/utils";
 import { convertDateToLocalISOString } from "../utils";
 import { ModuleObject, ModuleFunctionArguments } from "./index";
-import { isInitLog, parseAndGenerateInitLog } from "../pages/utils";
 
 const LOADING_LOGS_MSG = "Loading logs...";
 const NO_LOG_SELECTED_MSG =
